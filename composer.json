@@ -1,0 +1,22 @@
+{
+    "name": "zhanshop/framework",
+    "description": "张启全研发的PHP框架",
+    "keywords": [
+        "zhanshop"
+    ],
+    "homepage": "http://www.zhanshop.cn/",
+    "license": "Apache-2.0",
+    "authors": [
+        {
+            "name": "张启全",
+            "email": "768617998@qq.com"
+        }
+    ],
+    "require": {
+    },
+    "autoload": {
+        "psr-4": {
+            "zhanshop\\": "src/zhanshop/"
+        }
+    }
+}
