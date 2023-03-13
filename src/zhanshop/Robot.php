@@ -31,6 +31,6 @@ class Robot
      * @return array|bool|string
      */
     public function sendMsg(string $msg){
-        return $this->dirver->sendText($msg);
+        if($this->dirver) $this->dirver->sendText($msg);
     }
 }
