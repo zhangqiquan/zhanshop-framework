@@ -18,13 +18,14 @@ class Controller extends Common
 {
     protected static $input = null;
     protected static $version = null;
+    protected static $appType = 'http';
 
     /**
      * 创建控制器
      * @param Input $input
      */
-    public static function create(Input $input){
-
+    public static function create(Input $input, string $appType){
+        self::$appType = $appType;
         self::$input = $input;
 
         $version = $input->param('version');
@@ -33,7 +34,7 @@ class Controller extends Common
 
         $version = str_replace('.', '_', $version);
         self::$version = $version;
-        $classFile = App::appPath().DIRECTORY_SEPARATOR.'http'.DIRECTORY_SEPARATOR.$version.DIRECTORY_SEPARATOR.'controller'.DIRECTORY_SEPARATOR.$class.'.php';
+        $classFile = App::appPath().DIRECTORY_SEPARATOR.self::$appType.DIRECTORY_SEPARATOR.$version.DIRECTORY_SEPARATOR.'controller'.DIRECTORY_SEPARATOR.$class.'.php';
 
         self::check($classFile); // 检查控制器是否存在不存在初始化
 
@@ -50,25 +51,13 @@ class Controller extends Common
         $code = Helper::headComment($class.'控制器');
         $version = self::$version;
         $code .= "
-namespace app\http\\{$version}\controller;
+namespace app\\".self::$appType."\\{$version}\controller;
 
-use zhanshop\App;
-use app\http\Controller;
+use zhanshop\Request;
+use app\\".self::$appType."\\Controller;
 
 class $class extends Controller
 {
-    /**
-     * 前置中间件
-     * @var array
-     */
-    protected \$beforeMiddleware = [];
-
-    /**
-     * 后中间件
-     * @var array
-     */
-    protected \$afterMiddleware = [
-    ];
     
 }";
         return $code;
@@ -87,22 +76,9 @@ class $class extends Controller
      * @apiGroup $group
      * @return array
      */
-    public function $method(mixed &\$request){
-        \$method = \$request->post['_method'] ?? \$request->server['request_method'];
-        switch (\$method){
-            case \"POST\":
-            \$data = \$request->service->post".ucfirst($method)."(\$request);
-            break;
-            case \"PUT\":
-            \$data = \$request->service->put".ucfirst($method)."(\$request);
-            break;
-            case \"DELETE\":
-            \$data = \$request->service->delete".ucfirst($method)."(\$request);
-            break;
-            default:
-            \$data = \$request->service->get".ucfirst($method)."(\$request);
-        }
-        return \$data;;
+    public function $method(Request &\$request){
+        \$data = \$this->restful(\$request, false);
+        return \$data;
     }";
         return $code;
     }
@@ -114,7 +90,7 @@ class $class extends Controller
     protected static function getClassMethods(string $classFile): array
     {
         $method = self::$input->param('method');
-        $class = '\\app\\http\\'.self::$version.'\\controller\\'.self::$input->param('class');
+        $class = '\\app\\'.self::$appType.'\\'.self::$version.'\\controller\\'.self::$input->param('class');
         $ref = new \ReflectionClass(new $class());
 
         $methods = json_decode(json_encode($ref->getMethods()), true);

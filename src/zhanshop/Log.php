@@ -21,10 +21,13 @@ class Log
 
     protected $dirver;
 
+    protected $type;
+
     protected $timerId;
 
     public function __construct(){
         $type = App::config()->get('log.type');
+        $this->type = $type;
         if(strpos($type, '\\') === false) $type = '\\zhanshop\\log\\driver\\'.ucfirst($type);
         $capacity = 20000;
         $this->channel = new Channel($capacity);
@@ -41,18 +44,15 @@ class Log
         return $this->channel->pop($time);
     }
 
-    protected function write(){
-        $logs = "";
-        while ($msg = $this->pop()){
-            $logs .= $msg.PHP_EOL;
-        }
-        if($logs) $this->dirver->write($logs);
-    }
-
     public function execute(){
         // 0.1秒执行一次
         $this->timerId = Timer::tick(100, function () {
-            $this->write();
+            try {
+                $this->dirver->write($this);
+            }catch (\Throwable $e){
+                swoole_error_log(SWOOLE_LOG_ERROR, "日志写入出错：".$e->getMessage());
+            }
+
         });
     }
 

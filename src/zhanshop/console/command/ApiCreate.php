@@ -22,28 +22,39 @@ use zhanshop\console\Output;
 
 class ApiCreate extends Command
 {
+    protected $appType = 'http';
+
     public function configure()
     {
         $this->setTitle('api构建')->setDescription('一键生成http接口');
     }
 
     public function execute(Input $input, Output $output){
+
+        $all = $input->getArgv();
+
+        if($all == false){
+            $output->output("可用命令参考:");
+            return $this->help();
+        }
+
+
         $this->init($input);
 
         // 创建路由
-        Route::create($input);
+        Route::create($input, $all[0]);
 
         // 创建控制器
-        Controller::create($input);
+        Controller::create($input, $all[0]);
 
         // 创建service
-        Service::create($input);
+        Service::create($input, $all[0]);
 
         // 创建数据模型
         Model::create($input);
 
         // 创建api文档
-        Doc::create($input);
+        Doc::create($input, $all[0]);
 
         $output->output(PHP_EOL.PHP_EOL.'【ok】后面的代码请手动完善！！！', 'success');
     }
@@ -84,5 +95,10 @@ class ApiCreate extends Command
         $input->offsetSet('method', 'info');
         $input->offsetSet('table', 'user_member');
         $input->offsetSet('reqtype', ['get', 'post', 'delete', 'put']);
+    }
+
+    public function help()
+    {
+        echo 'php cmd.php api:create {http | wss} ' . PHP_EOL;
     }
 }

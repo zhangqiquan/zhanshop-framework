@@ -22,16 +22,21 @@ class RedisConnectionPool
 
     protected $timeoutPool;
 
+    protected $config;
+
+    protected $maxConnections = 20;
+
     public function __construct(array $config){
-        $maxConnections = $config['pool']['max_connections'] ?? 10;
+        $this->config = $config;
+        $this->maxConnections = $config['pool']['max_connections'] ?? 20;
         $this->timeoutPool = $config['pool']['timeout'] ?? 0.1;
         $this->pool = new RedisPool((new RedisConfig)
-            ->withHost($config['host'])
-            ->withPort((int)$config['port'])
-            ->withAuth($config['password'] ?? '')
-            ->withDbIndex((int)$config['select'] ?? 0)
-            ->withTimeout((float)$config['timeout'] ?? 1)
-            ,$maxConnections
+            ->withHost($this->config['host'])
+            ->withPort((int)$this->config['port'])
+            ->withAuth($this->config['password'] ?? '')
+            ->withDbIndex((int)$this->config['select'] ?? 0)
+            ->withTimeout((float)$this->config['timeout'] ?? 1)
+            ,$this->maxConnections
         );
     }
 
@@ -42,6 +47,14 @@ class RedisConnectionPool
             $this->recoveryRedis($redis);
         }catch (\Throwable $e){
             $this->recoveryRedis($redis);
+            if(strpos($e->getMessage(), 'away')){
+                try{
+                    $this->reconnect();
+                    $redis = $this->getRedis();
+                    $call($redis);
+                    $this->recoveryRedis($redis);
+                }catch (\Throwable $err){}
+            }
             throw new \Exception($e->getMessage().' '.$e->getFile().':'.$e->getLine(), $e->getCode());
         }
     }
@@ -75,7 +88,37 @@ class RedisConnectionPool
             return $data;
         }catch (\Throwable $e){
             $this->recoveryRedis($redis);
+            if(strpos($e->getMessage(), 'away')){
+                try{
+                    $this->reconnect();
+                    $redis = $this->getRedis();
+                    $data = $redis->$name(...$arguments);
+                    $this->recoveryRedis($redis);
+                    return $data;
+                }catch (\Throwable $err){}
+            }
             throw new \Exception($e->getMessage(), $e->getCode());
         }
+    }
+
+    /**
+     * 重连
+     * @return void
+     */
+    public function reconnect(){
+        $this->pool->close();
+        $this->pool = new RedisPool((new RedisConfig)
+            ->withHost($this->config['host'])
+            ->withPort((int)$this->config['port'])
+            ->withAuth($this->config['password'] ?? '')
+            ->withDbIndex((int)$this->config['select'] ?? 0)
+            ->withTimeout((float)$this->config['timeout'] ?? 1)
+            ,$this->maxConnections
+        );
+    }
+
+    public function __destruct()
+    {
+        $this->pool->close();
     }
 }

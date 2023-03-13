@@ -22,9 +22,11 @@ namespace zhanshop;
  * @method static Database database()
  * @method static Aes aes()
  * @method static Rsa rsa()
+ * @method static Curl curl()
  * @method static Middleware middleware()
  * @method static Console console()
  * @method static Task task()
+ * @method static Robot robot()
  */
 class App extends Container
 {
@@ -82,6 +84,7 @@ class App extends Container
     protected $registers = [
         'error'           => Error::class,
         'env'             => Env::class,
+        'curl'            => Curl::class,
         'config'          => Config::class,
         'cache'           => Cache::class,
         'log'             => Log::class,
@@ -95,6 +98,7 @@ class App extends Container
         'middleware'      => Middleware::class,
         'aes'             => Aes::class,
         'rsa'             => Rsa::class,
+        'robot'           => Robot::class
     ];
 
     public static function make(string $rootPath){

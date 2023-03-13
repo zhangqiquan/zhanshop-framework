@@ -41,7 +41,11 @@ class Cache{
 
     public function callback($callback, string $connection = null){
         if($connection == false) $connection = App::config()->get('cache.default');
-        $this->redisConnectionPool = CacheManager::get($connection);
-        return $this->redisConnectionPool->callback($callback);
+        $redisConnectionPool = CacheManager::get($connection);
+        return $redisConnectionPool->callback($callback);
+    }
+
+    public function __call(string $name, array $arguments){
+        return $this->instance($this->connection)->$name(...$arguments);
     }
 }

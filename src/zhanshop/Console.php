@@ -11,11 +11,13 @@ declare (strict_types=1);
 
 namespace zhanshop;
 
+use zhanshop\console\command\Admin;
 use zhanshop\console\command\ApiCreate;
-use zhanshop\console\command\ApiDocManager;
+use zhanshop\console\command\ApiDoc;
 use zhanshop\console\command\Help;
 use zhanshop\console\command\Http;
 use zhanshop\console\command\Rpc;
+use zhanshop\console\command\UdpLog;
 use zhanshop\console\command\Wss;
 use zhanshop\console\Input;
 use zhanshop\console\Output;
@@ -42,11 +44,10 @@ class Console{
      */
     protected $commands = [
         'help'       => Help::class,
-        'server:rpc' => Rpc::class,
         'server:http' => Http::class,
-        'server:wss' => Wss::class,
+        'server:admin' => Admin::class,
         'api:create' => ApiCreate::class,
-        'api:manager' => ApiDocManager::class
+        'api:manager' => ApiDoc::class
     ];
 
     /**
@@ -78,8 +79,6 @@ class Console{
         $this->commands = array_merge($this->commands, $config);
 
         $this->input = new Input($argv); // 初始化请求类
-        $this->input->cmd = $argv[0];
-
         $this->output = new Output(); // 输出类
         $this->runWithRequest($this->input);
 

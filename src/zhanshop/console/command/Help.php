@@ -47,7 +47,7 @@ class Help extends Command
                 $description .= $obj->getTitle().' - '.$obj->getDescription();
                 $output->output($description);
             }catch (\Throwable $exception){
-                $output->output($exception->getMessage(), 'error');
+                $output->output($exception->getMessage().' '.$exception->getFile().':'.$exception->getLine(), 'error');
             }
 
         }

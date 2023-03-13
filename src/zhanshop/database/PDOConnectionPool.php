@@ -10,6 +10,7 @@ declare (strict_types=1);
 
 namespace zhanshop\database;
 use Swoole\Database\PDOPool;
+use zhanshop\App;
 use zhanshop\database\connection\Mysql;
 
 class PDOConnectionPool
@@ -20,15 +21,29 @@ class PDOConnectionPool
 
     protected $timeoutPool;
 
+    protected $pdoConfig;
+
+    protected $maxConnections = 20;
+
     public function __construct(array $config){
         $type = $config['type'] ?? 'mysql';
         if(strpos($type, '\\') === false) $type = '\\zhanshop\\database\\drive\\'.ucfirst($type);
         $conn = new $type($config);
         $this->drive = $conn;
-        $pdoConfig = $conn->PDOConfig();
-        $maxConnections = $config['pool']['max_connections'] ?? 20;
+        $this->pdoConfig = $conn->PDOConfig();
+        //$this->pdoConfig = $pdoConfig;
+        $this->maxConnections = $config['pool']['max_connections'] ?? 20;
         $this->timeoutPool = $config['pool']['timeout'] ?? 0.1;
-        $this->pool = new PDOPool($pdoConfig, $maxConnections);
+        $this->pool = new PDOPool($this->pdoConfig, $this->maxConnections);
+    }
+
+    /**
+     * 重连
+     * @return void
+     */
+    public function reconnect(){
+        $this->pool->close();
+        $this->pool = new PDOPool($this->pdoConfig, $this->maxConnections);
     }
 
     /**
@@ -84,6 +99,7 @@ class PDOConnectionPool
      * @throws \Exception
      */
     public function query($sql, array $bind = [], $pdo = null){
+        $startTime = microtime(true);
         if($pdo){
             $result = $this->_query($pdo, $sql, $bind);
         }else{
@@ -91,11 +107,20 @@ class PDOConnectionPool
             try {
                 $result = $this->_query($pdo, $sql, $bind);
                 $this->recoveryPDO($pdo);
-            }catch (Throwable $e){
+            }catch (\Throwable $e){
                 $this->recoveryPDO($pdo);
-                throw new \Exception($e->getMessage(), $e->getCode());
+                if($e->getCode() == 2006 || strpos($e->getMessage(), '2006') || strpos($e->getMessage(), 'ackets ') || strpos($e->getMessage(), 'failed ')){
+                    $this->reconnect(); // 重连
+                    $pdo = $this->getPDO();
+                    $result = $this->_query($pdo, $sql, $bind);
+                    $this->recoveryPDO($pdo);
+                }else{
+                    throw new \Exception($e->getMessage().',sql:'.$sql.','.json_encode($bind));
+                }
+                //throw new \Exception($e->getMessage().',sql:'.$sql.','.json_encode($bind));
             }
         }
+        App::log()->push($sql.'【耗时：】'.(microtime(true) - $startTime), 'SQL');
         return $result;
     }
 
@@ -105,17 +130,23 @@ class PDOConnectionPool
      * @return void
      * @throws \Exception
      */
-    public function transaction($call){
+    public function transaction($call, $isRetry = true){
         $pdo = $this->getPDO();
         $pdo->beginTransaction();
         try {
             $call($pdo);
             $pdo->commit();
             $this->recoveryPDO($pdo);
-        }catch (Throwable $e){
-            $this->recoveryPDO($pdo);
-            $pdo->rollback();
-            throw new \Exception($e->getMessage(), $e->getCode());
+        }catch (\Throwable $e){
+            if($e->getCode() == 2006 || strpos($e->getMessage(), '2006') || strpos($e->getMessage(), 'ackets ') || strpos($e->getMessage(), 'failed ')){
+                $this->recoveryPDO($pdo);
+                $this->reconnect(); // 重连
+                if($isRetry) return $this->transaction($call, false); // 重试
+            }else{
+                $pdo->rollback(); // 如果连接被断开使用回滚方法会异常
+                $this->recoveryPDO($pdo);
+            }
+            throw new \Exception($e->getMessage());
         }
     }
 
@@ -129,6 +160,7 @@ class PDOConnectionPool
      * @throws \Exception
      */
     public function execute(string $sql, array $bind = [], bool $lastId = false, mixed $pdo = null){
+        $startTime = microtime(true);
         if($pdo){
             $result = $this->_execute($pdo, $sql, $bind, $lastId);
         }else{
@@ -136,17 +168,25 @@ class PDOConnectionPool
             try {
                 $result = $this->_execute($pdo, $sql, $bind, $lastId);
                 $this->recoveryPDO($pdo);
-            }catch (Throwable $e){
+            }catch (\Throwable $e){
                 $this->recoveryPDO($pdo);
-                throw new \Exception($e->getMessage(), $e->getCode());
+                if($e->getCode() == 2006 || strpos($e->getMessage(), '2006') || strpos($e->getMessage(), 'ackets ') || strpos($e->getMessage(), 'failed ')){
+                    $this->reconnect(); // 重连
+                    $pdo = $this->getPDO();
+                    $result = $this->_execute($pdo, $sql, $bind, $lastId);
+                    $this->recoveryPDO($pdo);
+                }else{
+                    throw new \Exception($e->getMessage().',sql:'.$sql.','.json_encode($bind));
+                }
             }
         }
+        //App::log()->push($sql.'【耗时：】'.(microtime(true) - $startTime), 'SQL');
         return $result;
     }
 
     /**
      * 获取通道上的pdo
-     * @return mixed
+     * @return \PDO
      */
     public function getPDO(){
         $pdo = $this->pool->get($this->timeoutPool);
@@ -171,5 +211,10 @@ class PDOConnectionPool
      */
     public function drive(){
         return $this->drive;
+    }
+
+    public function __destruct()
+    {
+        $this->pool->close();
     }
 }

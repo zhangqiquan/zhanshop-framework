@@ -8,15 +8,17 @@
 // +----------------------------------------------------------------------
 namespace zhanshop\console\command;
 
-use app\http\Controller;
+use app\admin\Controller;
 use zhanshop\App;
 use zhanshop\cache\CacheManager;
 use zhanshop\console\Command;
+use zhanshop\console\command\admin\Menu;
 use zhanshop\console\crontab\WatchCronTab;
 use zhanshop\console\Input;
 use zhanshop\console\Output;
 use zhanshop\console\task\WatchTask;
 use zhanshop\database\DbManager;
+use zhanshop\Request;
 use function Swoole\Coroutine\run;
 use function Swoole\Coroutine\go;
 use Swoole\Coroutine;
@@ -24,7 +26,7 @@ use Swoole\Coroutine\System;
 use Swoole\Process;
 use Swoole\Runtime;
 set_time_limit(0);
-class Wss extends Command
+class Admin extends Command
 {
     protected $config = [
         'servers' => [
@@ -33,30 +35,25 @@ class Wss extends Command
             'host' => '0.0.0.0',
             'port' => 9502,
             'sock_type' => SWOOLE_SOCK_TCP,
-        ],
-        'enable_static' => [
-            // 开启静态文件请求处理功能，需配合 document_root 使用 默认 false
-            'enable_static_handler' => true,
-            // 配置静态文件根目录，与 enable_static_handler 配合使用,此处必须为绝对路径
-            'document_root' => '',
-            // 开启 http autoindex 功能 默认不开启
-            'http_autoindex' => true,
-            // 配合 http_autoindex 使用，指定需要被索引的文件列表
-            'http_index_files' => ['index.html'],
+            'cross' => 'TOKEN',
         ],
         // 关于静态化访问 正式环境中不提供该功能
         'settings' => [
             'daemonize' => false,
-            'enable_coroutine' => true, // 这个只是将OnRequest 方法变成非阻塞而已而没有把mysql的操作变成非阻塞
+            'enable_coroutine' => true,
             'send_yield' => true,
             'send_timeout' => 3, // 1.5秒
-            'log_level' => SWOOLE_LOG_ERROR, // 仅记录错误日志以上的日志
+            'log_level' => SWOOLE_LOG_INFO, // 仅记录错误日志以上的日志
             'log_rotation' => SWOOLE_LOG_ROTATION_MONTHLY, // 每月日志
             'enable_deadlock_check' => false,
             'task_worker_num' => 1,
             'task_enable_coroutine' => true,
             'max_request' => 200000,
             'max_wait_time' => 2,
+            'enable_static_handler' => true,
+            'document_root' => '',
+            'http_autoindex' => true,
+            'http_index_files' => ['index.html']
         ],
         'task' => [
             'watchTask' => WatchTask::class,
@@ -66,33 +63,32 @@ class Wss extends Command
             'watchCrontab' => WatchCronTab::class,
         ],
     ];
-    protected $output = null;
+    protected Input $input;
+    protected Output $output;
     public function configure(){
-        $this->setTitle('启动wss服务')->setDescription('使用该命令可以创建一个websocket服务器');
+        $this->setTitle('启动api服务')->setDescription('使用该命令可以创建一个http后台服务器');
     }
 
     public function execute(Input $input, Output $output){
-        $this->config['settings']['pid_file'] = App::runtimePath().DIRECTORY_SEPARATOR.'wss.pid';
-        $this->config['settings']['log_file'] = App::runtimePath().DIRECTORY_SEPARATOR.'server'.DIRECTORY_SEPARATOR.'wss.log';
-        $config = include App::rootPath().DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'autoload'.DIRECTORY_SEPARATOR.'wss.php';
+        $this->config['settings']['pid_file'] = App::runtimePath().DIRECTORY_SEPARATOR.'admin.pid';
+        $this->config['settings']['log_file'] = App::runtimePath().DIRECTORY_SEPARATOR.'server'.DIRECTORY_SEPARATOR.'admin.log';
+        $config = include App::rootPath().DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'autoload'.DIRECTORY_SEPARATOR.'admin.php';
         $this->config['servers'] = array_merge($this->config['servers'], $config['servers']);
-        $startType = $config['start'] ?? 'ws';
+        $startType = $config['start'] ?? 'http';
         $this->config['settings'] = array_merge($this->config['settings'], $config['starts'][$startType] ?? []);
+
+        $this->config['task'] = array_merge($this->config['task'], $config['task']);
+        $this->config['crontab'] = array_merge($this->config['crontab'], $config['crontab']);
+
+        $this->input = $input;
         $this->output = $output;
 
-        $argv = $input->getArgv(); // 第一个参数是方法 第二个参数的环境 第3个参数是否后台启动
+        $argv = $input->getArgv();
         if($argv == false) return $this->usage();
 
         $method = $argv[0];
-        $env = $argv[1] ?? 'production';
-        $daemonize = $argv[2] ?? 'true';
-        $_SERVER['APP_ENV'] = $env;
-        if($env != 'production' && isset($this->config['settings']['open_http2_protocol']) == false){
-            $this->config['enable_static']['document_root'] = App::rootPath().DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'apiDoc';
-            $this->config['settings'] = array_merge($this->config['enable_static'], $this->config['settings']);
-        }
-        // 检查env
-        if(file_exists(App::rootPath().DIRECTORY_SEPARATOR.'.env.'.$env) == false) return $output->output('没有.env.'.$env.'的env配置文件！！！', 'error');
+        $daemonize = $argv[1] ?? 'true';
+        if($this->config['settings']['document_root'] == '') $this->config['settings']['document_root'] = App::rootPath().DIRECTORY_SEPARATOR.'public';
 
         return $this->$method($daemonize == 'false' ? false : true);
     }
@@ -115,9 +111,9 @@ class Wss extends Command
         if($this->isRuning()){
             return $this->output->output("程序已在运行...", 'error');
         }
-
+        
         try {
-            $server = new \Swoole\WebSocket\Server($this->config['servers']['host'], $this->config['servers']['port'], $this->config['servers']['mode'], $this->config['servers']['sock_type']);
+            $server = new \Swoole\Http\Server($this->config['servers']['host'], $this->config['servers']['port'], $this->config['servers']['mode'], $this->config['servers']['sock_type']);
             if($daemon) $this->config['settings']['daemonize'] = $daemon;
             $server->set($this->config['settings']);
             \Co::set(['hook_flags'=> SWOOLE_HOOK_ALL]);
@@ -167,6 +163,7 @@ class Wss extends Command
                         exit();
                     }
                 }
+                if(file_exists($this->config['settings']['pid_file'])) @unlink($this->config['settings']['pid_file']);
             }catch (\Throwable $e){
                 $this->output->output($e->getMessage(), 'error');
                 exit();
@@ -257,7 +254,6 @@ class Wss extends Command
      */
     protected function onEvent($server){
         $appConf = App::config()->get("app");
-
         $process = new \Swoole\Process(function ($process) use ($server) {
             foreach($this->config['crontab'] as $v){
                 (new $v())->execute($server);
@@ -265,88 +261,46 @@ class Wss extends Command
         }, false, 2, true);
         $server->addProcess($process);
 
-        //监听WebSocket连接打开事件
-        $server->on('Open', function ($ws, $request)use ($appConf) {
-            // 把request记录下来
-            $requestTime = $request->server["request_time_float"];
-            $requestTraceId = md5($request->server['remote_addr'].$requestTime);
-            $routeInfo = App::route()->swooleCallback($request->server['request_uri'] ?? App::error()->setError("uri参数获取失败", 500), $request->server['request_method'], 'wss'); // 检查路由
-            $request->service = $routeInfo['service'];
-            $method     = $routeInfo['action'];
-            $controller = App::service()->get($routeInfo['controller']);
-            try {
-                $request->controller = $controller; // 把控制器记录下来
-                App::service()->get(WssRequest::class)->set($request);
-                App::middleware()->runBefore($request, $controller->getBeforeMiddleware()); // 运行前置中间件
-                $data = $controller->$method($request);
-                App::middleware()->runAfter($request, $data, $controller->getAfterMiddleware());
-                if(is_array($data) || is_object($data)){
-                    $data = $controller->result($data);
-                    $data['time'] = $requestTime;
-                    $data['trace_id'] = $requestTraceId;
-                    $ws->push($request->fd, json_encode($data)); // 如果是数组的情况下
-                }else{
-                    $ws->push($request->fd, $data);
-                }
-
-            } catch (\Throwable $e) {
-                $exception = App::error()->exception($e);
-                $data = App::service()->get(Controller::class)->result($exception, $e->getMessage(), $e->getCode() < 200 ? 500 : $e->getCode());
-                $data['time'] = $requestTime;
-                $data['trace_id'] = $requestTraceId;
-                App::middleware()->runAfter($request, $data, $controller->getAfterMiddleware());
-                $ws->push($request->fd, $e->getMessage());
-            }
-        });
-
-        //监听WebSocket消息事件
-        $server->on('Message', function ($ws, $frame) {
-            $request = &App::service()->get(WssRequest::class)->get($frame->fd);
-            $requestTime = microtime(true);
-            $request->frame = $request;
-            $data = $request->controller->_onMessage($request);
-            App::middleware()->runAfter($request, $data, $request->controller->getAfterMiddleware());
-            if(is_array($data) || is_object($data)){
-                $data = $request->controller->result($data);
-                $data['time'] = $requestTime;
-                $data['trace_id'] = md5($request->server['remote_addr'].$requestTime);;
-                $ws->push($request->fd, json_encode($data)); // 如果是数组的情况下
-            }else{
-                $ws->push($request->fd, $data);
-            }
-        });
-
-
+        // swoole_error_log() 使用这个函数输出日志
         $server->on('Request', function ($request, $response) use($server, $appConf) {
             $response->header('Server', 'zhanshop');
-            if ($request->server['path_info'] == '/favicon.ico' || $request->server['request_uri'] == '/favicon.ico') {
+            $response->header('Access-Control-Allow-Origin', '*');
+            $response->header('Access-Control-Allow-Headers', $this->config['servers']['cross']);
+            $response->header('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE');
+            $response->header('Access-Control-Max-Age', '3600');
+            if ($request->server['path_info'] == '/favicon.ico' || $request->server['request_uri'] == '/favicon.ico' || $request->server['request_method'] == 'OPTIONS') {
                 $response->end();
                 return;
             }
             $httpCode = 200;
             $requestTime = $request->server["request_time_float"];
             $requestTraceId = md5($request->server['remote_addr'].$requestTime);
-
-            $routeInfo = App::route()->swooleCallback($request->server['request_uri'] ?? App::error()->setError("uri参数获取失败", 500), $request->server['request_method'], 'wss'); // 检查路由
-            $request->service = $routeInfo['service'];
-            $method     = $routeInfo['action'];
-            $controller = App::service()->get($routeInfo['controller']);
-
+            $req = new Request($request);
             try {
-                App::middleware()->runBefore($request, $controller->getBeforeMiddleware()); // 运行前置中间件
-                $data = $controller->$method($request);
-                App::middleware()->runAfter($request, $data, $controller->getAfterMiddleware());
+
+                $routeInfo = App::route()->swooleCallback($request->server['request_uri'] ?? App::error()->setError("uri参数获取失败", 500), $request->server['request_method'], 'admin'); // 检查路由
+                //$request->service = $routeInfo['service']; // 动态属性被弃用
+                $req->setService($routeInfo['service']);
+                $method     = $routeInfo['action'];
+                $req->setAction($method);
+                $controller = App::service()->get($routeInfo['controller']);
+                App::middleware()->runBefore($req, $controller->getBeforeMiddleware()); // 运行前置中间件
+                $data = $controller->$method($req);
                 if(is_array($data) || is_object($data)){
-                    $request->respHeader['Content-Type'] = 'application/json; charset=utf-8';
-                    $this->respHeader($request, $response);
+                    $response->header('Content-Type', 'application/json; charset=utf-8');
                     $data = $controller->result($data);
                     $data['time'] = $requestTime;
                     $data['trace_id'] = $requestTraceId;
+                    App::middleware()->runAfter($req, $data, $controller->getAfterMiddleware());
                     $response->status($httpCode);
                     $response->end(json_encode($data)); // 如果是数组的情况下
                 }else{
+                    $ret = $controller->result($data);
+                    $ret['time'] = $requestTime;
+                    $ret['trace_id'] = $requestTraceId;
+                    App::middleware()->runAfter($req, $ret, $controller->getAfterMiddleware());
                     $response->status($httpCode);
-                    $this->respHeader($request, $response);
+                    //$this->respHeader($request, $response);
                     $response->end($data);
                 }
 
@@ -360,10 +314,11 @@ class Wss extends Command
                 $response->status($httpCode);
                 $response->header('Content-Type', 'application/json; charset=utf-8');
                 $exception = App::error()->exception($e);
-                $data = App::service()->get(Controller::class)->result($exception, $message, $e->getCode() < 200 ? 500 : $e->getCode());
+                $controller = App::service()->get(Controller::class);
+                $data = $controller->result($exception, $message, $e->getCode() < 200 ? 500 : $e->getCode());
                 $data['time'] = $requestTime;
                 $data['trace_id'] = $requestTraceId;
-                App::middleware()->runAfter($request, $data, $controller->getAfterMiddleware());
+                App::middleware()->runAfter($req, $data, $controller->getAfterMiddleware());
                 if($appConf['show_error_msg'] == false){
                     $tmpData = $data;
                     unset($tmpData['data']);
@@ -372,33 +327,35 @@ class Wss extends Command
                     $response->end(json_encode($data));
                 }
             }
-
         });
 
-
         $server->on('Start', function ($server) {
+            $msg = "服务器事件:后台管理系统触发了启动";
+            App::robot()->sendMsg($msg);
+            swoole_error_log(SWOOLE_LOG_WARNING, $msg);
+            //echo date('Y-m-d H:i:s').'###[event]###'." Start".PHP_EOL;
             // onStart 回调中，仅允许 echo、打印 Log、修改进程名称。不得执行其他操作 (不能调用 server 相关函数等操作，因为服务尚未就绪)。onWorkerStart 和 onStart 回调是在不同进程中并行执行的，不存在先后顺序。
         });
 
         $server->on('BeforeShutdown', function ($server) {
-
+            //echo date('Y-m-d H:i:s').'###[event]###'." BeforeShutdown".PHP_EOL;
         });
 
         $server->on('Shutdown', function ($server) {
-            echo date('Y-m-d H:i:s').'###[info]###'." 进程终止".PHP_EOL;
+            App::robot()->sendMsg("服务器事件:后台管理系统触发了正常停止");
+            swoole_error_log(SWOOLE_LOG_WARNING, $msg);
         });
 
         $server->on('WorkerStart', function ($server, int $workerId) {
-            echo date('Y-m-d H:i:s').'###[info]###'.$workerId." 工作进程启动".PHP_EOL;
             App::clean(); // 这样清理掉的话通道会不会端开？
             // 一次性载入所有路由
-            $routePath = App::routePath().DIRECTORY_SEPARATOR.'wss';
+            $routePath = App::routePath().DIRECTORY_SEPARATOR.'admin';
             $files = scandir($routePath);
             foreach ($files as $k => $v){
                 $pathinfo = pathinfo($v);
                 if($pathinfo['extension'] == 'php'){
                     App::route()->setVersion($pathinfo['filename']);
-                    $routeFile = App::routePath() .DIRECTORY_SEPARATOR.'wss/'. $v;
+                    $routeFile = App::routePath() .DIRECTORY_SEPARATOR.'admin/'. $v;
                     require_once $routeFile; // 事先载入路由
                 }
             }
@@ -410,26 +367,33 @@ class Wss extends Command
 
         $server->on('WorkerStop', function ($server, int $workerId) {
             \Swoole\Timer::clearAll();
+            //echo date('Y-m-d H:i:s').'###[event]###'." onWorkerStop".PHP_EOL;
         });
 
         $server->on('WorkerExit', function ($server, int $workerId) {
+            //echo date('Y-m-d H:i:s').'###[event]###'." WorkerExit".PHP_EOL;
         });
 
         $server->on('Connect', function ($server, int $fd, int $reactorId) {
+            //echo date('Y-m-d H:i:s').'###[event]### '.$fd." Connect".PHP_EOL;
         });
 
         $server->on('Receive', function ($server, int $fd, int $reactorId, string $data) {
+            //echo date('Y-m-d H:i:s').'###[event]### '.$fd." Receive".PHP_EOL;
         });
 
         $server->on('Packet', function ($server, string $data, array $clientInfo) {
+            //echo date('Y-m-d H:i:s').'###[event]###'." Packet".PHP_EOL;
         });
 
         $server->on('Close', function ($server, int $fd, int $reactorId) {
-            App::service()->get(WssRequest::class)->clean($fd);
+            //echo date('Y-m-d H:i:s').'###[event]### '.$fd." Close".PHP_EOL;
         });
 
         $server->on('WorkerError', function ($server, int $worker_id, int $worker_pid, int $exit_code, int $signal) {
-            echo date('Y-m-d H:i:s').'###[fatal]###'."工作进程出错".$exit_code.', signal:'.$signal.PHP_EOL;
+            $msg = "服务器事件:后台管理系统进程发生错误,worker_id:".$worker_id.',worker_pid:'.$worker_pid.',exit_code:'.$exit_code.',signal:'.$signal;
+            App::robot()->sendMsg($msg);
+            swoole_error_log(SWOOLE_LOG_ERROR, $msg);
         });
 
         //处理异步任务(此回调函数在task进程中执行)
@@ -450,26 +414,16 @@ class Wss extends Command
 
         //处理异步任务的结果(此回调函数在worker进程中执行)
         $server->on('Finish', function ($serv, $task_id, $data) {
+            //echo date('Y-m-d H:i:s').'###[event]###'." Finish".PHP_EOL;
         });
 
         // reload完成后触发一次
         $server->on('AfterReload', function ($serv){
+            $msg = '服务器事件:后台管理系统触发了热更新';
+            App::robot()->sendMsg($msg);
+            swoole_error_log(SWOOLE_LOG_WARNING, $msg);
         });
 
-    }
-
-    /**
-     * 响应header
-     * @param mixed $request
-     * @param mixed $response
-     * @return void
-     */
-    public function respHeader(mixed &$request, mixed &$response){
-        if(isset($request->respHeader)){
-            foreach($request->respHeader as $k => $v){
-                $response->header($k, $v);
-            }
-        }
     }
 
     /**
@@ -477,24 +431,12 @@ class Wss extends Command
      * @return void
      */
     protected function usage(){
-        echo PHP_EOL.' 用法：php cmd.php server:wss {start | stop | reload | restart | status} '.PHP_EOL;
-        echo PHP_EOL.' 启动示例：php cmd.php server:wss start production true (production 指定加载的环境文件,【默认production】, true 申明后台启动【默认true】 )'.PHP_EOL;
+        echo PHP_EOL.' 用法：php cmd.php server:admin {start | stop | reload | restart | status } '.PHP_EOL;
+        echo PHP_EOL.' 启动示例：php cmd.php server:admin start false false代表非守护进程方式启动 )'.PHP_EOL;
+        echo PHP_EOL.' 关于环境：请修改全局环境变量 APP_ENV=dev或者APP_ENV=production 没有指定将会载入dev环境文件'.PHP_EOL;
         echo PHP_EOL." 开机启动: linux上将启动命令添加到 /ect/rc.local 文件中, 或参考：https://blog.csdn.net/hualinger/article/details/125321966".PHP_EOL;
         die;
     }
-}
 
 
-class WssRequest{
-    protected $requests = [];
-    public function &get($fd){
-        if(isset($this->requests[$fd]) == false) App::error()->setError('fd:'.$fd.'的请求记录不存在', 404);
-        return $this->requests[$fd];
-    }
-    public function set(&$request){
-        $this->requests[$request->fd] = $request;
-    }
-    public function clean($fd){
-        unset($this->requests[$fd]);
-    }
 }

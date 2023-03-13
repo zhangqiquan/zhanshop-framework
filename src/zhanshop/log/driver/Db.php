@@ -12,8 +12,22 @@ declare (strict_types=1);
 namespace zhanshop\log\driver;
 
 
+use zhanshop\App;
+use zhanshop\Log;
+
 class Db extends File
 {
+    protected $config = [
+        'max_request' => 2000,
+        'table' => 'system_logs', // 这个表需要包含3个字段 id bigint 递增、timestamp varchar(20) 、 body text
+    ];
+
+    public function __construct(){
+        $config = App::config()->get("log.connections");
+        $config = $config['File'] ?? [];
+        $this->config = array_merge($this->config, $config);
+    }
+
     /**
      * 日志写入
      * @access protected
@@ -21,19 +35,26 @@ class Db extends File
      * @param string $destination 日志文件
      * @return bool
      */
-    protected function write(array $message, string $destination): bool
+    public function write(Log &$obj): bool
     {
-        // 写入日志直接将日志写入到db
-//        $this->checkLogSize($destination);
-//
-//        $info = [];
-//
-//        foreach ($message as $type => $msg) {
-//            $info[$type] = is_array($msg) ? implode(PHP_EOL, $msg) : $msg;
-//        }
-//
-//        $message = implode(PHP_EOL, $info) . PHP_EOL;
-//
-//        return error_log($message, 3, $destination);
+
+        $insertAll = [];
+        $timestamp = date('Y-m-d H:i:s');
+        $number = 0;
+        while ($row = $obj->pop()){
+            $insert = [
+                'timestamp' => $timestamp,
+                'body' => $row,
+            ];
+            $insertAll[] = $insert;
+            $number++;
+            if($number >= $this->config['max_request']) break;
+        }
+
+        if($insertAll){
+            //print_r($insertAll);
+            App::database()->model($this->config['table'])->insertAll($insertAll);
+        }
+        return true;
     }
 }

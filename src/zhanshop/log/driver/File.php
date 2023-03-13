@@ -11,20 +11,29 @@ declare (strict_types=1);
 namespace zhanshop\log\driver;
 
 use zhanshop\App;
+use zhanshop\Log;
 
+/**
+ *
+ */
 class File
 {
     /**
      * 日志写入
      * @access protected
-     * @param array  $message     日志信息
+     * @param Log  $obj     日志对象
      * @param string $destination 日志文件
      * @return bool
      */
-    public function write(string &$message): bool
+    public function write(Log &$obj): bool
     {
+        $message = "";
 
-        return error_log($message, 3, $this->getDestination());
+        while ($row = $obj->pop()){
+            $message .= $row.PHP_EOL;
+        }
+        if($message) return error_log($message, 3, $this->getDestination());
+        return false;
     }
 
     /**

@@ -20,19 +20,12 @@ use zhanshop\database\Query;
 class Database{
 
     private array $querys = []; // 连接标识就应该有多少个Query
-    protected Query $query;
+    //protected Query $query;
     protected $models = [];
     public function getQuery(string $connection){
-        if(isset($this->querys[$connection])){
-            $this->query = $this->querys[$connection];
-            return $this->query;
-        }else{
-            $type = App::config()->get('database.connections')[$connection]['type'] ?? 'mysql';
-            $query = new Query($connection, $type);
-            $this->querys[$connection] = $query;
-            $this->query = $query;
-            return $query;
-        }
+        $type = App::config()->get('database.connections')[$connection]['type'] ?? 'mysql';
+        $query = new Query($connection, $type);
+        return $query;
     }
 
     /**
@@ -43,7 +36,7 @@ class Database{
     public function model(string $name){
         $class = '\\app\\model\\'.ucfirst(Helper::camelize($name)); // 转驼峰命名
         // 如果model存在返回model,否则z
-        $model = $this->getModels($class);
+        $model = $this->getModel($class);
         if(!$model){
             $model = $this->table($name);
         }
@@ -54,14 +47,14 @@ class Database{
      * @param string $name
      * @param mixed $value
      */
-    private function getModels(mixed $model){
-        if (isset($this->models[$model])) {
-            return $this->models[$model];
-        }
+    private function getModel(mixed $model){
+//        if (isset($this->models[$model])) {
+//            return $this->models[$model];
+//        }
         $modelFile = App::rootPath().DIRECTORY_SEPARATOR.str_replace('\\', '/', $model).'.php';
         if(file_exists($modelFile)){
             $obj = new $model();
-            $this->models[$model] = $obj;
+            //$this->models[$model] = $obj;
             return $obj;
         }
         return false;
@@ -71,7 +64,7 @@ class Database{
         if($connection == false) $connection = App::config()->get('database.default');
         $query = $this->getQuery($connection);
         $query->table($table);
-        return $this;
+        return $query;
     }
 
     public function query(string $sql, array $bind = [], string $connection = null, mixed $pdo = null){
@@ -99,7 +92,7 @@ class Database{
      * @return void
      * @throws \Exception
      */
-    public function transactionXa($callback, array $connections){
+    public function transactionXa(mixed $callback, array $connections, bool $isRetry = true){
         // SHOW VARIABLES LIKE 'event_scheduler'; 分布事务 先要在mysql服务器上开启
         /**
          * mysql> XA START 'xatest';
@@ -165,6 +158,15 @@ class Database{
             }
         }catch (\Throwable $e){
             $error = $e->getMessage().' '.$e->getFile().':'.$e->getLine().' ; ';
+            if($e->getCode() == 2006 || strpos($e->getMessage(), '2006') || strpos($e->getMessage(), 'ackets ')){
+                DbManager::clean();
+                DbManager::init(); // 重新初始化
+                if($isRetry){
+                    return $this->transactionXa($callback, $connections, false);
+                }
+                App::error()->setError($error);
+            }
+
             try {
                 foreach($pdos as $k => $v){
                     $ok = $v['poll']->drive()->rollbackXa($v['pdo'], $xid);
@@ -179,6 +181,17 @@ class Database{
 
             App::error()->setError($error);
         }
+    }
+
+    /**
+     * raw更新对象
+     * @param string $data
+     * @return stdClass
+     */
+    public function raw(string $data){
+        $obj = new \stdClass();
+        $obj->data = $data;
+        return $obj;
     }
     /**
      * 调用数据库操作方法

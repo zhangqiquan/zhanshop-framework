@@ -18,7 +18,9 @@ use zhanshop\Helper;
 
 class Route
 {
-    public static function create(Input $input){
+    protected static $appType = 'http';
+    public static function create(Input $input, string $appType){
+        self::$appType = $appType;
         $version = $input->param('version');
         // 驼峰转下划线
         $uri = '/'.Helper::uncamelize($input->param('class')).'.'.Helper::uncamelize($input->param('method'));
@@ -38,7 +40,7 @@ class Route
     // 检查这个路由是否存在
     public static function check(string $version, array $methods, string $uri, string $action){
 
-        $routeFile = App::rootPath() .DIRECTORY_SEPARATOR. 'route' . DIRECTORY_SEPARATOR.'http' .DIRECTORY_SEPARATOR. $version . '.php';
+        $routeFile = App::rootPath() .DIRECTORY_SEPARATOR. 'route' . DIRECTORY_SEPARATOR.self::$appType .DIRECTORY_SEPARATOR. $version . '.php';
         if(!file_exists($routeFile)) self::createRouteFile($version);
 
         include $routeFile;
@@ -72,6 +74,6 @@ class Route
      * @param string|null $code
      */
     public static function createRouteFile(string $version, ?string $code = null){
-        file_put_contents(App::rootPath().DIRECTORY_SEPARATOR.'route'.DIRECTORY_SEPARATOR.'http'.DIRECTORY_SEPARATOR.$version.'.php', $code ?? '<?php'.PHP_EOL);
+        file_put_contents(App::rootPath().DIRECTORY_SEPARATOR.'route'.DIRECTORY_SEPARATOR.self::$appType.DIRECTORY_SEPARATOR.$version.'.php', $code ?? '<?php'.PHP_EOL);
     }
 }

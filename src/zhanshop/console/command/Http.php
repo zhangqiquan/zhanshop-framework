@@ -12,11 +12,13 @@ use app\http\Controller;
 use zhanshop\App;
 use zhanshop\cache\CacheManager;
 use zhanshop\console\Command;
+use zhanshop\console\command\http\Menu;
 use zhanshop\console\crontab\WatchCronTab;
 use zhanshop\console\Input;
 use zhanshop\console\Output;
 use zhanshop\console\task\WatchTask;
 use zhanshop\database\DbManager;
+use zhanshop\Request;
 use function Swoole\Coroutine\run;
 use function Swoole\Coroutine\go;
 use Swoole\Coroutine;
@@ -33,16 +35,7 @@ class Http extends Command
             'host' => '0.0.0.0',
             'port' => 9502,
             'sock_type' => SWOOLE_SOCK_TCP,
-        ],
-        'enable_static' => [
-            // 开启静态文件请求处理功能，需配合 document_root 使用 默认 false
-            'enable_static_handler' => true,
-            // 配置静态文件根目录，与 enable_static_handler 配合使用,此处必须为绝对路径
-            'document_root' => '',
-            // 开启 http autoindex 功能 默认不开启
-            'http_autoindex' => true,
-            // 配合 http_autoindex 使用，指定需要被索引的文件列表
-            'http_index_files' => ['index.html'],
+            'cross' => 'TOKEN',
         ],
         // 关于静态化访问 正式环境中不提供该功能
         'settings' => [
@@ -50,42 +43,17 @@ class Http extends Command
             'enable_coroutine' => true, // 这个只是将OnRequest 方法变成非阻塞而已而没有把mysql的操作变成非阻塞
             'send_yield' => true,
             'send_timeout' => 3, // 1.5秒
-            'log_level' => SWOOLE_LOG_ERROR, // 仅记录错误日志以上的日志
+            //'log_level' => SWOOLE_LOG_ERROR, // 仅记录错误日志以上的日志
             'log_rotation' => SWOOLE_LOG_ROTATION_MONTHLY, // 每月日志
             'enable_deadlock_check' => false,
             'task_worker_num' => 1,
             'task_enable_coroutine' => true,
             'max_request' => 200000,
             'max_wait_time' => 2,
-            // 设置启动的 Reactor 线程数。【默认值：CPU 核数】
-            //'reactor_num' => swoole_cpu_num(),
-            // 设置启动的 Worker 进程数。【默认值：CPU 核数】
-            //'worker_num' => swoole_cpu_num(),
-            // 设置 worker 进程的最大任务数。【默认值：0 即不会退出进程】
-            //'max_request' => 0,
-            // 服务器程序，最大允许的连接数。【默认值：ulimit -n】
-            //'max_conn' => 65535,
-            // 设置 Worker 进程收到停止服务通知后最大等待时间【默认值：3】
-            //'max_wait_time' => 3,
-            // 设置上传文件的临时目录。目录最大长度不得超过 220 字节
-            //'upload_tmp_dir' => App::runtimePath().'tmp',
-            // 开启静态文件请求处理功能，需配合 document_root 使用 默认 false
-            //'enable_static_handler' => true,
-            // 配置静态文件根目录，与 enable_static_handler 配合使用,此处必须为绝对路径
-            //'document_root' => App::rootPath().'public',
-            // 开启 http autoindex 功能 默认不开启
-            //'http_autoindex' => true,
-            // 配合 http_autoindex 使用，指定需要被索引的文件列表
-            //'http_index_files' => ['index.html', 'index.php'],
-            // 启用 HTTP2 协议解析【默认值：false】
-            //'open_http2_protocol' => true,
-            // 配置ssl_cert文件路径
-            //'ssl_cert_file' => dirname(__DIR__) . '/ssl/server.crt',
-            // 配置ssl_key文件路径
-            //'ssl_key_file' => dirname(__DIR__) . '/ssl/server.key',
-            //'admin_server' => '0.0.0.0:9800',
-            //'pid_file' => App::runtimePath().'http.pid',
-            //'log_file' => '/dev/null'
+            'enable_static_handler' => true,
+            'document_root' => '',
+            'http_autoindex' => true,
+            'http_index_files' => ['index.html'],
         ],
         'task' => [
             'watchTask' => WatchTask::class,
@@ -95,9 +63,10 @@ class Http extends Command
             'watchCrontab' => WatchCronTab::class,
         ],
     ];
-    protected $output = null;
+    protected Input $input;
+    protected Output $output;
     public function configure(){
-        $this->setTitle('启动http服务')->setDescription('使用该命令可以创建一个http服务器');
+        $this->setTitle('启动后台服务')->setDescription('使用该命令可以创建一个http后台服务器');
     }
 
     public function execute(Input $input, Output $output){
@@ -107,21 +76,19 @@ class Http extends Command
         $this->config['servers'] = array_merge($this->config['servers'], $config['servers']);
         $startType = $config['start'] ?? 'http';
         $this->config['settings'] = array_merge($this->config['settings'], $config['starts'][$startType] ?? []);
+
+        $this->config['task'] = array_merge($this->config['task'], $config['task']);
+        $this->config['crontab'] = array_merge($this->config['crontab'], $config['crontab']);
+
+        $this->input = $input;
         $this->output = $output;
 
-        $argv = $input->getArgv(); // 第一个参数是方法 第二个参数的环境 第3个参数是否后台启动
+        $argv = $input->getArgv();
         if($argv == false) return $this->usage();
 
         $method = $argv[0];
-        $env = $argv[1] ?? 'production';
-        $daemonize = $argv[2] ?? 'true';
-        $_SERVER['APP_ENV'] = $env;
-        if($env != 'production' && isset($this->config['settings']['open_http2_protocol']) == false){
-            $this->config['enable_static']['document_root'] = App::rootPath().DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'apiDoc';
-            $this->config['settings'] = array_merge($this->config['enable_static'], $this->config['settings']);
-        }
-        // 检查env
-        if(file_exists(App::rootPath().DIRECTORY_SEPARATOR.'.env.'.$env) == false) return $output->output('没有.env.'.$env.'的env配置文件！！！', 'error');
+        $daemonize = $argv[1] ?? 'true';
+        if($this->config['settings']['document_root'] == '') $this->config['settings']['document_root'] = App::rootPath().DIRECTORY_SEPARATOR.'public';
 
         return $this->$method($daemonize == 'false' ? false : true);
     }
@@ -144,7 +111,7 @@ class Http extends Command
         if($this->isRuning()){
             return $this->output->output("程序已在运行...", 'error');
         }
-        
+
         try {
             $server = new \Swoole\Http\Server($this->config['servers']['host'], $this->config['servers']['port'], $this->config['servers']['mode'], $this->config['servers']['sock_type']);
             if($daemon) $this->config['settings']['daemonize'] = $daemon;
@@ -196,6 +163,7 @@ class Http extends Command
                         exit();
                     }
                 }
+                if(file_exists($this->config['settings']['pid_file'])) @unlink($this->config['settings']['pid_file']);
             }catch (\Throwable $e){
                 $this->output->output($e->getMessage(), 'error');
                 exit();
@@ -297,33 +265,42 @@ class Http extends Command
 
         $server->on('Request', function ($request, $response) use($server, $appConf) {
             $response->header('Server', 'zhanshop');
-            if ($request->server['path_info'] == '/favicon.ico' || $request->server['request_uri'] == '/favicon.ico') {
+            $response->header('Access-Control-Allow-Origin', '*');
+            $response->header('Access-Control-Allow-Headers', $this->config['servers']['cross']);
+            $response->header('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE');
+            $response->header('Access-Control-Max-Age', '3600');
+            if ($request->server['path_info'] == '/favicon.ico' || $request->server['request_uri'] == '/favicon.ico' || $request->server['request_method'] == 'OPTIONS') {
                 $response->end();
                 return;
             }
             $httpCode = 200;
             $requestTime = $request->server["request_time_float"];
             $requestTraceId = md5($request->server['remote_addr'].$requestTime);
-
-            $routeInfo = App::route()->swooleCallback($request->server['request_uri'] ?? App::error()->setError("uri参数获取失败", 500), $request->server['request_method']); // 检查路由
-            $request->service = $routeInfo['service'];
-            $method     = $routeInfo['action'];
-            $controller = App::service()->get($routeInfo['controller']);
             try {
-                App::middleware()->runBefore($request, $controller->getBeforeMiddleware()); // 运行前置中间件
-                $data = $controller->$method($request);
-                App::middleware()->runAfter($request, $data, $controller->getAfterMiddleware());
+                $req = new Request($request);
+                $routeInfo = App::route()->swooleCallback($request->server['request_uri'] ?? App::error()->setError("uri参数获取失败", 500), $request->server['request_method'], 'http'); // 检查路由
+                //$request->service = $routeInfo['service']; // 动态属性被弃用
+                $req->setService($routeInfo['service']);
+                $method     = $routeInfo['action'];
+                $req->setAction($method);
+                $controller = App::service()->get($routeInfo['controller']);
+                App::middleware()->runBefore($req, $controller->getBeforeMiddleware()); // 运行前置中间件
+                $data = $controller->$method($req);
                 if(is_array($data) || is_object($data)){
-                    $request->respHeader['Content-Type'] = 'application/json; charset=utf-8';
-                    $this->respHeader($request, $response);
+                    $response->header('Content-Type', 'application/json; charset=utf-8');
                     $data = $controller->result($data);
                     $data['time'] = $requestTime;
                     $data['trace_id'] = $requestTraceId;
+                    App::middleware()->runAfter($request, $data, $controller->getAfterMiddleware());
                     $response->status($httpCode);
-                    $response->end(json_encode($data)); // 如果是数组的情况下
+                    $response->end(json_encode($data, JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE)); // 如果是数组的情况下
                 }else{
+                    $ret = $controller->result($data);
+                    $ret['time'] = $requestTime;
+                    $ret['trace_id'] = $requestTraceId;
+                    App::middleware()->runAfter($request, $ret, $controller->getAfterMiddleware());
                     $response->status($httpCode);
-                    $this->respHeader($request, $response);
+                    //$this->respHeader($request, $response);
                     $response->end($data);
                 }
 
@@ -337,7 +314,8 @@ class Http extends Command
                 $response->status($httpCode);
                 $response->header('Content-Type', 'application/json; charset=utf-8');
                 $exception = App::error()->exception($e);
-                $data = App::service()->get(Controller::class)->result($exception, $message, $e->getCode() < 200 ? 500 : $e->getCode());
+                $controller = App::service()->get(Controller::class);
+                $data = $controller->result($exception, $message, $e->getCode() < 200 ? 500 : $e->getCode());
                 $data['time'] = $requestTime;
                 $data['trace_id'] = $requestTraceId;
                 App::middleware()->runAfter($request, $data, $controller->getAfterMiddleware());
@@ -361,7 +339,9 @@ class Http extends Command
         });
 
         $server->on('Shutdown', function ($server) {
-            echo date('Y-m-d H:i:s').'###[info]###'." 进程终止".PHP_EOL;
+            $msg = "服务器事件:后台管理系统触发了正常停止";
+            App::robot()->sendMsg($msg);
+            swoole_error_log(SWOOLE_LOG_WARNING, $msg);
         });
 
         $server->on('WorkerStart', function ($server, int $workerId) {
@@ -404,7 +384,9 @@ class Http extends Command
         });
 
         $server->on('WorkerError', function ($server, int $worker_id, int $worker_pid, int $exit_code, int $signal) {
-            echo date('Y-m-d H:i:s').'###[fatal]###'."工作进程出错".$exit_code.', signal:'.$signal.PHP_EOL;
+            $msg = "服务器事件:HTTP服务进程发生错误,worker_id:".$worker_id.',worker_pid:'.$worker_pid.',exit_code:'.$exit_code.',signal:'.$signal;
+            App::robot()->sendMsg($msg);
+            swoole_error_log(SWOOLE_LOG_ERROR, $msg);
         });
 
         //处理异步任务(此回调函数在task进程中执行)
@@ -417,7 +399,7 @@ class Http extends Command
                 try {
                     App::task()->call($command); // 不能在自身里面投
                 }catch (\Throwable $e){
-                    echo date('Y-m-d H:i:s').'###[fatal]###'." task出错".$e->getMessage().PHP_EOL;
+                    swoole_error_log(SWOOLE_LOG_ERROR, "task出错：".$e->getMessage());
                 }
             }
 
@@ -429,22 +411,11 @@ class Http extends Command
 
         // reload完成后触发一次
         $server->on('AfterReload', function ($serv){
+            $msg = '服务器事件:HTTP服务触发了热更新';
+            App::robot()->sendMsg($msg);
+            swoole_error_log(SWOOLE_LOG_WARNING, $msg);
         });
 
-    }
-
-    /**
-     * 响应header
-     * @param mixed $request
-     * @param mixed $response
-     * @return void
-     */
-    public function respHeader(mixed &$request, mixed &$response){
-        if(isset($request->respHeader)){
-            foreach($request->respHeader as $k => $v){
-                $response->header($k, $v);
-            }
-        }
     }
 
     /**
@@ -452,9 +423,12 @@ class Http extends Command
      * @return void
      */
     protected function usage(){
-        echo PHP_EOL.' 用法：php cmd.php server:http {start | stop | reload | restart | status} '.PHP_EOL;
-        echo PHP_EOL.' 启动示例：php cmd.php server:http start production true (production 指定加载的环境文件,【默认production】, true 申明后台启动【默认true】 )'.PHP_EOL;
+        echo PHP_EOL.' 用法：php cmd.php server:http {start | stop | reload | restart | status } '.PHP_EOL;
+        echo PHP_EOL.' 启动示例：php cmd.php server:http start false false代表非守护进程方式启动 )'.PHP_EOL;
+        echo PHP_EOL.' 关于环境：请修改全局环境变量 APP_ENV=dev或者APP_ENV=production 没有指定将会载入dev环境文件'.PHP_EOL;
         echo PHP_EOL." 开机启动: linux上将启动命令添加到 /ect/rc.local 文件中, 或参考：https://blog.csdn.net/hualinger/article/details/125321966".PHP_EOL;
         die;
     }
+
+
 }

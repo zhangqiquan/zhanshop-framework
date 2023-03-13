@@ -1,20 +1,20 @@
 <?php
 // +----------------------------------------------------------------------
-// | zhanshop-php / Mysql.php    [ 2023/1/29 20:06 ]
+// | zhanshop-admin / Sqlite.php    [ 2023/3/7 18:54 ]
 // +----------------------------------------------------------------------
 // | Copyright (c) 2011~2023 zhangqiquan All rights reserved.
 // +----------------------------------------------------------------------
-// | Author: zhangqiquan <768617998@qq.com>
+// | Author: Administrator <768617998@qq.com>
 // +----------------------------------------------------------------------
 declare (strict_types=1);
 
-namespace zhanshop\database\builder;
+namespace zhanshop\apidoc;
 
-use zhanshop\database\Query;
+use zhanshop\apidoc\Sqlite;
 
-class Mysql
+class Builder
 {
-    public function &insert(Query &$query){
+    public function &insert(Sqlite &$query){
         $data = $query->getOptions("data", true);
         if($data){
             $field = '`'.implode('`, `', array_keys($data[0])).'`';
@@ -41,7 +41,7 @@ class Mysql
         throw new \PDOException("未设定需要insert的数据", 2000);
     }
 
-    public function delete(Query &$query){
+    public function delete(Sqlite &$query){
         $where = $query->getOptions("where", true);
         $whereStr = $this->parseWhere($query, $where);
         if($whereStr){
@@ -51,7 +51,7 @@ class Mysql
         throw new \PDOException("未设定需要delete的条件", 2001);
     }
 
-    public function update(Query &$query){
+    public function update(Sqlite &$query){
         $where = $query->getOptions("where", true);
         $whereStr = $this->parseWhere($query, $where);
         if($whereStr){
@@ -77,7 +77,7 @@ class Mysql
         throw new \PDOException("未设定需要update的条件", 2002);
     }
 
-    public function count(Query &$query){
+    public function count(Sqlite &$query){
         $where = $query->getOptions("where", true);
         $whereStr = $this->parseWhere($query, $where);
         $field = $query->getOptions('field', true);
@@ -86,7 +86,7 @@ class Mysql
     }
 
     // 聚合查询只有where条件有效
-    public function avg(Query &$query){
+    public function avg(Sqlite &$query){
         $where = $query->getOptions("where", true);
         $whereStr = $this->parseWhere($query, $where);
         $field = $query->getOptions('field', true);
@@ -94,7 +94,7 @@ class Mysql
         return $sql;
     }
 
-    public function min(Query &$query){
+    public function min(Sqlite &$query){
         $where = $query->getOptions("where", true);
         $whereStr = $this->parseWhere($query, $where);
         $field = $query->getOptions('field', true);
@@ -102,7 +102,7 @@ class Mysql
         return $sql;
     }
 
-    public function max(Query &$query){
+    public function max(Sqlite &$query){
         $where = $query->getOptions("where", true);
         $whereStr = $this->parseWhere($query, $where);
         $field = $query->getOptions('field', true);
@@ -110,7 +110,7 @@ class Mysql
         return $sql;
     }
 
-    public function sum(Query &$query){
+    public function sum(Sqlite &$query){
         $where = $query->getOptions("where", true);
         $whereStr = $this->parseWhere($query, $where);
         $field = $query->getOptions('field', true);
@@ -118,7 +118,7 @@ class Mysql
         return $sql;
     }
 
-    public function find(Query &$query){
+    public function find(Sqlite &$query){
         $joinStr = $this->parseJoin($query, $query->getOptions("join", true));
         $whereStr = $this->parseWhere($query, $query->getOptions("where", true));
         $havingStr = $this->parseHaving($query, $query->getOptions("having", true));
@@ -132,7 +132,7 @@ class Mysql
         return $sql;
     }
 
-    public function select(Query &$query){
+    public function select(Sqlite &$query){
         $joinStr = $this->parseJoin($query, $query->getOptions("join", true));
         $whereStr = $this->parseWhere($query, $query->getOptions("where", true));
         $havingStr = $this->parseHaving($query, $query->getOptions("having", true));
@@ -147,14 +147,14 @@ class Mysql
         return $sql;
     }
 
-    public function parseAlias(Query &$query, ?string $alias){
+    public function parseAlias(Sqlite &$query, ?string $alias){
         if($alias){
             $alias = ' AS '.$alias;
         }
         return $alias;
     }
 
-    protected function parseWhere(Query &$query, ?array $where){
+    protected function parseWhere(Sqlite &$query, ?array $where){
         $whereStr = '';
         $ands = $where['AND'] ?? [];
         $firstKey = array_key_first($ands);
@@ -200,7 +200,7 @@ class Mysql
         return $whereStr;
     }
 
-    public function parseHaving(Query &$query, ?array $having){
+    public function parseHaving(Sqlite &$query, ?array $having){
         $havingStr = '';
         foreach ($having ?? [] as $k => $v){
             if($havingStr){
@@ -216,7 +216,7 @@ class Mysql
         return $havingStr;
     }
 
-    public function parseOrder(Query &$query, ?array $order){
+    public function parseOrder(Sqlite &$query, ?array $order){
         $orderStr = '';
         if($order){
             $orderStr = ' ORDER BY '.implode(',', $order);
@@ -224,12 +224,12 @@ class Mysql
         return $orderStr;
     }
 
-    public function parseGroup(Query &$query, ?string $group){
+    public function parseGroup(Sqlite &$query, ?string $group){
         if($group) $group = " GROUP BY ".$group;
         return $group;
     }
 
-    public function parseLimit(Query &$query, ?array $limit){
+    public function parseLimit(Sqlite &$query, ?array $limit){
         $limitStr = '';
         if($limit){
             $limitStr = " LIMIT ".$limit[0];
@@ -242,7 +242,7 @@ class Mysql
         return $limitStr;
     }
 
-    public function parseJoin(Query &$query, ?array $join){
+    public function parseJoin(Sqlite &$query, ?array $join){
         $joinStr = '';
         if($join){
             foreach($join as $v){
@@ -255,7 +255,7 @@ class Mysql
         return $joinStr;
     }
 
-    public function buildSql(Query &$query){
+    public function buildSql(Sqlite &$query){
         $sql = $this->select($query);
         $bind = $query->getBind();
         return $this->fetchSql($sql, $bind);

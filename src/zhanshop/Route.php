@@ -81,7 +81,7 @@ class Route
 
         return [
             'controller' => $controller,
-            'service' => App::service()->get('\app\\'.$protocol.'\\'.$version.'\service\\'.$actions[0].'Service'),
+            'service' => '\app\\'.$protocol.'\\'.$version.'\service\\'.$actions[0].'Service',
             'action' => $actions[1],
         ];
     }

@@ -25,11 +25,11 @@ class Service
      * @param string $name
      * @param mixed $value
      */
-    protected static function getInstance(mixed $service){
+    protected static function getInstance(mixed $service, mixed ...$arr){
         if (isset(self::$instances[$service])) {
             return self::$instances[$service];
         }
-        $obj = new $service();
+        $obj = new $service(...$arr);
         return self::$instances[$service] = $obj;
     }
 
@@ -38,8 +38,8 @@ class Service
      * @param mixed $service
      * @return mixed
      */
-    public function get(mixed $service){
-        return self::getInstance($service);
+    public function get(mixed $service, mixed ...$arr){
+        return self::getInstance($service, ...$arr);
     }
 
     /**

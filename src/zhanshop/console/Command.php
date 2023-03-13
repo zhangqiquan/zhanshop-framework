@@ -13,6 +13,17 @@ namespace zhanshop\console;
 abstract class Command
 {
     /**
+     * 命令标题
+     * @var
+     */
+    protected $title;
+
+    /**
+     * 命令描述
+     * @var
+     */
+    protected $description;
+    /**
      * 配置信息
      * @return mixed
      */

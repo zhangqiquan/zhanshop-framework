@@ -1,20 +1,20 @@
 <?php
 // +----------------------------------------------------------------------
-// | zhanshop-php / Query.php    [ 2023/1/31 17:09 ]
+// | zhanshop-admin / ApiDocService.php    [ 2023/3/7 18:44 ]
 // +----------------------------------------------------------------------
 // | Copyright (c) 2011~2023 zhangqiquan All rights reserved.
 // +----------------------------------------------------------------------
-// | Author: zhangqiquan <768617998@qq.com>
+// | Author: Administrator <768617998@qq.com>
 // +----------------------------------------------------------------------
 declare (strict_types=1);
 
-namespace zhanshop\database;
+namespace zhanshop\apidoc;
 
 use zhanshop\App;
 
-class Query
+class Sqlite
 {
-    protected string $connection;
+    protected \PDO $connection;
 
     protected mixed $builder;
 
@@ -22,10 +22,16 @@ class Query
 
     protected $bind = [];
 
-    public function __construct(string $connection, string $builder){
-        $this->connection = $connection;
-        if(strpos($builder, '\\') === false) $builder = '\\zhanshop\\database\\builder\\'.ucfirst($builder);
-        $this->builder = new $builder;
+    public function __construct(){
+        try {
+            $this->connection = new \PDO("sqlite:".App::runtimePath().DIRECTORY_SEPARATOR.'apidoc.db', null, null, [
+                \PDO::ERRMODE_EXCEPTION => \PDO::ERRMODE_EXCEPTION, // 只要发生错误最终都会报错的 只是默认报的内容比较少
+                \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC
+            ]);
+            $this->builder = new Builder($this);
+        }catch (PDOException $e){
+            throw new \Exception($e->getMessage(), $e->getCode());
+        }
     }
 
     public function table(string $table){
@@ -231,14 +237,6 @@ class Query
         return $data;
     }
 
-    public function finder(int $page, int $limit = 20, mixed $pdo = null){
-        $offset = ($page - 1) * $limit;
-        return [
-            'data' => $this->limit($offset, $limit)->select($pdo),
-            'total' => $this->count('*', $pdo),
-        ];
-    }
-
     public function value(string $field, mixed $pdo = null){
         $this->options['field'] = $field;
         $sql = $this->builder->find($this);
@@ -265,18 +263,40 @@ class Query
 
 
     public function query(string $sql, array $bind = [], mixed $pdo = null){
-        $pdoPoll = DbManager::get($this->connection);
-        return $pdoPoll->query($sql, $bind, $pdo);
+        $statement = $this->connection->prepare($sql);
+        if (!$statement) {
+            App::error()->setError("Prepare failed");
+        }
+        $result = $statement->execute($bind);
+        if (!$result) {
+            App::error()->setError("Execute failed");
+        }
+        $result = $statement->fetchAll();
+        $statement->closeCursor();
+        $this->options = [];
+        $this->bind = [];
+        return $result;
     }
 
     public function execute(string $sql, array $bind = [], bool $lastID = false, mixed $pdo = null){
-        $pdoPoll = DbManager::get($this->connection);
-        return (float) $pdoPoll->execute($sql, $bind, $lastID, $pdo);
-    }
+        $statement = $this->connection->prepare($sql);
+        if (!$statement) {
+            App::error()->setError('Prepare failed');
+        }
+        $result = $statement->execute($bind);
+        if (!$result) {
+            App::error()->setError('Execute failed');
+        }
+        if($lastID){
+            $result = $pdo->lastInsertId();
+        }else{
+            $result = $statement->rowCount();
+        }
 
-    public function transaction($call){
-        $pdoPoll = DbManager::get($this->connection);
-        $pdoPoll->transaction($call);
+        $statement->closeCursor();
+        $this->options = [];
+        $this->bind = [];
+        return $result;
     }
 
     /**
@@ -314,4 +334,5 @@ class Query
         $this->bind = [];
         return $bind;
     }
+
 }

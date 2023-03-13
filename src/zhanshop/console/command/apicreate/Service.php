@@ -20,12 +20,13 @@ class Service extends Common
 {
     protected static $input = null;
     protected static $version = null;
-
-    public static function create(Input $input){
+    protected static $appType = 'http';
+    public static function create(Input $input, string $appType){
+        self::$appType = $appType;
         self::$input = $input;
 
         self::$version = str_replace('.', '_', $input->param('version'));
-        $classFile = App::appPath().DIRECTORY_SEPARATOR.'http'.DIRECTORY_SEPARATOR.self::$version.DIRECTORY_SEPARATOR.'service'.DIRECTORY_SEPARATOR.$input->param('class').'Service'.'.php';
+        $classFile = App::appPath().DIRECTORY_SEPARATOR.self::$appType.DIRECTORY_SEPARATOR.self::$version.DIRECTORY_SEPARATOR.'service'.DIRECTORY_SEPARATOR.$input->param('class').'Service'.'.php';
 
         self::check($classFile); // 检查控制器是否存在不存在初始化
 
@@ -39,7 +40,7 @@ class Service extends Common
         $class = self::$input->param('class');
         $code = Helper::headComment($class.'Service');
         $code .= "
-namespace app\\http\\$version\\service;
+namespace app\\".self::$appType."\\$version\\service;
 
 use zhanshop\\App;
 
@@ -58,7 +59,7 @@ class {$class}Service
      */
     protected static function getClassMethods(string $classFile): array
     {
-        $class = '\\app\\http\\'.self::$version.'\\service\\'.self::$input->param('class').'Service';
+        $class = '\\app\\'.self::$appType.'\\'.self::$version.'\\service\\'.self::$input->param('class').'Service';
         $ref = new \ReflectionClass(new $class());
 
         $methods = json_decode(json_encode($ref->getMethods()), true);
@@ -87,7 +88,7 @@ class {$class}Service
         $version = self::$version;
         $code = Helper::headComment($class.'Service');
         $code .= "
-namespace app\\http\\$version\service;
+namespace app\\".self::$appType."\\$version\service;
 
 use zhanshop\\App;
 
@@ -108,10 +109,10 @@ class {$class}Service
     {
         $curd = '[];';
         if(self::$input->param('table')){
-            $curd = 'App::database()->model("'.self::$input->param('table').'")->select(); // 数据模型测试代码';
+            $curd = 'App::database()->model("'.self::$input->param('table').'")->limit(100)->select(); // 数据模型测试代码';
         }
         $code = "\t/**
-     * $title
+     * $title $method 方法
      * @apiParam {String} Required param 示例参数
      * @apiExplain {json} {\"错误码\":\"错误描述\"}
      * @return array

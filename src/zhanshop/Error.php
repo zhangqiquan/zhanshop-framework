@@ -35,13 +35,14 @@ class Error
      * @param string $errline
      */
     public function error(int $errno,  $errstr,  $errfile,  $errline){
-        $this->setError($errstr.'; errfile:'.$errfile.'; errline:'.$errline, 500);
+        $this->setError($errstr.'; errfile:'.$errfile.'; errline:'.$errline, $errno);
     }
 
     public function exception(\Throwable $exception){
         return [
-            'errfile' => $exception->getFile(),
-            'errline' => $exception->getLine(),
+            'msg' => $exception->getMessage(),
+            'file' => $exception->getFile(),
+            'line' => $exception->getLine(),
             'trace' => $exception->getTrace(),
         ];
     }
