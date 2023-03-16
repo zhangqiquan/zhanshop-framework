@@ -3,6 +3,9 @@
 ## 简介
 zhanshop-php 是一个基于swoole高性能轻量级框架、全程非阻塞、凭借swoole底层将php函数进行epoll非阻塞化和php自身低开销特点爆发强劲的性能，性能较传统基于 PHP-FPM 的框架有质的提升，提供超高性能的同时，也保持着极其灵活的可扩展性， 一键快速生成业务逻辑层代码骨架，只需要编写业务逻辑代码即可，根据注释配置即可生成api文档，对PDO 和 redis连接池进行了封装，同一连接内事务支持，不同连接和不同数据库服务器之前的分布式事务等功能，全程APP容器化管理，数据库操作类和缓存操作类和thinkphp类似，简单易用。
 
+## 完整项目
+https://github.com/zhangqiquan/zhanshop-php
+
 ## server组成
 1. 业务层(包含控制器、service、model)
 2. crontab (定时任务进程，可将任务丢给task执行, 自带提供的定时有监听代码变化热更新server)
@@ -16,12 +19,28 @@ robot
 ## 日志收集
 config/log.php  
 type 目前支持3种收集类型
+
 1：File 写入到本地,再结合阿里云/腾讯云日志收集工具将日志收集到阿里云/腾讯云日志服务 （推荐）
-2：Es 将日志批量写入到Elasticsearch
-3. 写入到数据库中
+
+2：Es 将日志批量写入到Elasticsearch 依赖 composer require elasticsearch/elasticsearch 需要手动安装
+
+3： 写入到数据库中
+
+## 关于附件
+目前附件是只传七牛云的 依赖 composer require qiniu/php-sdk  并修改 config/sns.php 相应配置
 
 ## 环境要求
 php8.1 以上版本，需要redis扩展的支持， pdo mysql 扩展的支持，swoole4.8 以上的扩展支持
+
+## 关于热更新
+非vendor, runtime, public目录下的php文件只要发生了变更就会触发更新
+注意修改了 .dev.*的配置文件和 修改了 config目录下的 app.php 请手动进行重新启动
+
+示例 php cmd.php server:http restart
+
+## 提供测试数据
+在项目目录下有一个 zhanshop.sql 文件 想要把后台管理系统跑起来 需要把zhanshop.sql导入到 mysql数据库中，建议mysql使用8.0以上版本,
+
 
 ## 性能表现 （供参考和对比）
 1. 本框架http服务器，在我的（本机4核，16G ubuntu22 设备上）使用ab压力测试工具 吞吐量可达10万多/s ， 在开启日志写入功能后吞吐量任然在9万多/s
@@ -39,8 +58,7 @@ php8.1 以上版本，需要redis扩展的支持， pdo mysql 扩展的支持，
 │  ├─crontab        定时任务目录
 │  ├─http           http服务控制逻辑层
 │  ├─model          模型目录
-│  ├─task           task任务目录
-│  └─wss            websocket服务控制逻辑层
+│  └─task           task任务目录
 │
 ├─config                配置目录
 │  ├─autoload           server载入配置目录
@@ -58,7 +76,7 @@ php8.1 以上版本，需要redis扩展的支持， pdo mysql 扩展的支持，
 │  │  └─v1.0.0.php      注册的目录版本配置文件
 │  └─ ...   
 │
-├─public                WEB目录（由于swoole对静态资源访问的支持不够完善仅提供在开发调试的api文档访问）
+├─public                WEB目录
 ├─extend                扩展类库目录
 ├─runtime               应用的运行时目录（可写，可定制）
 ├─vendor                Composer类库目录
@@ -76,7 +94,7 @@ php8.1 以上版本，需要redis扩展的支持， pdo mysql 扩展的支持，
 │  ├─Service.php        service单例管理
 │  ├─Task.php           task任务管理
 │  ├─Validate.php       请求参数验证
-│  ├─console            控制台程序目录(包含http服务器,websocket服务器等程序)
+│  ├─console            控制台程序目录(包含http服务器,后台管理系统等程序)
 │  └─ ...  
 ├─.env.dev              本地开发环境变量示例文件
 ├─.env.test             测试环境变量示例文件
@@ -95,12 +113,6 @@ composer require zhanshop/framework
 
 ~~~
 
-## 完整的初始化项目
-
-~~~
-https://github.com/zhangqiquan/zhanshop-php.git
-~~~
-
 
 ## 控制台使用方法
 ~~~
@@ -113,8 +125,8 @@ php cmd.php
 可用命令：
 
 help                                帮助 - 显示命令的帮助
-server:http                         启动后台服务 - 使用该命令可以创建一个http服务器
-server:admin                        启动api服务 - 使用该命令可以创建一个http后台管理系统
+server:http                         启动http服务 - 使用该命令可以创建一个http服务器
+server:admin                        启动后台管理系统 - 使用该命令可以创建一个http后台管理系统
 api:create                          api构建 - 一键生成http接口
 api:manager                         api管理 - 对现有的文档数据进行(修改/删除/清空/回滚/生成等功能)
 test:demo                           test - 测试用例
@@ -144,6 +156,20 @@ WantedBy=multi-user.target
 保存后
 
 systemctl enable zhanshop_http.service
+
+~~~
+
+## 演习地址
+~~~
+后台管理系统：
+http://36.111.20.204:6300/admin/
+账号: admin
+密码: admin123
+
+http接口服务：
+http://36.111.20.204:6200/apiDoc
+
+访问密码： zhangqiquan
 
 ~~~
 
@@ -223,3 +249,9 @@ App::cache()->set(...);
 
 等等....
 ~~~
+
+## 交流群
+由于微信群无法直接加入，故可先加下方二维码好友，并声明目的，再拉您入群。
+
+微信号： eee7798
+![](http://test-cdn.zhanshop.cn/2023313/167870337640814238.jpg)

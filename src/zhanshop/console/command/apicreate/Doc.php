@@ -24,13 +24,16 @@ class Doc
      */
     public static function create(Input $input, string $appType){
         $action = $input->param('class').'@'.$input->param('method');
-        $service = new ApiDocService($appType);
         $param = [];
         $explain = [];
         $service = new ApiDocService($appType);
         foreach($input->param('reqtype') as $vv){
-            $param[$vv] = $service->getApiDocParam($input->param('version'), $action, strtolower($vv)); // 拿到文档参数
-            $explain[$vv] = $service->getApiDocExplain($input->param('version'), $action, strtolower($vv)); // 拿到错误代码解析
+            try {
+                $param[$vv] = $service->getApiDocParam($input->param('version'), $action, strtolower($vv)); // 拿到文档参数
+                $explain[$vv] = $service->getApiDocExplain($input->param('version'), $action, strtolower($vv)); // 拿到错误代码解析
+            }catch (\Throwable $e){
+
+            }
         }
         $service->create([
             'version' => $input->param('version'),

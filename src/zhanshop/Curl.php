@@ -84,7 +84,7 @@ class Curl
      * @return $this
      */
     public function setIpresolve(int $ipresolve){
-        $this->config['ipresolve'] = $useragent;
+        $this->config['ipresolve'] = $ipresolve;
         return $this;
     }
 

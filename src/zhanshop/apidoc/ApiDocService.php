@@ -191,7 +191,7 @@ class ApiDocService
     public function getApiDocParam(string $version, string $action, string $requestType){
         echo PHP_EOL.'#获取'.$version.'/'.$action.'的service的'.$requestType.'参数#';
         $action = explode('@', $action);
-        $class = '\\app\\'.$this->appType.'\\'.$version.'\\service\\'.$action[0].'Service';
+        $class = '\\app\\'.$this->appType.'\\'.str_replace('.', '_', $version).'\\service\\'.$action[0].'Service';
         $rc = new \ReflectionClass($class);
 
         $rc = $rc->getMethod($requestType.ucwords($action[1]));

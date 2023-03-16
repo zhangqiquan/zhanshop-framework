@@ -53,9 +53,6 @@ class ApiCreate extends Command
         // 创建数据模型
         Model::create($input);
 
-        // 创建api文档
-        Doc::create($input, $all[0]);
-
         $output->output(PHP_EOL.PHP_EOL.'【ok】后面的代码请手动完善！！！', 'success');
     }
 
