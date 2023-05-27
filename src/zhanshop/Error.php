@@ -10,13 +10,13 @@ declare (strict_types=1);
 
 namespace zhanshop;
 
-class Error
+class Error extends \Error
 {
-    protected $exceptionHandle = null;
-
-    public function __construct(){
-        if($handler = App::config()->get('app.handler')) $this->exceptionHandle = new $handler;
-    }
+    const OK = 0;
+    const BAD_REQUEST = 400;
+    const FORBIDDEN = 403;
+    const NOT_FOUND = 404;
+    const SERVER_ERROR = 500;
 
     /**
      * 设置错误信息
@@ -28,23 +28,52 @@ class Error
     }
 
     /**
+     * 断言
+     * @param mixed $condition
+     * @param string $message
+     * @param int $code
+     * @return void
+     */
+    public function assert(mixed $condition, string $msg, int $code = 500){
+        if($condition == false){
+            $this->setError($msg, $code);
+        }
+    }
+
+    /**
      * 系统异常处理
      * @param int $errno
      * @param string $errstr
      * @param string $errfile
      * @param string $errline
      */
-    public function error(int $errno,  $errstr,  $errfile,  $errline){
-        $this->setError($errstr.'; errfile:'.$errfile.'; errline:'.$errline, $errno);
+    public static function errorHandler(int $errno,  $errstr,  $errfile,  $errline){
+        throw new \Exception($errstr.' '.$errfile.':'.$errline.PHP_EOL, $errno);
     }
 
-    public function exception(\Throwable $exception){
-        return [
-            'msg' => $exception->getMessage(),
-            'file' => $exception->getFile(),
-            'line' => $exception->getLine(),
-            'trace' => $exception->getTrace(),
-        ];
+    /**
+     * 用户定义的错误
+     * @param \Throwable $exception
+     * @return void
+     */
+    public static function exceptionHandler(\Throwable $exception){
+        Log::errorLog(SWOOLE_LOG_ERROR, $exception->getMessage().PHP_EOL.
+            $exception->getFile().':'.$exception->getLine().PHP_EOL.
+            $exception->getTraceAsString()
+        );
+    }
+
+    /**
+     * Server运行期致命错误
+     * @return void
+     */
+    public static function shutdown(){
+        // 无法提前捕获的错误
+        $error = error_get_last();
+        if(isset($error['message'])){
+            Log::errorLog(SWOOLE_LOG_ERROR, $error['message']);
+        }
+
     }
 
 }

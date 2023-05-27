@@ -10,29 +10,36 @@ declare (strict_types=1);
 
 namespace zhanshop;
 
-use zhanshop\console\task\WatchCode;
-
 class Task
 {
+    /**
+     * server对象
+     * @var Swoole\Server
+     */
     protected $server;
-    protected $tasks = [];
-    protected $instances = [];
-    public function init(&$server, &$tasks){
-        if($this->server == false){
-            $this->server = $server;
-            $this->tasks = $tasks;
-        }
+    public function __construct(mixed &$server)
+    {
+        $this->server = $server;
     }
 
-    protected function instance(string $name){
-        $val = $this->tasks[$name] ?? App::error()->setError('没有配置/注册名为：'.$name.'的任务');
-        if(isset($this->instances[$name])) return $this->instances[$name];
-        $obj = new $val();
-        $this->instances[$name] = $obj;
-        return $obj;
+    /**
+     * 获取server对象
+     * @return Swoole\Server
+     */
+    public function getServer(){
+        return $this->server;
     }
 
-    public function call(string $name){
-        $this->instance($name)->execute($this->server);
+    /**
+     * 执行task任务
+     * @param array $call
+     * @param array $param
+     * @return void
+     */
+    public function callback(array $callback, ...$value){
+        $this->server->task([
+            'callback' => $callback,
+            'value' => $value
+        ]);
     }
 }

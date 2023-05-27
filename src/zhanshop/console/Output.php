@@ -18,6 +18,7 @@ class Output
         'success' => "\033[0;32m%s\033[0m",
         'error' => "\033[31;31m%s\033[0m",
         'info' => "\033[33;33m%s\033[0m",
+        'debug' => "\033[36;36m%s\033[0m",
     ];
 
     /**
@@ -111,7 +112,7 @@ class Output
      * @param string $errline
      */
     public static function render(int $errno, string $errstr, string $errfile, mixed $errline){
-        throw new \Exception($errstr.' :errfile:'.$errfile.', line:'.$errline, $errno);
+        throw new \Exception($errstr.' '.$errfile.' on line '.$errline.PHP_EOL, $errno);
     }
 
     /**
@@ -121,7 +122,27 @@ class Output
     public static function exception(\Throwable $exception){
         echo PHP_EOL;
         printf("\033[33;33m%s\033[0m", $exception->getMessage().PHP_EOL.PHP_EOL);
-        echo $exception->getFile().'第'.$exception->getLine().'行'.PHP_EOL;
+        echo $exception->getFile().' on line '.$exception->getLine().PHP_EOL;
         printf("\033[31;31m%s\033[0m", $exception->getTraceAsString());
+    }
+
+    /**
+     * 输出
+     * @param string $msg
+     * @param int $width
+     * @return void
+     */
+    public function echo(string $msg, string $align = 'left', int $width = 0, string $filler = ' '){
+        if($width <= 0) $width = 36;
+
+        $length = $width - mb_strlen($msg);
+        //echo PHP_EOL.PHP_EOL.PHP_EOL."总长度".$width.'字符串长度'.mb_strlen($msg).'需要补'.$length.PHP_EOL;
+        //var_dump($width , mb_strlen($msg), $length);
+        if($length < 0) $length = 0;
+        if($align == 'right'){
+            echo str_repeat($filler, $length).$msg;
+        }else{
+            echo $msg.str_repeat($filler, $length);
+        }
     }
 }

@@ -14,6 +14,8 @@ use Swoole\Coroutine\Channel;
 use Swoole\Timer;
 use Swoole\Coroutine;
 use zhanshop\App;
+use zhanshop\console\command\Server;
+use zhanshop\console\Output;
 
 class Log
 {
@@ -23,15 +25,17 @@ class Log
 
     protected $type;
 
-    protected $timerId;
+    protected static $daemonize = false;
 
-    public function __construct(){
+    public function __construct($daemonize){
         $type = App::config()->get('log.type');
         $this->type = $type;
         if(strpos($type, '\\') === false) $type = '\\zhanshop\\log\\driver\\'.ucfirst($type);
-        $capacity = 20000;
+
+        $capacity = App::config()->get('log.capacity', 20000);
         $this->channel = new Channel($capacity);
         $this->dirver = new $type;
+        self::$daemonize = $daemonize;
     }
 
     public function push(string $msg, $level = 'INFO'){
@@ -46,17 +50,37 @@ class Log
 
     public function execute(){
         // 0.1秒执行一次
-        $this->timerId = Timer::tick(100, function () {
+        Timer::tick(100, function () {
             try {
                 $this->dirver->write($this);
             }catch (\Throwable $e){
-                swoole_error_log(SWOOLE_LOG_ERROR, "日志写入出错：".$e->getMessage());
+                Error::exceptionHandler($e);
             }
 
         });
     }
 
-    public function close(){
-        \Swoole\Timer::clear($this->timerId);
+    /**
+     * 打印错误日志
+     * @param int $level
+     * @param string $msg
+     * @return void
+     */
+    public static function errorLog(int $level, string $msg) :void{
+        if(self::$daemonize){
+            swoole_error_log($level, $msg);
+        }else{
+            // 直接输出日志
+            $msg = '['.date('Y-m-d H:i:s *v').']	LOG LEVEL '.$level.'	'.$msg;
+            $stype = 'success';
+            if ($level >= 5){
+                $stype = 'error';
+            }else if($level >= 4){
+                $stype = 'info';
+            }else if($level >= 2){
+                $stype = 'debug';
+            }
+            App::make(Output::class)->output($msg, $stype);
+        }
     }
 }

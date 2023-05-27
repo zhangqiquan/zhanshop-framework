@@ -28,7 +28,7 @@ class DbManager
      * @throws \Exception
      */
     public static function get(string $connection){
-        return self::$PDOConnectionPools[$connection] ?? throw new \Exception('database.'.$connection.'未定义');
+        return self::$PDOConnectionPools[$connection] ?? throw new \Exception('database.connections.'.$connection.'未定义');
     }
 
     public static function clean(){

@@ -19,25 +19,16 @@ namespace zhanshop;
 class Middleware
 {
     /**
-     * 执行前置中间件
-     * @param Request $request
-     * @param array $middlewares
+     * 是否后置中间件
+     * @var int
      */
-    public function runBefore(mixed &$request, array $middlewares){
-        $rep = null;
-        foreach($middlewares as $v){
-            App::service()->get($v)->handle($request, $rep); // 执行前置中间件
-        }
-    }
+    protected bool $isAfter = false; // 中间件类型 1 前置 2 后置
 
     /**
-     * 执行异步中间件
-     * @param Request $request
-     * @param array $middlewares
+     * 获取中间件类型
+     * @return int
      */
-    public function runAfter(mixed &$request, mixed &$data, ?array $middlewares = []){
-        foreach($middlewares as $v){
-            App::service()->get($v)->handle($request, $data); // 执行后置中间件
-        }
+    public function isAfter(){
+        return $this->type;
     }
 }

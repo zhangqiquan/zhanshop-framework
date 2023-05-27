@@ -16,16 +16,27 @@ class Query
 {
     protected string $connection;
 
+    protected string $deleteTime = '';
+
     protected mixed $builder;
 
     protected $options = [];
 
     protected $bind = [];
 
-    public function __construct(string $connection, string $builder){
+    public function __construct(string $connection, string $builder, string $deleteTime = ''){
         $this->connection = $connection;
+        $this->deleteTime = $deleteTime;
         if(strpos($builder, '\\') === false) $builder = '\\zhanshop\\database\\builder\\'.ucfirst($builder);
         $this->builder = new $builder;
+    }
+
+    /**
+     * 不限制被软删除的数据
+     * @return void
+     */
+    public function withTrashed(){
+        $this->deleteTime = '';
     }
 
     public function table(string $table){
@@ -171,8 +182,12 @@ class Query
     }
 
     public function delete(mixed $pdo = null){
-        $sql = $this->builder->delete($this);
-        return $this->execute($sql, $this->getBind(), false, $pdo);
+        if($this->deleteTime){
+            return $this->update([$this->deleteTime => time()]);
+        }else{
+            $sql = $this->builder->delete($this);
+            return $this->execute($sql, $this->getBind(), false, $pdo);
+        }
     }
 
     public function insertAll(array $data, bool $getLastInsID = false, mixed $pdo = null) :float{
@@ -185,6 +200,7 @@ class Query
     }
 
     public function count(string $field = '*', mixed $pdo = null){
+        if($this->deleteTime) $this->where([$this->deleteTime => 0]);
         $this->options['field'] = $field;
         $sql = $this->builder->count($this);
         $data = $this->query($sql, $this->getBind(), $pdo);
@@ -192,6 +208,7 @@ class Query
     }
 
     public function avg(string $field, mixed $pdo = null){
+        if($this->deleteTime) $this->where([$this->deleteTime => 0]);
         $this->options['field'] = $field;
         $sql = $this->builder->avg($this);
         $data = $this->query($sql, $this->getBind(), $pdo);
@@ -199,6 +216,7 @@ class Query
     }
 
     public function max(string $field, mixed $pdo = null){
+        if($this->deleteTime) $this->where([$this->deleteTime => 0]);
         $this->options['field'] = $field;
         $sql = $this->builder->max($this);
         $data = $this->query($sql, $this->getBind(), $pdo);
@@ -206,6 +224,7 @@ class Query
     }
 
     public function min(string $field, mixed $pdo = null){
+        if($this->deleteTime) $this->where([$this->deleteTime => 0]);
         $this->options['field'] = $field;
         $sql = $this->builder->min($this);
         $data = $this->query($sql, $this->getBind(), $pdo);
@@ -213,6 +232,7 @@ class Query
     }
 
     public function sum(string $field = '*', mixed $pdo = null){
+        if($this->deleteTime) $this->where([$this->deleteTime => 0]);
         $this->options['field'] = $field;
         $sql = $this->builder->sum($this);
         $data = $this->query($sql, $this->getBind(), $pdo);
@@ -220,12 +240,14 @@ class Query
     }
 
     public function find(mixed $pdo = null){
+        if($this->deleteTime) $this->where([$this->deleteTime => 0]);
         $sql = $this->builder->find($this);
         $data = $this->query($sql, $this->getBind(), $pdo);
         return $data[0] ?? null;
     }
 
     public function select(mixed $pdo = null){
+        if($this->deleteTime) $this->where([$this->deleteTime => 0]);
         $sql = $this->builder->select($this);
         $data = $this->query($sql, $this->getBind(), $pdo);
         return $data;
@@ -234,7 +256,7 @@ class Query
     public function finder(int $page, int $limit = 20, mixed $pdo = null){
         $offset = ($page - 1) * $limit;
         return [
-            'data' => $this->limit($offset, $limit)->select($pdo),
+            'list' => $this->limit($offset, $limit)->select($pdo),
             'total' => $this->count('*', $pdo),
         ];
     }
@@ -311,7 +333,6 @@ class Query
 
     public function &getBind(){
         $bind =  $this->bind;
-        $this->bind = [];
         return $bind;
     }
 }

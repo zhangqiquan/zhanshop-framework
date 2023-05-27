@@ -11,6 +11,7 @@ declare (strict_types=1);
 namespace zhanshop\apidoc;
 
 use zhanshop\App;
+use zhanshop\Error;
 use zhanshop\Request;
 use zhanshop\apidoc\ApiDocService;
 
@@ -39,9 +40,9 @@ class ApiDocController
      * @throws \Exception
      */
     public function apidoc(Request &$request){
-        if(($_SERVER['APP_ENV'] ?? 'dev') == 'production') App::error()->setError('访问的接口不存在', 404);
+        if(($_SERVER['APP_ENV'] ?? 'dev') == 'production') App::error()->setError('访问的接口不存在', Error::NOT_FOUND);
         $method = $request->method();
-        if(!in_array($method, ['login', 'apis', 'detail', 'debug', 'cross', 'update'])) App::error()->setError('访问的接口不存在', 403);
+        if(!in_array($method, ['login', 'apis', 'detail', 'debug', 'cross', 'update'])) App::error()->setError('访问的Doc不存在', Error::NOT_FOUND);
         $this->service = new ApiDocService($this->appType);
         if($request->post('_auth') == false || $request->post('_auth') != $this->apiPwd) App::error()->setError("请先输入访问密码", 10001);
         return $this->$method($request);

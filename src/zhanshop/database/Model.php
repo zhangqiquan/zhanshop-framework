@@ -27,9 +27,12 @@ class Model
 
     private Query $query;
 
+    // 软删除字段
+    protected $deleteTime = '';
+
     public function __construct(){
         $type = App::config()->get('database.connections')[$this->connection]['type'] ?? 'mysql';
-        $this->query = new Query($this->connection, $type);
+        $this->query = new Query($this->connection, $type, $this->deleteTime);
         $this->query->table($this->table);
     }
 

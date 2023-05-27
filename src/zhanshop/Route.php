@@ -10,22 +10,32 @@ declare (strict_types=1);
 
 namespace zhanshop;
 
+use zhanshop\route\Group;
+use zhanshop\route\Rule;
+
 class Route
 {
-    protected $version = "v1.0.0";
     /**
-     * 注册的路由列表（请求类型,uri,方法,中间件）
-     * @var array
+     * 路由规则
+     * @var Rule
      */
-    protected $registers = [];
+    protected Rule $rule;
+    protected Group $group;
 
     public function __construct(){
-        //echo "Route初始化\n";
+        $this->rule = new Rule();
+        $this->group = new Group();
+        $this->rule->setGroup($this->group);
     }
 
-    public function setVersion(string $version){
-        $this->version = $version;
+    /**
+     * 获取rule对象
+     * @return Rule
+     */
+    public function getRule(){
+        return $this->rule;
     }
+
     /**
      * 注册路由
      * @param array $methods
@@ -33,10 +43,25 @@ class Route
      * @param string $action
      * @param array $middleware
      */
-    public function match(array $methods, string $uri, string $action = null){
+    public function match(array $methods, string $uri, array $handler): Rule{
+        return $this->rule->addRule($uri, $handler, $methods);
+    }
 
-        // 带$ 代表结束
-        $this->registers[$this->version][$uri] = [$methods, $uri, $action];
+
+    /**
+     * 分组路由
+     * @param string $name
+     * @param callable $fun
+     * @return void
+     */
+    public function group(string $name, callable $fun): Group{
+        $group = new Group();
+        $group->addGroup($name, $fun);
+        return $group;
+    }
+
+    public function extra(string $str){
+
     }
 
     public function uriPath(string &$uri) :string{
@@ -45,15 +70,23 @@ class Route
             // 把@后面的参数解析到参数
             //$param = explode('?', $paths[1]);
             parse_str($paths[1], $params);
-            $_REQUEST = array_merge($_REQUEST, $params);
             return '/'.$paths[0];  // 不需要再解析?
         }else{
             //$paths = explode("?", $paths[0]);
             return '/'.$paths[0];
         }
     }
-    // 这里有待优化
-    public function swooleCallback(string $uri, $method, $protocol = 'http'){
+
+
+    /**
+     * 解析路由
+     * @param string $uri
+     * @param $method
+     * @param $protocol
+     * @return array
+     * @throws \Exception
+     */
+    public function parse(string $uri, string $method, string $group = 'http'){
         $arr = explode("/", $uri);
         $version = $arr[1];
         if($version == false){
@@ -70,19 +103,15 @@ class Route
                 $uri = '/'.$uri;
             }
         }
-        $routeInfo = $this->registers[$version][$uri] ?? App::error()->setError('您访问的接口不存在', 404);
+        $routeInfo = $this->registers[$group][$version][$uri] ?? App::error()->setError('您访问的API不存在', Error::NOT_FOUND);
 
-        if(!in_array($method, $routeInfo[0])) App::error()->setError('当前接口不支持'.$method.'请求', 403);
+        if(!in_array($method, $routeInfo[0])) App::error()->setError('当前API不支持'.$method.'请求', Error::FORBIDDEN);
 
-        $actions = explode('@', $routeInfo[2]);
-
-        $version = str_replace('.', '_', $version);
-        $controller = '\app\\'.$protocol.'\\'.$version.'\controller\\'.$actions[0];
-
+        $controller = $routeInfo[2][0];
         return [
             'controller' => $controller,
-            'service' => '\app\\'.$protocol.'\\'.$version.'\service\\'.$actions[0].'Service',
-            'action' => $actions[1],
+            'service' => str_replace('\\controller\\', '\\service\\', $controller).'Service',
+            'action' => $routeInfo[2][1],
         ];
     }
 
@@ -96,18 +125,44 @@ class Route
     }
 
     /**
-     * 获取全部路由
-     * @return array
-     */
-    public function getAll($version = null){
-        if($version) return $this->registers[$version];
-        return $this->registers;
-    }
-
-    /**
      * 清空路由
      */
     public function clean(){
         $this->registers = [];
+        $this->grpcService = [];
+    }
+
+    protected $grpcService = [];
+    /**
+     * 注册grpc服务
+     * @param $class
+     * @return void
+     */
+    public function setGrpc($class){
+        $this->grpcService[$class] = [];
+        // 通过反射拿到请求类和响应类
+        $reflectionClass = new \ReflectionClass($class);
+        $methods = $reflectionClass->getMethods();
+        foreach($methods as $v){
+            $method = $v->getName();
+            $parameters = $reflectionClass->getMethod($method)->getParameters();
+            if(isset($parameters[0]) && $parameters[1]){
+                $this->grpcService[$class][$method][] = $parameters[0]->getType()->getName();
+                $this->grpcService[$class][$method][] = $parameters[1]->getType()->getName();
+            }
+        }
+    }
+
+    public function getGrpc($class, $method){
+        $class = $this->grpcService[$class] ?? App::error()->setError('您所请求的类不存在', Error::NOT_FOUND);
+        return $class[$method] ?? App::error()->setError('您所请求的方法'.$method.'不存在', Error::NOT_FOUND);
+    }
+
+    /**
+     * 获取所有路由
+     * @return array
+     */
+    public function getAll(){
+        return $this->rule->getAll();
     }
 }

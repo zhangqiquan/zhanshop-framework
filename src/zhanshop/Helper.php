@@ -144,4 +144,35 @@ declare (strict_types=1);\n\n";
         return $host;
     }
 
+    /**
+     * 解析model名字的字符
+     * @param string $name
+     * @return void
+     */
+    public static function parseStrModel(string $name){
+        $tables =explode('/', $name);
+        $table = $tables[0];
+        $modelDir = $tables[0];
+        if(isset($tables[1])){
+            $table = $tables[1];
+            //$modelDir .= '\\';
+        }else{
+            $modelDir = '';
+        }
+        return [
+            'dir' => $modelDir,
+            'table' => $table,
+            'class' => '\\app\\model\\'.($modelDir ? $modelDir.'\\' : '').ucfirst(self::camelize($table))
+        ];
+    }
+
+    /**
+     * 获取schema文件路径
+     * @param string $name
+     * @return void
+     */
+    public static function getSchemaPath(string $name){
+        $parseStrModel = self::parseStrModel($name);
+        return App::appPath().DIRECTORY_SEPARATOR.'schema'.DIRECTORY_SEPARATOR.($parseStrModel['dir'] ? $parseStrModel['dir'].DIRECTORY_SEPARATOR : '').$parseStrModel['table'].'.php';
+    }
 }

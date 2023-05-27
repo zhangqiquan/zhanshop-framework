@@ -21,6 +21,7 @@ class Curl
         'ipresolve' => 1,
         'referer' => '', // 请求来源
         'maxredirs' => 3, // 最大跳转次数
+        'encodeng' => 'gzip', // 解压编码
     ];
 
     /**
@@ -31,6 +32,15 @@ class Curl
     public function setTimeout(int $timeout = 3000){
         $this->config['timeout'] = $timeout;
         return $this;
+    }
+
+    /**
+     * 设置解压编码
+     * @param $encodeng
+     * @return void
+     */
+    public function seEncodeng($encodeng){
+        $this->config['encodeng'] = $encodeng;
     }
 
     /**
@@ -164,6 +174,8 @@ class Curl
         curl_setopt($ch, CURLOPT_TIMEOUT_MS, $this->config['timeout']);
         curl_setopt($ch, CURLOPT_COOKIE, $this->config['cookie']);
         curl_setopt($ch, CURLOPT_REFERER, $this->config['referer']);
+
+        if($this->config['encodeng']) curl_setopt($ch, CURLOPT_ENCODING ,$this->config['encodeng']);
         if($this->config['header']){
             curl_setopt($ch, CURLOPT_HTTPHEADER, $this->config['header']);//设置请求头
         }

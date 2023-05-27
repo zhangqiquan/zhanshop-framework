@@ -10,28 +10,27 @@ declare (strict_types=1);
 
 namespace zhanshop\apidoc;
 
+use zhanshop\apidoc\sqlite\Builder;
 use zhanshop\App;
 
 class Sqlite
 {
     protected \PDO $connection;
-
     protected mixed $builder;
 
     protected $options = [];
 
     protected $bind = [];
 
-    public function __construct(){
-        try {
-            $this->connection = new \PDO("sqlite:".App::runtimePath().DIRECTORY_SEPARATOR.'apidoc.db', null, null, [
-                \PDO::ERRMODE_EXCEPTION => \PDO::ERRMODE_EXCEPTION, // 只要发生错误最终都会报错的 只是默认报的内容比较少
-                \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC
-            ]);
-            $this->builder = new Builder($this);
-        }catch (PDOException $e){
-            throw new \Exception($e->getMessage(), $e->getCode());
-        }
+    /**
+     * 由于swoole提供的数据库连接池对sqlite支持存在问题
+     * @param string $database
+     */
+    public function __construct(string $database){
+        $dsn = "sqlite:".$database;
+        $pdo = new \PDO($dsn, null, null, [\PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC]);
+        $this->connection = $pdo;
+        $this->builder = new Builder($this);
     }
 
     public function table(string $table){

@@ -20,51 +20,63 @@ use zhanshop\database\DbManager;
 class Container
 {
     /**
-     * 容器对象实例
-     * @var
-     */
-    public static $instance;
-
-    /**
      * 容器对象实例列表
-     * @var Container|Closure
+     * @var
      */
     protected static $instances;
 
     /**
-     * 容器获取注册app类
-     * @param string $name
-     * @param mixed $value
+     * 容器绑定标识
+     * @var array
      */
-    public static function get(mixed $name, array $args = []){
-        if (isset(self::$instances[$name])) {
-            return self::$instances[$name];
+    protected static $bind = [
+    ];
+
+    /**
+     * 绑定别名到一个类
+     * @param string $key
+     * @param string $class
+     * @return void
+     */
+    public function bind(string $key, string $class){
+        $this->bind[$key] = $class;
+    }
+
+    /**
+     * 通过类名获取类的实例
+     * @template Type
+     * @param class-string<Type> $className
+     * @return Type
+     */
+    public static function make(string $className, array $vars = [], bool $newInstance = false){
+        if (isset(self::$instances[$className]) && !$newInstance) {
+            return self::$instances[$className];
         }
-        $app = static::$instance->registers[$name] ?? throw new \Exception('APP '.$name.'类不存在或者未注册', 500);
-        $obj = new $app(...$args);
-        return self::$instances[$name] = $obj;
-    }
-    /**
-     * 容器获取app类
-     * @param string $name
-     */
-    public function __get(string $name){
-        return self::$instances[$name] ?? throw new \Exception('APP '.$name.'类不存在或者未注册', 500);
-    }
 
-    public function __unset($name)
-    {
-        unset(self::$instances[$name]);
+        $obj = new $className(...$vars);
+        return self::$instances[$className] = $obj;
     }
 
     /**
-     * 容器获取app类
-     * @param string $name
+     * 获取实例
+     * @param $name
      * @param array $arguments
      * @return mixed
      * @throws \Exception
      */
-    public function __call(string $name, array $arguments){
+    protected static function get(string &$name, array &$arguments){
+        $className = static::$bind[$name] ?? throw new \Exception('没有绑定'.$name.'方法关联的类', 500);
+        return self::make($className, $arguments);
+    }
+    /**
+     * 容器获取app类
+     * @param $name
+     * @param array $arguments
+     * @return mixed
+     * @throws \Exception
+     */
+    public function __call(string $name, array $arguments)
+    {
         return self::get($name, $arguments);
     }
 
@@ -80,7 +92,11 @@ class Container
         return self::get($name, $arguments);
     }
 
-    public static function clean(){
+    /**
+     * 清理容器上所有类
+     * @return void
+     */
+    public static function cleanAll(){
         self::$instances = [];
         CacheManager::init();
         DbManager::init();

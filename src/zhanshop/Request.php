@@ -10,170 +10,312 @@ declare (strict_types=1);
 
 namespace zhanshop;
 
+use zhanshop\console\command\Server;
+
 class Request
 {
-    protected $request;
-
-    protected $method;
-
-    protected $post = [];
-
-    protected $service;
-
-    protected $action;
-
-    protected $ext = [];
-
-    public function __construct(mixed &$request){
-        $this->request = $request;
-
-        $inputData = $this->getInputData($request->getContent(), $request->server['request_method'] ?? 'POST');
-        $this->post = $inputData ? $inputData : $request->post;
-    }
+    /**
+     * 协议
+     * @var int
+     */
+    protected $protocol = Server::HTTP;
 
     /**
-     * 当前请求参数
+     * 原始请求对象
+     * @var \Swoole\Http\Request
+     */
+    protected mixed $rawRequest = null;
+
+    /**
+     * http请求内容类型
+     * @var mixed|null
+     */
+    protected mixed $contentType = null;
+
+    /**
+     * 额外参数
      * @var array
      */
-    protected $param = []; // 包含get和post
+    protected array $extData = [];
 
-//    public function init(mixed &$request){
-//        $this->method = null;
-//        $this->request = null;
-//        $this->ext = [];
-//        $this->get = [];
-//        $this->post = [];
-//        $this->action = null;
-//        $this->ext = [];
-//        $this->request = $request;
-//
-//        $inputData = $this->getInputData($request->getContent());
-//
-//        $this->post    = $request->post ?: $inputData;
-//    }
+    /**
+     * 当前请求的路由
+     * @var array
+     */
+    protected array $roure;
 
-    public function setAction(string $action){
-        $this->action = $action;
-    }
+    // 请求的方法
+    protected $method;
 
-    public function getAction(){
-        return $this->action;
-    }
-
-    public function setService(string $class){
-        $this->service = $class;
-    }
-
-    public function getService(){
-        return App::service()->get($this->service);
-    }
-
-    protected function getInputData(string $content, string $method = 'POST'): array
-    {
-        $contentType = $this->contentType();
-        if ($method == 'POST') {
-            if(false !== strpos($contentType, 'json')){
-                $json = json_decode($content, true);
-                if($json == false) App::error()->setError('请求数据不是一个有效的json数据', 403);
-                return (array) $json;
-            }
-        }
-
-        return [];
+    public function setRoure(array &$roure){
+        $this->roure = $roure;
     }
 
     /**
-     * 设置或者获取当前的Header
-     * @access public
-     * @param  string $name header名称
-     * @param  string $default 默认值
-     * @return string|array
+     * 获取当前请求路由
+     * @return array
+     */
+    public function getRoure(){
+        return $this->roure;
+    }
+
+    /**
+     * 获取service对象
+     * @return T
+     */
+    public function service(){
+        return [App::make($this->roure['service'][0]), strtolower($this->method()).$this->roure['service'][1]];
+    }
+
+
+    /**
+     * 构造器
+     * @param int $protocol
+     * @param mixed $rawRequest http协议：Request对象， tcp/udp：{"header": {}, "server", "get": {}, "post":{}}
+     */
+    public function __construct(int &$protocol, mixed &$rawRequest){
+        $this->protocol = $protocol;
+        $this->rawRequest = $rawRequest;
+
+        if($this->method(true) == 'POST' && strpos($this->contentType(), 'json') !== false){
+            $this->getInputData();
+        }
+    }
+
+    /**
+     * 获取客户端fd
+     * @return int
+     */
+    public function fd(){
+        return $this->rawRequest->fd;
+    }
+
+    /**
+     * 获取请求方法
+     * @param bool $original
+     * @return string
+     */
+    public function method(bool $original = false) :string{
+        if($original){
+            return $this->rawRequest->getMethod();
+        }
+
+        if($this->method){
+            return $this->method;
+        }else if(isset($this->rawRequest->post['_method'])){
+            $this->method = $this->rawRequest->post['_method'];
+            unset($this->rawRequest->post['_method']);
+            return $this->method;
+        }
+        return $this->rawRequest->getMethod();
+    }
+    /**
+     * 获取header
+     * @param string $name
+     * @param mixed|null $default
+     * @return array|mixed|null
      */
     public function header(string $name = '', mixed $default = null)
     {
         if ('' === $name) {
-            return $this->request->header;
+            return $this->rawRequest->header ?? [];
         }
 
-        $name = str_replace('_', '-', strtolower($name));
-
-        return $this->request->header[$name] ?? $default;
-    }
-
-    public function server(string $name = '', mixed $default = null){
-        return $this->request->server[$name] ?? $default;
-    }
-
-    public function time(bool $flot = false){
-        if($flot) return $this->request->server['request_time_float'];
-        return $this->request->server['request_time'];
+        return $this->rawRequest->header[$name] ?? $default;
     }
 
     /**
-     * 当前请求 HTTP_CONTENT_TYPE
-     * @access public
+     * 获取请求类型
      * @return string
      */
     public function contentType(): string
     {
-        $contentType = $this->header('content-type');
+        if(null !== $this->contentType) return $this->contentType;
 
-        if ($contentType) {
-            if (strpos($contentType, ';')) {
-                [$type] = explode(';', $contentType);
-            } else {
-                $type = $contentType;
+        $type = '';
+        if(in_array($this->protocol, [Server::HTTP, Server::WEBSOCKET])){
+            $contentType = $this->rawRequest->header['content-type'] ?? '';
+            if ($contentType) {
+                if (strpos($contentType, ';')) {
+                    [$type] = explode(';', $contentType);
+                } else {
+                    $type = $contentType;
+                }
+                $type = trim($type);
+
+                // 如果是json请求
+                if(false !== strpos($type, 'json')){
+                    $rawContent = $this->rawRequest->rawContent();
+                    if($rawContent){
+                        $rawData = json_decode($rawContent, true);
+                        if($rawData){
+                            $this->rawRequest->post = $rawData;
+                        }else{
+                            Log::errorLog(SWOOLE_LOG_WARNING, 'json请求格式错误:'.$rawContent);
+                        }
+                    }
+                }
             }
-            return trim($type);
         }
 
-        return '';
+        $this->contentType = $type;
+        return $type;
     }
 
-    public function method(bool $original = false){
-        if($original) return $this->request->server['request_method'];
-        if($this->method) return $this->method;
-        $method = $this->post('_method');
-        $method = $method ?? $this->request->server['request_method'];
-        $this->method = strtolower($method);
-        unset($this->post['_method']);
-        return $this->method;
+    /**
+     * 获取server
+     * @param string $name
+     * @param mixed|null $default
+     * @return mixed|null
+     */
+    public function server(string $name = '', mixed $default = null){
+        if ('' === $name) {
+            return $this->rawRequest->server ?? [];
+        }
+
+        return $this->rawRequest->server[$name] ?? $default;
     }
 
-    public function get(string $key = '', mixed $default = null){
-        if($key == '') return $this->request->get ?? [];
-        return $this->request->get[$key] ?? $default;
+    /**
+     * 获取获取原始的 POST 包体
+     * @return void
+     */
+    private function getInputData(){
+        $rawContent= $this->rawRequest->getContent();
+        if($rawContent){
+            $rawContent = json_decode($rawContent, true);
+            if($rawContent) $this->rawRequest->post = $rawContent;
+        }
+    }
+    /**
+     * 获取get参数
+     * @param string $name
+     * @param mixed|null $default
+     * @return array|mixed|null
+     */
+    public function get(string $name = '', mixed $default = null){
+        if ('' === $name) {
+            return $this->rawRequest->get ?? [];
+        }
+
+        return $this->rawRequest->get[$name] ?? $default;
     }
 
-    public function post(string $key = '', mixed $default = null){
-        if($this->post == false) $this->post = array_merge($this->request->post ?? [], $this->request->files ?? []);
-        if($key == '') return $this->post ?? [];
-        return $this->post[$key] ?? $default;
+    /**
+     * 获取post参数
+     * @param string $name
+     * @param mixed|null $default
+     * @return array|mixed|null
+     */
+    public function post(string $name = '', mixed $default = null){
+        if ('' === $name) {
+            return $this->rawRequest->post ?? [];
+        }
+
+        return $this->rawRequest->post[$name] ?? $default;
     }
 
-    public function files(string $key = '', mixed $default = null){
-        if($key == '') return $this->request->files ?? [];
-        return $this->request->files[$key] ?? $default;
+    /**
+     * 获取上传文件信息
+     * @param string $name
+     * @param mixed|null $default
+     * @return array|mixed|null
+     */
+    public function files(string $name = '', mixed $default = null){
+        if ('' === $name) {
+            return $this->rawRequest->files ?? [];
+        }
+
+        return $this->rawRequest->files[$name] ?? $default;
     }
 
-    public function param(string $key = '', mixed $default = null){
-        $ret = null;
-        switch ($this->request->server['request_method'] ?? 'GET'){
+    /**
+     * 获取请求参数
+     * @param string $key
+     * @param mixed|null $default
+     * @return array|mixed|null
+     */
+    public function param(string $name = '', mixed $default = null){
+        switch ($this->method(true)){
             case "POST":
-                $ret = $this->post($key, $default);
+                $ret = $this->post($name, $default);
                 break;
             default:
-                $ret = $this->get($key, $default);
+                $ret = $this->get($name, $default);
                 break;
         }
         return $ret;
     }
 
-    public function setExt(string $key, mixed $val){
-        $this->ext[$key] = $val;
+    /**
+     * 设置额外参数
+     * @param mixed $name
+     * @param mixed $val
+     * @return void
+     */
+    public function setData(string $name, mixed $val){
+        $this->extData[$name] = $val;
     }
 
-    public function getExt(string $key, mixed $default = null){
-        return $this->ext[$key] ?? $default;
+    /**
+     * 获取额外参数
+     * @param mixed $name
+     * @param mixed $val
+     * @return void
+     */
+    public function getData(string $name = '', mixed $default = null){
+        if ('' === $name) {
+            return $this->extData ?? [];
+        }
+
+        return $this->extData[$name] ?? $default;
+    }
+
+    /**
+     * 获取原始Request对象
+     * @return void
+     */
+    public function rawRequest(){
+
+        return $this->rawRequest;
+    }
+
+    /**
+     * 获取请求事件戳
+     * @param bool $float
+     * @return int|mixed
+     */
+    public function time(bool $float = false){
+        if($float) return $this->rawRequest->server['request_time_float'] ?? microtime(true);
+        return $this->rawRequest->server['request_time'] ?? time();
+    }
+
+    /**
+     * 请求参数验证
+     * @param array $rules
+     * @param array $message
+     * @return Validate
+     */
+    public function validate(array $rules, array $message = []){
+        $params = $this->param();
+        return new Validate($params ?? [], $rules, $message);
+    }
+
+    /**
+     * 获取get请求参数并验证是否为空
+     * @param array $rules
+     * @param array $message
+     * @return void
+     */
+    public function getParam(string $name){
+        return $this->rawRequest->get[$name] ?? App::error()->setError($name.'不能为空', Error::BAD_REQUEST);
+    }
+
+    /**
+     * 验证自定义数据
+     * @return void
+     */
+    public function validateData(array $data, array $rules, array $message = []){
+        return new Validate($data, $rules, $message);
     }
 }

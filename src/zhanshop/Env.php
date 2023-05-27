@@ -124,4 +124,20 @@ class Env
     {
         return !is_null($this->get($name));
     }
+
+    /**
+     * 扩展检查
+     * @param array $extNames
+     * @return void
+     */
+    public function checkExtensions(array $extNames){
+        $loadedExtensions = get_loaded_extensions();
+        foreach ($extNames as $v){
+            if(!in_array($v, $loadedExtensions)){
+                Log::errorLog(SWOOLE_LOG_ERROR, $v.'扩展没有安装！');
+                return false;
+            }
+        }
+        return true;
+    }
 }

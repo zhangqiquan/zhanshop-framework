@@ -16,9 +16,8 @@ use zhanshop\console\command\ApiCreate;
 use zhanshop\console\command\ApiDoc;
 use zhanshop\console\command\Help;
 use zhanshop\console\command\Http;
-use zhanshop\console\command\Rpc;
-use zhanshop\console\command\UdpLog;
-use zhanshop\console\command\Wss;
+use zhanshop\console\command\Pmake;
+use zhanshop\console\command\Server;
 use zhanshop\console\Input;
 use zhanshop\console\Output;
 /**
@@ -44,8 +43,8 @@ class Console{
      */
     protected $commands = [
         'help'       => Help::class,
-        'server:http' => Http::class,
-        'server:admin' => Admin::class,
+        'server' => Server::class,
+        'pmake'  => Pmake::class,
         'api:create' => ApiCreate::class,
         'api:manager' => ApiDoc::class
     ];
@@ -61,8 +60,6 @@ class Console{
      * Http constructor.
      */
     public function __construct(){
-        set_error_handler([Output::class, 'render'], E_ALL);// 系统错误
-        set_exception_handler([Output::class, 'exception']); //用户自定义的异常处理函数
         $this->init(); // 初始化操作
     }
 
@@ -136,5 +133,7 @@ class Console{
             ini_set($k, $v);
         }
 
+        $isPhar = $_SERVER['SCRIPT_IS_PHAR'] ?? false;
+        if($isPhar) unset($this->commands['pmake']);
     }
 }

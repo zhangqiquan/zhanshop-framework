@@ -34,11 +34,10 @@ class Database{
      * @return Query
      */
     public function model(string $name){
-        $class = '\\app\\model\\'.ucfirst(Helper::camelize($name)); // 转驼峰命名
-        // 如果model存在返回model,否则z
-        $model = $this->getModel($class);
+        $parseStrModel = Helper::parseStrModel($name);
+        $model = $this->getModel($parseStrModel['class']);
         if(!$model){
-            $model = $this->table($name);
+            $model = $this->table($parseStrModel['table']);
         }
         return $model;
     }
@@ -48,16 +47,12 @@ class Database{
      * @param mixed $value
      */
     private function getModel(mixed $model){
-//        if (isset($this->models[$model])) {
-//            return $this->models[$model];
-//        }
-        $modelFile = App::rootPath().DIRECTORY_SEPARATOR.str_replace('\\', '/', $model).'.php';
-        if(file_exists($modelFile)){
+        try {
             $obj = new $model();
-            //$this->models[$model] = $obj;
             return $obj;
+        }catch (\Throwable $e){
+            return false;
         }
-        return false;
     }
 
     public function table(string $table, string $connection = null){

@@ -198,9 +198,15 @@ class Config
     // 自动注册
     private function autoloadRegister(){
         spl_autoload_register(function ($class) {
-            $class = App::rootPath() .DIRECTORY_SEPARATOR. str_replace('\\', '/', $class) . '.php';
-            if (file_exists($class)) {
-                require_once ($class);
+            $classFile = App::rootPath() .DIRECTORY_SEPARATOR. str_replace('\\', '/', $class) . '.php';
+            if (file_exists($classFile)) {
+                require_once ($classFile);
+            }else{
+                $classFile = App::rootPath() .DIRECTORY_SEPARATOR.'extend'.DIRECTORY_SEPARATOR.str_replace('\\', '/', $class) . '.php';
+
+                if (file_exists($classFile)) {
+                    require_once ($classFile);
+                }
             }
         });
     }
