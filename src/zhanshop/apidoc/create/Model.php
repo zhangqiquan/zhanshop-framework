@@ -33,7 +33,7 @@ class Model
     public static function create(string $name){
         $connection = App::config()->get('database.default');
         // 名字需要拆解最终转驼峰
-        $tables = explode('/', $name);
+        $tables = explode('.', $name);
         $table = $tables[0];
         $namespace = 'app\\model';
         $modelName = $tables[0];

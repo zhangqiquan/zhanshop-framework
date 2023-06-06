@@ -17,7 +17,7 @@ class Schema
     public static function create(string $name){
         $modelCreateCode = Model::create($name);// 先检查model
         $data = self::getCreateSchema($name);
-        $schemaPath = App::appPath().DIRECTORY_SEPARATOR.'schema'.DIRECTORY_SEPARATOR.$name.'.php';
+        $schemaPath = App::appPath().DIRECTORY_SEPARATOR.'schema'.DIRECTORY_SEPARATOR.str_replace('.', DIRECTORY_SEPARATOR, $name).'.php';
         Helper::mkdirs(dirname($schemaPath)); // 创建目录 如果这个文件不存在的话
         file_put_contents($schemaPath, '<?php'.PHP_EOL.'return '.var_export($data, true).';');
         return $data;
@@ -51,8 +51,7 @@ class Schema
      * @return void
      */
     public static function getOldSchema($table){
-        $tables = explode('/', $table);
-        $schemaFile = App::appPath().DIRECTORY_SEPARATOR.'schema'.DIRECTORY_SEPARATOR.$tables[0].(isset($tables[1]) ? DIRECTORY_SEPARATOR.$tables[1] : '').'.php';
+        $schemaFile = App::appPath().DIRECTORY_SEPARATOR.'schema'.DIRECTORY_SEPARATOR.str_replace('.', DIRECTORY_SEPARATOR, $table).'.php';
         $data = [];
         if(file_exists($schemaFile)){
             $data = (array) include $schemaFile;
@@ -61,7 +60,7 @@ class Schema
     }
 
     public static function getNewSchema($table){
-        $tables = explode('/', $table);
+        $tables = explode('.', $table);
         $modelName = $table;
         $table = $tables[0];
         if(isset($tables[1])) $table = $tables[1]; // 最终的表名

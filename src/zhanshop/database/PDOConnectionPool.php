@@ -115,7 +115,7 @@ class PDOConnectionPool
                     $result = $this->_query($pdo, $sql, $bind);
                     $this->recoveryPDO($pdo);
                 }else{
-                    throw new \Exception($e->getMessage().',sql:'.$sql.','.json_encode($bind), (int)$e->getCode());
+                    throw new \Exception($e->getMessage().',sql:'.$sql.','.json_encode($bind, JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE), (int)$e->getCode());
                 }
                 //throw new \Exception($e->getMessage().',sql:'.$sql.','.json_encode($bind));
             }
@@ -176,7 +176,7 @@ class PDOConnectionPool
                     $result = $this->_execute($pdo, $sql, $bind, $lastId);
                     $this->recoveryPDO($pdo);
                 }else{
-                    throw new \Exception($e->getMessage().',sql:'.$sql.','.json_encode($bind));
+                    throw new \Exception($e->getMessage().',sql:'.$sql.','.json_encode($bind, JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE));
                 }
             }
         }

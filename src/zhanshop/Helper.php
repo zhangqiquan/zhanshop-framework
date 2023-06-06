@@ -150,7 +150,7 @@ declare (strict_types=1);\n\n";
      * @return void
      */
     public static function parseStrModel(string $name){
-        $tables =explode('/', $name);
+        $tables = explode('.', $name);
         $table = $tables[0];
         $modelDir = $tables[0];
         if(isset($tables[1])){
@@ -174,5 +174,73 @@ declare (strict_types=1);\n\n";
     public static function getSchemaPath(string $name){
         $parseStrModel = self::parseStrModel($name);
         return App::appPath().DIRECTORY_SEPARATOR.'schema'.DIRECTORY_SEPARATOR.($parseStrModel['dir'] ? $parseStrModel['dir'].DIRECTORY_SEPARATOR : '').$parseStrModel['table'].'.php';
+    }
+
+    /**
+     * 获取指定日期的年月周
+     * @param int|string $date
+     * @return void
+     */
+    public static function getWeek(int|string $date){
+        if(is_string($date)){
+            $date = strtotime($date);
+        }
+
+        $weekW = date("w", $date);
+        $weekNum = $weekW == 1 ? -0:-1;
+
+        $year = date("Y", $date);
+        $month = date("m", $date);
+        $yearWeek = date("W", $date);
+        $day = date('d', $date);
+        $monthWeek = ceil($day / 7);
+        if($month == 1 && $yearWeek > 50){
+            $year--;
+            $month = 12;
+            $yearLastMonthWeek1 = date("W", strtotime($year.'-'.$month));
+            $monthWeek = $yearWeek - $yearLastMonthWeek1;
+        }
+
+        print_r([
+            'date' => date('Y-m-d', $date),
+            'year' => $year, // 当前年份
+            'month' => $month, // 当前月份
+            'year_week' => $yearWeek, // 当前年内周数
+            'month_week' => $monthWeek // 当前月内周数
+        ]);
+
+        return [
+            'date' => date('Y-m-d', $date),
+            'year' => $year, // 当前年份
+            'month' => $month, // 当前月份
+            'year_week' => $yearWeek, // 当前年内周数
+            'month_week' => $monthWeek // 当前月内周数
+        ];
+    }
+
+    /**
+     * 获取周一的日期
+     * @param int|string $date
+     * @return string
+     */
+    public static function getWeek1(int|string $date){
+
+        if(is_string($date)){
+            $date = strtotime($date);
+        }
+
+        $weekW = date("w", $date);
+        $weekNum = $weekW == 1 ? -0:-1;
+        return date("Y-m-d", strtotime(date("Y-m-d", $date).$weekNum." week Monday"));
+    }
+
+    /**
+     * 获取周日的日期
+     * @param int|string $date
+     * @return string
+     */
+    public static function getWeek7(int|string $date){
+        $date = self::getWeek1($date);
+        return date('Y-m-d', strtotime('+6 day', strtotime($date)));
     }
 }

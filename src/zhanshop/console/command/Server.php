@@ -338,7 +338,7 @@ class Server extends Command
             $process->set(['enable_coroutine' => true]);
             App::task($server);
             foreach($this->config['crontab'] as $v){
-                new $v($server); // 执行定时任务
+                (new $v($server))->configure(); // 根据配置执行定时任务
             }
             //echo PHP_EOL.'['.date('Y-m-d H:i:s').']' .' ###[info]### 定时任务启动, 进程'.getmypid().PHP_EOL.PHP_EOL;
         }, false, 2, true);

@@ -14,7 +14,7 @@ class Curl
 {
     protected $config = [
         'cookie' => '',
-        'timeout' => 5000,
+        'timeout' => 60000,
         'header' => [],
         'upload' => [], // 上传对象
         'useragent' => 'Mozilla/5.0 (Windows NT 11.0; Win64; x64; rv:96.0) Gecko/20100101 Firefox/96.0',
@@ -145,7 +145,7 @@ class Curl
      * @param array $data
      * @return bool|string
      */
-    public function request(string $url, string $method = 'GET', string|array $data = [], $contentType = '', bool $report = false){
+    public function request(string $url, string $method = 'GET', string|array $data = [], $contentType = '', bool $report = false, bool $again = true){
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method); //设置请求方式
@@ -182,9 +182,16 @@ class Curl
         $output = curl_exec($ch);
         $curlInfo = curl_getinfo($ch);
         $httpCode = $curlInfo['http_code'];
+
+        App::log()->push($url.', 请求状态:'.$httpCode.'连接耗时:'.$curlInfo['connect_time'].'，请求耗时:'.$curlInfo['total_time']);
         // 如果发生错误打印错误报告
-        if($httpCode != 200) App::error()->setError($url.'请求'.$httpCode.'错误'.',请求:'. "".',响应:'.$output, 500);
-        //curl_close($ch);
+        if($httpCode != 200){
+            if($again){
+                return self::request($url,  $method, $data, $contentType, $report, false); // 再次尝试
+            }
+            App::error()->setError($url.'请求'.$httpCode.'错误'.',请求:'. "".',响应:'.$output, 500);
+        }
+
         $outData = [
             'code' => $httpCode,
             'body' => $output,
@@ -194,7 +201,6 @@ class Curl
         $this->config['header'] = [];
         $this->config['upload'] = [];
         if($report) $outData['report'] = $curlInfo;
-
         return $outData;
     }
 }

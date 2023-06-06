@@ -15,15 +15,16 @@ use zhanshop\CronTab;
 
 class WatchLogCronTab extends CronTab
 {
-
-    protected int $interval = 3600000; // 运行间隔时间1小时
-    protected int $maxLogFiles = 30; // 最大保存日志数
+    public function configure()
+    {
+        $this->setPerSecondRule(3600000); // 设置每小时执行一次
+    }
 
     /**
      * 检查server日志文件个数是否超过上限如果上限删除部分文件
      * @return void
      */
-    public function serverLog(){
+    protected function serverLog(){
         $servLogs = glob(App::runtimePath().DIRECTORY_SEPARATOR.'server'.DIRECTORY_SEPARATOR.$this->serverName.DIRECTORY_SEPARATOR. 'server*');
         $count = count($servLogs);
         if ($count > $this->maxLogFiles) {
@@ -40,7 +41,7 @@ class WatchLogCronTab extends CronTab
      * 检查框架日志文件个数是否超过上限如果上限删除部分文件
      * @return void
      */
-    public function frameworkLog(){
+    protected function frameworkLog(){
         $frameworkLogs = glob(App::runtimePath().DIRECTORY_SEPARATOR.'log'.DIRECTORY_SEPARATOR.$this->serverName.DIRECTORY_SEPARATOR. '*.log');
         $count = count($frameworkLogs);
         if ($count > $this->maxLogFiles) {
@@ -53,7 +54,8 @@ class WatchLogCronTab extends CronTab
         }
     }
 
-    public function handle(mixed &$server)
+
+    public function execute()
     {
         $this->maxLogFiles = App::config()->get('log.max_files', 30);
         $this->serverLog();

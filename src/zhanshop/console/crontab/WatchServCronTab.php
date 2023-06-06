@@ -16,10 +16,13 @@ use zhanshop\CronTab;
 
 class WatchServCronTab extends CronTab
 {
-    protected int $interval = 2000; // 运行间隔时间
+    public function configure()
+    {
+        $this->setPerSecondRule(2000);
+    }
 
-    public function handle(mixed &$server){
-        App::task()->callback([WatchServTask::class, 'check']); // 调用
-        //$server->task([WatchServTask::class, 'check']); // 检查是否需要重启
+    public function execute()
+    {
+        App::task()->callback([WatchServTask::class, 'check']);
     }
 }

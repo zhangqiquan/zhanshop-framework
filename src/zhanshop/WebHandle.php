@@ -28,12 +28,12 @@ class WebHandle
      * 构造函数
      * @param array $servNames
      */
-    public function __construct(mixed $servEvent)
+    public function __construct(mixed $servEvent = null)
     {
         $this->servEvent = $servEvent;
 
         $this->loadRoute(); // 装载路由配置
-        App::task($this->servEvent->server); // 载入task类
+        App::task($this->servEvent->server ?? null); // 载入task类
         CacheManager::init(); // 缓存管理初始化
         DbManager::init(); // 数据库管理初始化
         App::log($this->servEvent->setting['daemonize'] ?? false)->execute(); // 日志通道运行起来
@@ -45,7 +45,7 @@ class WebHandle
      */
     protected function loadRoute(){
         $middlewares = App::config()->get('middleware', []);
-        foreach($this->servEvent->servNames as $v){
+        foreach($this->servEvent->servNames ?? [] as $v){
             $routePath = App::routePath().DIRECTORY_SEPARATOR.$v;
             if(!file_exists($routePath)) continue;
             $files = scandir($routePath);

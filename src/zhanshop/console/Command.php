@@ -10,6 +10,8 @@ declare (strict_types=1);
 
 namespace zhanshop\console;
 
+use Swoole\Coroutine;
+
 abstract class Command
 {
     /**
@@ -73,4 +75,19 @@ abstract class Command
     public function getDescription(){
         return $this->description ?? '';
     }
+
+    /**
+     * 以协程方式运行
+     * @param $fun
+     * @return void
+     */
+    public function coroutine($fun){
+        \Swoole\Coroutine\run(function() use ($fun){
+            $fun();
+
+            echo "协程函数执行完毕";
+            \Swoole\Process::kill(getmypid());
+        });
+    }
+
 }

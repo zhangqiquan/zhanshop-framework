@@ -97,7 +97,7 @@ class Request
      */
     public function method(bool $original = false) :string{
         if($original){
-            return $this->rawRequest->getMethod();
+            return $this->rawRequest ? $this->rawRequest->getMethod() : '';
         }
 
         if($this->method){

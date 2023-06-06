@@ -18,7 +18,7 @@ class Mysql
         $data = $query->getOptions("data", true);
         if($data){
             $field = '`'.implode('`, `', array_keys($data[0])).'`';
-            $sql = 'INSERT INTO `'.$query->getOptions('table').'` ('.$field.') VALUES';
+            $sql = 'INSERT INTO '.$query->getOptions('table').' ('.$field.') VALUES';
 
             foreach ($data as $k => $v){
                 if($k != 0){
@@ -45,7 +45,7 @@ class Mysql
         $where = $query->getOptions("where", true);
         $whereStr = $this->parseWhere($query, $where);
         if($whereStr){
-            $sql = 'DELETE FROM `'.$query->getOptions('table').'` '.$whereStr;
+            $sql = 'DELETE FROM '.$query->getOptions('table').$whereStr;
             return $sql;
         }
         throw new \PDOException("未设定需要delete的条件", 2001);
@@ -71,7 +71,7 @@ class Mysql
                     $num++;
                 }
             }
-            $sql = 'UPDATE `'.$query->getOptions('table').'` '.$setVal.' '.$whereStr;
+            $sql = 'UPDATE '.$query->getOptions('table').' '.$setVal.' '.$whereStr;
             return $sql;
         }
         throw new \PDOException("未设定需要update的条件", 2002);
@@ -81,7 +81,7 @@ class Mysql
         $where = $query->getOptions("where", true);
         $whereStr = $this->parseWhere($query, $where);
         $field = $query->getOptions('field', true);
-        $sql = 'SELECT COUNT('.($field ?? '*').') AS __count FROM `'.$query->getOptions('table').'`'.$whereStr;
+        $sql = 'SELECT COUNT('.($field ?? '*').') AS __count FROM '.$query->getOptions('table').$whereStr;
         return $sql;
     }
 
@@ -90,7 +90,7 @@ class Mysql
         $where = $query->getOptions("where", true);
         $whereStr = $this->parseWhere($query, $where);
         $field = $query->getOptions('field', true);
-        $sql = 'SELECT AVG('.($field ?? '*').') AS __avg FROM `'.$query->getOptions('table').'`'.$whereStr;
+        $sql = 'SELECT AVG('.($field ?? '*').') AS __avg FROM '.$query->getOptions('table').$whereStr;
         return $sql;
     }
 
@@ -98,7 +98,7 @@ class Mysql
         $where = $query->getOptions("where", true);
         $whereStr = $this->parseWhere($query, $where);
         $field = $query->getOptions('field', true);
-        $sql = 'SELECT MIN('.($field ?? '*').') AS __min FROM `'.$query->getOptions('table').'`'.$whereStr;
+        $sql = 'SELECT MIN('.($field ?? '*').') AS __min FROM '.$query->getOptions('table').$whereStr;
         return $sql;
     }
 
@@ -106,7 +106,7 @@ class Mysql
         $where = $query->getOptions("where", true);
         $whereStr = $this->parseWhere($query, $where);
         $field = $query->getOptions('field', true);
-        $sql = 'SELECT MAX('.($field ?? '*').') AS __max FROM `'.$query->getOptions('table').'`'.$whereStr;
+        $sql = 'SELECT MAX('.($field ?? '*').') AS __max FROM '.$query->getOptions('table').$whereStr;
         return $sql;
     }
 
@@ -114,7 +114,7 @@ class Mysql
         $where = $query->getOptions("where", true);
         $whereStr = $this->parseWhere($query, $where);
         $field = $query->getOptions('field', true);
-        $sql = 'SELECT SUM('.($field ?? '*').') AS __sum FROM `'.$query->getOptions('table').'`'.$whereStr;
+        $sql = 'SELECT SUM('.($field ?? '*').') AS __sum FROM '.$query->getOptions('table').$whereStr;
         return $sql;
     }
 
@@ -128,7 +128,7 @@ class Mysql
         $distinct = $query->getOptions('distinct', true);
         $field = $query->getOptions('field', true);
 
-        $sql = 'SELECT'.($distinct ? ' DISTINCT' : '').' '.($field ?? '*').' FROM `'.$query->getOptions('table').'`'.$alias.$joinStr.$whereStr.$groupStr.$havingStr.$orderStr.' LIMIT 1';
+        $sql = 'SELECT'.($distinct ? ' DISTINCT' : '').' '.($field ?? '*').' FROM '.$query->getOptions('table').$alias.$joinStr.$whereStr.$groupStr.$havingStr.$orderStr.' LIMIT 1';
         return $sql;
     }
 
