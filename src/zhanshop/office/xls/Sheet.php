@@ -122,54 +122,11 @@ class Sheet
                 $this->worksheet->setCellValueExplicit($sKey, $sItem, $pDataType);
             }
 
-            //$this->worksheet->freezePane('A2'); // 锁定头部
-
             /* 设置宽度 */
             foreach ($this->data[0] as $swKey => $options) {
                 $swKey = $this->columnKey[$swKey];
                 $this->worksheet->getColumnDimension($swKey)->setWidth($options['width']);
             }
-
-
-            $styleArray = [
-                'alignment' => [
-                    'horizontal' => Alignment::HORIZONTAL_CENTER,
-                    'vertical'   => Alignment::VERTICAL_CENTER,
-                ],
-            ];
-            foreach ($this->data as $k => $v) {
-                foreach ($v as $sKey => $options) {
-                    $sKey = $this->columnKey[$sKey].($k + 1);
-                    /* 设置背景色 */
-                    $this->worksheet->getStyle($sKey)
-                        ->getFill()->setFillType(Fill::FILL_SOLID)
-                        ->getStartColor()->setARGB($options['bgColor']);
-
-                    if($options['isCenter']){
-                        /* 设置居中 */
-                        $this->worksheet->getStyle($sKey)->applyFromArray($styleArray);
-                    }
-
-                    /* 设置加粗 */
-                    $this->worksheet->getStyle($sKey)->getFont()->setBold($options['isBold'] ?? false);
-
-                }
-            }
-
-            /* 设置单元格边框 */
-            $border    = [
-                'borders' => [
-                    'allBorders' => [
-                        'borderStyle' => Border::BORDER_THIN, // 设置border样式
-                        'color'       => ['argb' => 'FF000000'], // 设置border颜色
-                    ],
-                ],
-            ];
-
-            // 字体颜色加近来
-
-            $setBorder = 'A1:' . $this->worksheet->getHighestColumn() . $this->worksheet->getHighestRow();
-            $this->worksheet->getStyle($setBorder)->applyFromArray($border);
 
         }
     }
