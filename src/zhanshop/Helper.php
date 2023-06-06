@@ -201,14 +201,6 @@ declare (strict_types=1);\n\n";
             $monthWeek = $yearWeek - $yearLastMonthWeek1;
         }
 
-        print_r([
-            'date' => date('Y-m-d', $date),
-            'year' => $year, // 当前年份
-            'month' => $month, // 当前月份
-            'year_week' => $yearWeek, // 当前年内周数
-            'month_week' => $monthWeek // 当前月内周数
-        ]);
-
         return [
             'date' => date('Y-m-d', $date),
             'year' => $year, // 当前年份

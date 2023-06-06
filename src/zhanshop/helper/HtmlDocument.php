@@ -102,8 +102,6 @@ class HtmlDocument
             $this->outerHTML,
             $outs);
 
-        print_r($outs);die;
-
         if($outs){
             if(isset($outs[2])){
                 $outs[0] = '<'.$outs[2].' '.$outs[0];
@@ -124,8 +122,6 @@ class HtmlDocument
         preg_match($pattern,
             $this->outerHTML,
             $outs);
-        echo "55555555555555555";
-        print_r($outs);die;
     }
 
     public function title(){
