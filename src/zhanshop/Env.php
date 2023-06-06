@@ -39,8 +39,10 @@ class Env
      */
     public function load(string $file): void
     {
-        $env = parse_ini_file($file, true) ?: [];
-        $this->set($env);
+        if(file_exists($file)){
+            $env = parse_ini_file($file, true) ?: [];
+            $this->set($env);
+        }
     }
 
     /**
