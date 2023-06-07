@@ -15,6 +15,8 @@ use zhanshop\CronTab;
 
 class WatchLogCronTab extends CronTab
 {
+    protected $maxLogFiles = 30;
+
     public function configure()
     {
         $this->setPerSecondRule(3600000); // 设置每小时执行一次
@@ -25,7 +27,7 @@ class WatchLogCronTab extends CronTab
      * @return void
      */
     protected function serverLog(){
-        $servLogs = glob(App::runtimePath().DIRECTORY_SEPARATOR.'server'.DIRECTORY_SEPARATOR.$this->serverName.DIRECTORY_SEPARATOR. 'server*');
+        $servLogs = glob(App::runtimePath().DIRECTORY_SEPARATOR.'server'.DIRECTORY_SEPARATOR. 'server*');
         $count = count($servLogs);
         if ($count > $this->maxLogFiles) {
             foreach($servLogs as $v){
@@ -42,7 +44,7 @@ class WatchLogCronTab extends CronTab
      * @return void
      */
     protected function frameworkLog(){
-        $frameworkLogs = glob(App::runtimePath().DIRECTORY_SEPARATOR.'log'.DIRECTORY_SEPARATOR.$this->serverName.DIRECTORY_SEPARATOR. '*.log');
+        $frameworkLogs = glob(App::runtimePath().DIRECTORY_SEPARATOR.'log'.DIRECTORY_SEPARATOR. '*.log');
         $count = count($frameworkLogs);
         if ($count > $this->maxLogFiles) {
             foreach($frameworkLogs as $v){
