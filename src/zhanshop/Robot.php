@@ -17,12 +17,23 @@ class Robot
     protected $dirver;
 
     public function __construct(){
-        $robot = App::config()->get("sns.robot");
-        if(isset($robot['type']) && $robot['type'] && isset($robot['url']) && $robot['url']){
-            $dirver = $robot['type'];
-            if(strpos($robot['type'], '\\') === false) $dirver = '\\zhanshop\\robot\\'.ucfirst($robot['type']);
-            $this->dirver = new $dirver($robot['url']);
+        $type = App::env()->get('PUSH_REBOT_TYPE');
+        $url = App::env()->get('PUSH_REBOT_URL');
+        if($url && $type){
+            if(strpos($type, '\\') === false) $dirver = '\\zhanshop\\robot\\'.ucfirst($type);
+            $this->dirver = new $dirver($url);
+        }else{
+            $this->dirver = $this;
         }
+    }
+
+    /**
+     * 发送文本消息
+     * @param string $msg
+     * @return void
+     */
+    public function sendText(string $msg){
+        return 123;
     }
 
     /**
@@ -30,7 +41,8 @@ class Robot
      * @param string $msg
      * @return array|bool|string
      */
-    public function sendMsg(string $msg){
-        if($this->dirver) $this->dirver->sendText($msg);
+    public function send(string $msg){
+        $msg = '['.date('Y-m-d H:i:s').'] '.$msg;
+        $ret = $this->dirver->sendText($msg);
     }
 }

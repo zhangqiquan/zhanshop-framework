@@ -90,7 +90,9 @@ class ServEvent
      * @return void
      */
     public function onStart(\Swoole\Server $server) :void{
-        Log::errorLog(SWOOLE_LOG_NOTICE, "启动进程数".($this->config['settings']['worker_num'] ?? swoole_cpu_num()).', 线程数'.($this->config['settings']['reactor_num'] ?? swoole_cpu_num())*($this->config['settings']['worker_num'] ?? swoole_cpu_num()).', 进程'.getmypid().', swoole'.swoole_version().', 环境'.($_SERVER['APP_ENV'] ?? 'dev'));
+        $msg = "启动进程数".($this->config['settings']['worker_num'] ?? swoole_cpu_num()).', 线程数'.($this->config['settings']['reactor_num'] ?? swoole_cpu_num())*($this->config['settings']['worker_num'] ?? swoole_cpu_num()).', 进程'.getmypid().', swoole'.swoole_version().', 环境'.($_SERVER['APP_ENV'] ?? 'dev');
+        Log::errorLog(SWOOLE_LOG_NOTICE, $msg);
+        App::make(Robot::class)->send($msg);
     }
 
     /**
@@ -100,8 +102,10 @@ class ServEvent
      * @return void
      */
     public function onWorkerStart(\Swoole\Server $server, int $workerId) :void{
-        Log::errorLog(SWOOLE_LOG_DEBUG, $workerId."号工作进程启动, 进程".getmypid());
-
+        $msg = $workerId."号工作进程启动, 进程".getmypid();
+        Log::errorLog(SWOOLE_LOG_DEBUG, $msg);
+        App::make(Robot::class)->send($msg);
+        
         App::cleanAll(); // 清空销毁APP容器的所有对象
 
         App::webhandle($this); // webServer处理
@@ -142,7 +146,9 @@ class ServEvent
         // bt 紧接着输入 bt 并回车，就可以看到出现问题的调用栈
         // f 1 || f 0 可以通过键入 f 数字 来查看指定的调用栈帧
         // 将以上信息都贴在 issue 中
-        Log::errorLog(SWOOLE_LOG_ERROR, '工作进程'.$worker_id.',所属进程'.$worker_pid.'退出码'.$exit_code.'退出信号');
+        $msg = '工作进程'.$worker_id.',所属进程'.$worker_pid.'退出码'.$exit_code.'退出信号';
+        Log::errorLog(SWOOLE_LOG_ERROR, $msg);
+        App::make(Robot::class)->send($msg);
     }
 
     /**
@@ -285,8 +291,9 @@ class ServEvent
     public function onShutdown(\Swoole\Server $server) :void{
         $pidFile = $server->setting['pid_file'] ?? '';
         if(file_exists($pidFile)) @unlink($pidFile);
-
-        Log::errorLog(SWOOLE_LOG_NOTICE,'server触发了正常停止');
+        $msg = 'server触发了正常停止';
+        Log::errorLog(SWOOLE_LOG_NOTICE, $msg);
+        App::make(Robot::class)->send($msg);
     }
 
     /**

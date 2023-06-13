@@ -90,7 +90,16 @@ class Console{
      */
     public function runWithRequest(Input $input){
         $instance = $this->getApp($input->getCommand());
-        $instance->execute($input, $this->output); // 执行控制台app
+        $instance->configure();
+        $instance->initialize(); // 初始化
+        if($instance->getIsCoroutine()){
+            \Swoole\Coroutine\run(function() use (&$instance, &$input){
+                $instance->execute($input, $this->output); // 执行控制台app
+            });
+        }else{
+            $instance->execute($input, $this->output); // 执行控制台app
+        }
+
     }
 
     /**

@@ -11,6 +11,8 @@ declare (strict_types=1);
 namespace zhanshop\console;
 
 use Swoole\Coroutine;
+use zhanshop\cache\CacheManager;
+use zhanshop\database\DbManager;
 
 abstract class Command
 {
@@ -25,6 +27,12 @@ abstract class Command
      * @var
      */
     protected $description;
+
+    /**
+     * 是否以协程方式运行
+     * @var bool
+     */
+    protected $isCoroutine = false;
     /**
      * 配置信息
      * @return mixed
@@ -62,6 +70,46 @@ abstract class Command
     }
 
     /**
+     * 是否以协程方式运行
+     * @param bool $isCoroutine
+     * @return void
+     */
+    protected function setIsCoroutine(bool $isCoroutine){
+        $this->isCoroutine = $isCoroutine;
+        return $this;
+    }
+
+    /**
+     * 是否有使用到数据库
+     * @param bool $use
+     * @return $this
+     */
+    protected function useDatabase(){
+        $this->isCoroutine = true;
+        DbManager::init();
+        return $this;
+    }
+
+    /**
+     * 是否有使用到缓存
+     * @param bool $use
+     * @return $this
+     */
+    protected function useCache(){
+        $this->isCoroutine = true;
+        CacheManager::init();
+        return $this;
+    }
+
+    /**
+     * 获取当前命令程序是否以协程方式运行
+     * @return bool
+     */
+    public function getIsCoroutine(){
+        return $this->isCoroutine;
+    }
+
+    /**
      * 获取标题
      */
     public function getTitle(){
@@ -77,17 +125,10 @@ abstract class Command
     }
 
     /**
-     * 以协程方式运行
-     * @param $fun
+     * 初始化
      * @return void
      */
-    public function coroutine($fun){
-        \Swoole\Coroutine\run(function() use ($fun){
-            $fun();
+    public function initialize(){
 
-            echo "协程函数执行完毕";
-            \Swoole\Process::kill(getmypid());
-        });
     }
-
 }
