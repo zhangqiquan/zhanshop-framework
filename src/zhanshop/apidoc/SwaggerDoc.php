@@ -16,8 +16,50 @@ class SwaggerDoc
     protected function db(){
         $database = 'swagger';
         $path = App::runtimePath().DIRECTORY_SEPARATOR.'doc'.DIRECTORY_SEPARATOR.$database.'.db';
-        if(!file_exists($path)) App::error()->setError($database.'库文件不存在');
+        if(!file_exists($path)){
+            $this->createDb($path);
+            App::error()->setError($database.'库文件不存在');
+        }
         return new Sqlite($path);
+    }
+
+    protected function createDb($path){
+        if(!file_exists(App::runtimePath().DIRECTORY_SEPARATOR.'doc')){
+            mkdir(App::runtimePath().DIRECTORY_SEPARATOR.'doc');
+        }
+
+        $sqlLite = new Sqlite($path);
+        $sqlLite->execute('CREATE TABLE "apidocs" (
+  "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  "type" TEXT DEFAULT http,
+  "version" TEXT,
+  "uri" TEXT,
+  "doc" INTEGER DEFAULT 0,
+  "method" TEXT,
+  "detail" TEXT,
+  "success" TEXT,
+  CONSTRAINT "doc" UNIQUE ("type", "version", "uri", "doc", "method")
+);');
+        $sqlLite->execute('CREATE TABLE "apimenu" (
+  "id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
+  "title" TEXT,
+  "parent_id" INTEGER DEFAULT 0,
+  "target" TEXT,
+  "icon" TEXT,
+  "sortrank" integer DEFAULT 50
+);');
+        $sqlLite->execute('CREATE TABLE "doclist" (
+  "id" text NOT NULL,
+  "title" TEXT,
+  "version" TEXT,
+  "url" TEXT,
+  "config" TEXT,
+  "server_url" TEXT,
+  "create_time" DATE,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "url" UNIQUE ("url")
+);');
+
     }
 
     /**

@@ -11,15 +11,15 @@ declare (strict_types=1);
 namespace zhanshop\console\crontab;
 
 use zhanshop\App;
-use zhanshop\CronTab;
+use zhanshop\Crontab;
 
-class WatchLogCronTab extends CronTab
+class WatchLogCronTab extends Crontab
 {
     protected $maxLogFiles = 30;
 
     public function configure()
     {
-        $this->setPerSecondRule(3600000); // 设置每小时执行一次
+        $this->setTitle("日志检查和清理")->interval(3600); // 设置每小时执行一次
     }
 
     /**

@@ -12,13 +12,13 @@ namespace zhanshop\console\crontab;
 
 use zhanshop\App;
 use zhanshop\console\task\WatchServTask;
-use zhanshop\CronTab;
+use zhanshop\Crontab;
 
-class WatchServCronTab extends CronTab
+class WatchServCronTab extends Crontab
 {
     public function configure()
     {
-        $this->setPerSecondRule(2000);
+        $this->setTitle("定时检查代码并热更新")->interval(3);
     }
 
     public function execute()

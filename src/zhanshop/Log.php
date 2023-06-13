@@ -27,7 +27,7 @@ class Log
 
     protected static $daemonize = false;
 
-    public function __construct($daemonize){
+    public function __construct($daemonize = false){
         $type = App::config()->get('log.type');
         $this->type = $type;
         if(strpos($type, '\\') === false) $type = '\\zhanshop\\log\\driver\\'.ucfirst($type);

@@ -120,9 +120,9 @@ class WebHandle
 
             $data = $dispatch->run($appName, $request, $servResponse);
 
+            $servResponse->setData($data);
             // 执行后置中间件
             $this->afterMiddleware($request, $servResponse);
-            $servResponse->setData($data);
         }catch (\Throwable $e){
             $servResponse->setStatus((int)$e->getCode());
             $data = $this->getErrorData($appName, $e);

@@ -183,7 +183,6 @@ class Curl
         $curlInfo = curl_getinfo($ch);
         $httpCode = $curlInfo['http_code'];
 
-        App::log()->push($url.', 请求状态:'.$httpCode.'连接耗时:'.$curlInfo['connect_time'].'，请求耗时:'.$curlInfo['total_time']);
         // 如果发生错误打印错误报告
         if($httpCode != 200){
             if($again){

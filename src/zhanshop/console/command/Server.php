@@ -19,6 +19,7 @@ use zhanshop\console\ServerStatus;
 use zhanshop\Log;
 use zhanshop\ServEvent;
 use zhanshop\console\crontab\WatchServCronTab;
+use zhanshop\Timer;
 use zhanshop\WebHandle;
 
 class Server extends Command
@@ -320,7 +321,7 @@ class Server extends Command
         $server = null;
         foreach($this->config['servers'] as $k => $v){
             if($k == 0){
-                if($v['serv_type'] != Server::HTTP) App::error()->setError('主server的serv_type必须为HTTP');
+                if(!in_array($v['serv_type'], [Server::HTTP, Server::WEBSOCKET])) App::error()->setError('主server的serv_type必须为HTTP | ');
                 $server = $this->createServer($v);
                 //App::make(ServEvent::class)->setServer($server);
                 $server->set(array_merge($this->config['settings'], $v['settings']));
@@ -338,7 +339,7 @@ class Server extends Command
             $process->set(['enable_coroutine' => true]);
             App::task($server);
             foreach($this->config['crontab'] as $v){
-                (new $v($server))->configure(); // 根据配置执行定时任务
+                App::make(Timer::class)->register(new $v($server)); // 根据配置执行定时任务
             }
             //echo PHP_EOL.'['.date('Y-m-d H:i:s').']' .' ###[info]### 定时任务启动, 进程'.getmypid().PHP_EOL.PHP_EOL;
         }, false, 2, true);
