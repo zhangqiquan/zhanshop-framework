@@ -60,19 +60,14 @@ class Env
 
         $name = strtoupper(str_replace('.', '_', $name));
 
-        if (isset($this->data[$name])) {
-            return $this->data[$name];
-        }
-
         return $this->getEnv($name, $default);
     }
 
     protected function getEnv(string $name, $default = null)
     {
         $result = getenv('PHP_' . $name);
-
         if (false === $result) {
-            return $default;
+            $result = $this->data[$name] ?? $default;
         }
 
         if ('false' === $result) {
@@ -80,11 +75,7 @@ class Env
         } elseif ('true' === $result) {
             $result = true;
         }
-
-        if (!isset($this->data[$name])) {
-            $this->data[$name] = $result;
-        }
-
+        
         return $result;
     }
 

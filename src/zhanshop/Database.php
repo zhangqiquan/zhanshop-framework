@@ -37,7 +37,7 @@ class Database{
         $parseStrModel = Helper::parseStrModel($name);
         $model = $this->getModel($parseStrModel['class']);
         if(!$model){
-            $model = $this->table($parseStrModel['table']);
+            $model = $this->table($name);
         }
         return $model;
     }

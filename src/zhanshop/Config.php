@@ -201,6 +201,7 @@ class Config
             $classFile = App::rootPath() .DIRECTORY_SEPARATOR. str_replace('\\', '/', $class) . '.php';
             if (file_exists($classFile)) {
                 require_once ($classFile);
+                return true;
             }
         });
     }

@@ -15,7 +15,7 @@ class Schema
      * @return void
      */
     public static function create(string $name){
-        $modelCreateCode = Model::create($name);// 先检查model
+        //$modelCreateCode = Model::create($name);// 先检查model
         $data = self::getCreateSchema($name);
         $schemaPath = App::appPath().DIRECTORY_SEPARATOR.'schema'.DIRECTORY_SEPARATOR.str_replace('.', DIRECTORY_SEPARATOR, $name).'.php';
         Helper::mkdirs(dirname($schemaPath)); // 创建目录 如果这个文件不存在的话
@@ -60,11 +60,11 @@ class Schema
     }
 
     public static function getNewSchema($table){
-        $tables = explode('.', $table);
-        $modelName = $table;
-        $table = $tables[0];
-        if(isset($tables[1])) $table = $tables[1]; // 最终的表名
-        $data = App::database()->model($modelName)->query('SHOW FULL COLUMNS FROM '.$table);
+        //$tables = explode('.', $table);
+//        $modelName = $table;
+//        $table = $tables[0];
+//        if(isset($tables[1])) $table = $tables[1]; // 最终的表名
+        $data = App::database()->model($table)->query('SHOW FULL COLUMNS FROM '.$table);
         $schemaData = [];
         foreach($data as $v){
             $maxlength = 0;

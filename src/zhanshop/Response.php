@@ -14,7 +14,7 @@ use app\http\Controller;
 use zhanshop\console\command\Server;
 
 /**
- * @mixin \Swoole\Http\Request
+ * @mixin \Swoole\Http\Response
  */
 class Response
 {

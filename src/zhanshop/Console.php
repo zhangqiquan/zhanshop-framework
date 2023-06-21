@@ -16,7 +16,7 @@ use zhanshop\console\command\ApiCreate;
 use zhanshop\console\command\ApiDoc;
 use zhanshop\console\command\Help;
 use zhanshop\console\command\Http;
-use zhanshop\console\command\Pmake;
+use zhanshop\console\command\Phar;
 use zhanshop\console\command\Server;
 use zhanshop\console\Input;
 use zhanshop\console\Output;
@@ -44,7 +44,7 @@ class Console{
     protected $commands = [
         'help'       => Help::class,
         'server' => Server::class,
-        'pmake'  => Pmake::class,
+        'phar' => Phar::class,
         'api:create' => ApiCreate::class,
         'api:manager' => ApiDoc::class
     ];
