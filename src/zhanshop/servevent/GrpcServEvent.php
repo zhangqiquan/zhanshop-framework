@@ -48,7 +48,6 @@ class GrpcServEvent extends ServEvent
      * @return void
      */
     public function onRequest(mixed $request, mixed $response, int $protocol = Server::HTTP, string $routeGroup = 'grpc') :void{
-
         if (!in_array($request->header['content-type'] ?? '', [
             'application/grpc',
             'application/grpc+proto',
@@ -68,10 +67,9 @@ class GrpcServEvent extends ServEvent
             $class = Grpc::urlClass($uris[1] ?? ''); // 检查这个类是否被注册
             $data = Grpc::callGrpc($class, $uris[2] ?? '', $request->getContent());
         }catch (\Throwable $e){
-            $response->status(Grpc::getStatus($e->getCode()));
+            $response->status(Grpc::httpCode(intval($e->getCode())));
             $data = $e->getMessage().PHP_EOL.$e->getFile().':'.$e->getLine().PHP_EOL.$e->getTraceAsString();
         }
-
         $response->end($data);
     }
 }

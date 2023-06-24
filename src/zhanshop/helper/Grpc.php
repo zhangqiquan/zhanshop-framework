@@ -100,13 +100,15 @@ class Grpc
         return self::serialize($response);
     }
 
-    public static function getStatus(int $code){
-        if($code < 200){
-            return 500;
-        }else if($code > 505){
-            return 417;
-        }else{
-            return 200;
+    /**
+     * grpcHTTP状态码
+     * @param int $code
+     * @return int
+     */
+    public static function httpCode(int $code){
+        if($code >= 200 && $code <= 505){
+            return $code;
         }
+        return 417;
     }
 }
