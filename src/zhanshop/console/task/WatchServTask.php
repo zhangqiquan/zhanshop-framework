@@ -42,6 +42,7 @@ class WatchServTask
      * @return void
      */
     public static function check(){
+        clearstatcache();
         self::init();
         if(WatchCode::isChange()){
             $isReload = (self::$version == self::version());

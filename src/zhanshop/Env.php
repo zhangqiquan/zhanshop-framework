@@ -26,9 +26,18 @@ class Env
      */
     public function __construct()
     {
+
+        $this->load($this->envFile());
+    }
+
+    /**
+     * 获取env文件路径
+     * @return string
+     */
+    public function envFile(){
         $envName = $_SERVER['APP_ENV'] ?? 'dev';
         $envFile = App::rootPath() .DIRECTORY_SEPARATOR. '.env.' . $envName;
-        $this->load($envFile);
+        return $envFile;
     }
 
     /**

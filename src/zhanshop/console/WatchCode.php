@@ -17,7 +17,7 @@ class WatchCode
      * 排除目录
      * @var string[]
      */
-    public static $excludeDir = ['vendor', 'runtime', 'public'];
+    public static $excludeDir = ['vendor', 'runtime', 'public', 'test'];
 
     protected static $hashes = [];
 
@@ -25,7 +25,7 @@ class WatchCode
      * 监视的文件后缀
      * @var string
      */
-    public static $watchExt = 'php,env';
+    public static $watchExt = 'php';
 
     /**
      * 初始化【像这种可能比较耗时的任务丢到Task, 还有日志的循环和写入也丢进去】
@@ -93,11 +93,11 @@ class WatchCode
      */
     protected static function fileHash(string $pathname): string
     {
-        $contents = file_get_contents($pathname);
+        $contents = filemtime($pathname); // 拿文件最后修改时间
         if (false === $contents) {
             return 'deleted';
         }
-        return md5($contents);
+        return md5((string)$contents);
     }
 
 
@@ -115,7 +115,7 @@ class WatchCodeFilter extends \RecursiveFilterIterator
         }
         $list = array_map(function (string $item): string {
             return "\.$item";
-        }, explode(',', WatchCode::$watchExt));
+        }, explode(',', WatchCode::$watchExt.','.($_SERVER['APP_ENV'] ?? 'dev')));
         $list = implode('|', $list);
         $int = preg_match("/($list)$/", $this->current()->getFilename());
         return boolval($int);
