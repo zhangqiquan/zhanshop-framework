@@ -130,7 +130,8 @@ class WebHandle
             // 执行全局的中间件全部变成了后置
             $this->globalAfterMiddleware($appName, $request, $servResponse);
         }
-
+        // 设置控制器的基类
+        $servResponse->setController('\\app\\api\\'.$appName.'\\Controller');
     }
 
     /**

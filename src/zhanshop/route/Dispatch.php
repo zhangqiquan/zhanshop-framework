@@ -57,7 +57,6 @@ class Dispatch
         $roure = $request->getRoure();
         $action = $roure['handler'][1];
         $controller = $roure['handler'][0];
-        $servResponse->setController($controller);
         return App::make($controller)->$action($request, $servResponse);
     }
 }
