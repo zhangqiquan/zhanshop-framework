@@ -48,11 +48,12 @@ class Config
             $files = glob($this->path . '*' . $this->ext);
         }
 
+        $this->autoloadRegister();
+
         foreach ($files as $file) {
             $this->load($file, pathinfo($file, PATHINFO_FILENAME));
         }
-
-        $this->autoloadRegister();
+        
     }
 
     /**
