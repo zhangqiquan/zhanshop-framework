@@ -12,6 +12,7 @@ namespace zhanshop\client;
 
 use Swoole\Coroutine\Http2\Client;
 use Swoole\Http2\Request;
+use zhanshop\App;
 use zhanshop\helper\Grpc;
 
 class GrpcClient
