@@ -8,7 +8,7 @@
 // +----------------------------------------------------------------------
 declare (strict_types=1);
 
-namespace zhanshop\rpc;
+namespace zhanshop\client;
 
 class JsonRpcClient
 {

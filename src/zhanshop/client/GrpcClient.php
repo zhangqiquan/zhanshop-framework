@@ -8,7 +8,7 @@
 // +----------------------------------------------------------------------
 declare (strict_types=1);
 
-namespace zhanshop\rpc;
+namespace zhanshop\client;
 
 use Swoole\Coroutine\Http2\Client;
 use Swoole\Http2\Request;
