@@ -27,5 +27,12 @@ class JsonRpcEvent extends ServEvent
 
 // 独立的请求类
 class JsonRpcRequest{
-
+    public $fd = 0;
+    public $header = [];
+    public $server = [];
+    public $get = [];
+    public $post = [];
+    public function getMethod(){
+        return 'GET';
+    }
 }
