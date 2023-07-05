@@ -28,17 +28,17 @@ class JsonRpcEvent extends ServEvent
                 'code' => 0,
                 'msg' => 'OK',
                 'data' => $this->callJsonRpc($class, $uris[2] ?? '', $data['body'] ?? [])
-            ]));
+            ]), JSON_UNESCAPED_UNICODE);
         }catch (\Throwable $e){
             $server->send($fd, json_encode([
-                'code' => $e->getCode(),
+                'code' => $e->getCode() ? $e->getCode() : 500,
                 'msg' => $e->getMessage(),
                 'data' => [
                     'file' => $e->getFile(),
                     'line' => $e->getLine(),
                     'trace' => $e->getTrace(),
                 ]
-            ]));
+            ],JSON_UNESCAPED_UNICODE));
         }
     }
 
@@ -80,6 +80,7 @@ class JsonRpcEvent extends ServEvent
         $arr = App::route()->getJsonRpc($class, $method);
         $request = new $arr[0]($data);
         $response = new $arr[1];
-        return App::make($class)->$method($request, $response);
+        App::make($class)->$method($request, $response);
+        return $response->toArray();
     }
 }
