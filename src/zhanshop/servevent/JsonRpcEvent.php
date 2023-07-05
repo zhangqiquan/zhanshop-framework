@@ -21,14 +21,20 @@ class JsonRpcEvent extends ServEvent
 
         try {
             $data = $this->getData($data);
-            $path = $data['path'];
-            $uris = explode('/', $path);
-            $class = $this->urlClass($uris[1] ?? '');
-            $server->send($fd, json_encode([
-                'code' => 0,
-                'msg' => 'OK',
-                'data' => $this->callJsonRpc($class, $uris[2] ?? '', $data['body'] ?? [])
-            ]), JSON_UNESCAPED_UNICODE);
+            $uris = explode('/', $data['path']);
+            if(isset($uris[1]) && isset($uris[2])){
+                $service = App::route()->getJsonRpc('/'.$uris[1], $uris[2]);
+
+                $method = $uris[2];
+                $req = new $service['param'][0]($data['body'] ?? []);
+                $resp = new $service['param'][1];
+                App::make($service['service'])->$method($req, $resp);
+                $server->send($fd, json_encode([
+                    'code' => 0,
+                    'msg' => 'OK',
+                    'data' => $resp->toArray()
+                ]), JSON_UNESCAPED_UNICODE);
+            }
         }catch (\Throwable $e){
             $server->send($fd, json_encode([
                 'code' => $e->getCode() ? $e->getCode() : 500,
@@ -47,40 +53,5 @@ class JsonRpcEvent extends ServEvent
         if($data == false) App::error()->setError($data.PHP_EOL.'不是一个有效的json', 400);
         if(isset($data['path']) == false) App::error()->setError('没有指定访问地址参数path', 400);
         return $data;
-    }
-
-    /**
-     * 根据path获取service类
-     * @param string $uri
-     * @return string
-     * @throws \Exception
-     */
-    private function urlClass(string $uri){
-        if($uri == false) App::error()->setError('请求参数错误', Error::FORBIDDEN);
-        $uri = explode('.', $uri);
-        $class = '';
-        foreach($uri as $v){
-            $class .= $v.'\\';
-        }
-        $class = rtrim($class, '\\');
-        return $class;
-    }
-
-    /**
-     * 调用jsonRpc服务类
-     * @param string $class
-     * @param string $method
-     * @param mixed $data
-     * @return mixed
-     * @throws \Exception
-     */
-    private function callJsonRpc(string $class, string $method, mixed $data){
-        if($method == false) App::error()->setError('请求方法错误', Error::FORBIDDEN);
-        $method = lcfirst($method);
-        $arr = App::route()->getJsonRpc($class, $method);
-        $request = new $arr[0]($data);
-        $response = new $arr[1];
-        App::make($class)->$method($request, $response);
-        return $response->toArray();
     }
 }

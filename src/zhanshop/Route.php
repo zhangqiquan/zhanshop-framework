@@ -139,8 +139,10 @@ class Route
      * @param $class
      * @return void
      */
-    public function setGrpc($class){
-        $this->grpcService[$class] = [];
+    public function setGrpc(string $uri, string $class){
+        $this->grpcService[$uri] = [
+            'class' => $class
+        ];
         // 通过反射拿到请求类和响应类
         $reflectionClass = new \ReflectionClass($class);
         $methods = $reflectionClass->getMethods();
@@ -148,15 +150,18 @@ class Route
             $method = $v->getName();
             $parameters = $reflectionClass->getMethod($method)->getParameters();
             if(isset($parameters[0]) && $parameters[1]){
-                $this->grpcService[$class][$method][] = $parameters[0]->getType()->getName();
-                $this->grpcService[$class][$method][] = $parameters[1]->getType()->getName();
+                $this->grpcService[$uri]['method'][$method][] = $parameters[0]->getType()->getName();
+                $this->grpcService[$uri]['method'][$method][] = $parameters[1]->getType()->getName();
             }
         }
     }
 
-    public function getGrpc($class, $method){
-        $class = $this->grpcService[$class] ?? App::error()->setError('您所请求的类不存在', Error::NOT_FOUND);
-        return $class[$method] ?? App::error()->setError('您所请求的方法'.$method.'不存在', Error::NOT_FOUND);
+    public function getGrpc(string $uri, string $method){
+        $service = $this->grpcService[$uri] ?? App::error()->setError('您所请求的资源不存在', Error::NOT_FOUND);
+        return [
+            'service' => $service['class'],
+            'param' => $service['method'][$method] ?? App::error()->setError('您所请求的方法'.$method.'不存在', Error::NOT_FOUND),
+        ];
     }
 
     protected $jsonRpcService = [];
@@ -166,8 +171,10 @@ class Route
      * @return void
      * @throws \ReflectionException
      */
-    public function setJsonRpc($class){
-        $this->jsonRpcService[$class] = [];
+    public function setJsonRpc(string $uri, string $class){
+        $this->jsonRpcService[$uri] = [
+            'class' => $class
+        ];
         // 通过反射拿到请求类和响应类
         $reflectionClass = new \ReflectionClass($class);
         $methods = $reflectionClass->getMethods();
@@ -175,15 +182,18 @@ class Route
             $method = $v->getName();
             $parameters = $reflectionClass->getMethod($method)->getParameters();
             if(isset($parameters[0]) && $parameters[1]){
-                $this->jsonRpcService[$class][$method][] = $parameters[0]->getType()->getName();
-                $this->jsonRpcService[$class][$method][] = $parameters[1]->getType()->getName();
+                $this->jsonRpcService[$uri]['method'][$method][] = $parameters[0]->getType()->getName();
+                $this->jsonRpcService[$uri]['method'][$method][] = $parameters[1]->getType()->getName();
             }
         }
     }
 
-    public function getJsonRpc($class, $method){
-        $class = $this->jsonRpcService[$class] ?? App::error()->setError('您所请求的类不存在', Error::NOT_FOUND);
-        return $class[$method] ?? App::error()->setError('您所请求的方法'.$method.'不存在', Error::NOT_FOUND);
+    public function getJsonRpc(string $uri, string $method){
+        $service = $this->jsonRpcService[$uri] ?? App::error()->setError('您所请求的资源不存在', Error::NOT_FOUND);
+        return [
+            'service' => $service['class'],
+            'param' => $service['method'][$method] ?? App::error()->setError('您所请求的方法'.$method.'不存在', Error::NOT_FOUND),
+        ];
     }
 
     /**

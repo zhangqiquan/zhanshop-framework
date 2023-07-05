@@ -65,8 +65,17 @@ class GrpcServEvent extends ServEvent
         $data = '';
         try {
             $uris = explode('/', $request->server['request_uri']);
-            $class = Grpc::urlClass($uris[1] ?? ''); // 检查这个类是否被注册
-            $data = Grpc::callGrpc($class, $uris[2] ?? '', $request->getContent());
+            if(isset($uris[1]) && isset($uris[2])){
+                $service = App::route()->getGrpc('/'.$uris[1], $uris[2]);
+
+                $method = lcfirst($uris[2]);
+                $req = new $service['param'][0];
+                Grpc::deserialize($req, $request->getContent());
+                $resp = new $service['param'][1];
+                App::make($service['service'])->$method($req, $resp);
+                $data = Grpc::serialize($resp);
+            }
+
         }catch (\Throwable $e){
             $response->status(Grpc::getStatus($e->getCode()));
             $data = $e->getMessage().PHP_EOL.$e->getFile().':'.$e->getLine().PHP_EOL.$e->getTraceAsString();
