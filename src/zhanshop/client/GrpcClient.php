@@ -26,7 +26,7 @@ class GrpcClient
      * 已建立的连接
      * @var Client
      */
-    protected array $connects = [];
+    protected static array $clients = [];
 
     /**
      * 设置配置
@@ -40,23 +40,55 @@ class GrpcClient
     }
 
     /**
-     * 获取连接
+     * 连接
      * @param string $host
      * @param int $port
      * @param bool $ssl
-     * @return mixed|null
+     * @param float $timeout
+     * @return mixed|Client
      */
-    protected function connect(string $host, int $port, bool $ssl = false){
-        $connect = $this->connects[$host.$port] ?? null;
-        if(!$connect){
-            $connect = new Client($host, $port, $ssl);
-            $config = $this->config;
-            if($ssl) $config['ssl_host_name'] = $host;
-            $connect->set($config);
-            $connect->connect();
-            $this->connects[$host.$port] = $connect;
+    protected static function client(string $host, int $port, bool $ssl = false, float $timeout = 3){
+        $client = self::$clients[$host.$port] ?? null;
+        if($client){
+            return $client;
         }
-        return $connect;
+
+
+        $client = new Client($host, $port, $ssl);
+        $config = [
+            'timeout' => $timeout
+        ];
+        if($ssl) $config['ssl_host_name'] = $host;
+        $client->set($config);
+        $client->connect();
+        self::$clients[$host.$port] = $client;
+
+        return $client;
+    }
+
+    /**
+     * 销毁连接
+     * @param string $host
+     * @param int $port
+     * @return void
+     */
+    public static function close(string $host, int $port = 6204){
+        if(isset(self::$clients[$host.$port])){
+            $client = self::$clients[$host.$port];
+            $client->close();
+            unset(self::$clients[$host.$port]);
+        }
+    }
+
+    /**
+     * 销毁所有连接
+     * @return void
+     */
+    public static function closeAll(){
+        foreach(self::$clients as $v){
+            $v->close();
+        }
+        self::$clients = [];
     }
 
     /**
@@ -103,14 +135,20 @@ class GrpcClient
      * @param mixed $data
      * @return mixed
      */
-    public function request(string $url, mixed $data){
+    public function request(string $url, mixed $data, bool $again = false){
         $parseUrl = $this->parseUrl($url);
         $requestData = $this->requestData($parseUrl['host'], $parseUrl['path'], $data);
 
-        $connect = $this->connect($parseUrl['host'], $parseUrl['port'], $parseUrl['ssl']);
+        $connect = GrpcClient::client($parseUrl['host'], $parseUrl['port'], $parseUrl['ssl'], $this->config['timeout']);
         $connect->send($requestData);
         $response = $connect->recv();
-        if($response == false) App::error()->setError($url.' 无法访问');
+        if($response == false){
+            GrpcClient::close($parseUrl['host'], $parseUrl['port']);
+            if($again == false){
+                return $this->request($url, $data, true); // 再试一次
+            }
+            App::error()->setError($url.' 无法访问');
+        }
         return $response;
     }
 

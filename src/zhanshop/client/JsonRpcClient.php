@@ -65,6 +65,17 @@ class JsonRpcClient
     }
 
     /**
+     * 销毁所有连接
+     * @return void
+     */
+    public static function closeAll(){
+        foreach(self::$clients as $v){
+            $v->close();
+        }
+        self::$clients = [];
+    }
+
+    /**
      * 设置grpc服务地址
      * @param string $name
      * @return $this
