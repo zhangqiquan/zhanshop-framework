@@ -130,6 +130,7 @@ class Route
     public function clean(){
         $this->registers = [];
         $this->grpcService = [];
+        $this->jsonRpcService = [];
     }
 
     protected $grpcService = [];
@@ -155,6 +156,33 @@ class Route
 
     public function getGrpc($class, $method){
         $class = $this->grpcService[$class] ?? App::error()->setError('您所请求的类不存在', Error::NOT_FOUND);
+        return $class[$method] ?? App::error()->setError('您所请求的方法'.$method.'不存在', Error::NOT_FOUND);
+    }
+
+    protected $jsonRpcService = [];
+    /**
+     * 注册jsonRpc
+     * @param $class
+     * @return void
+     * @throws \ReflectionException
+     */
+    public function setJsonRpc($class){
+        $this->jsonRpcService[$class] = [];
+        // 通过反射拿到请求类和响应类
+        $reflectionClass = new \ReflectionClass($class);
+        $methods = $reflectionClass->getMethods();
+        foreach($methods as $v){
+            $method = $v->getName();
+            $parameters = $reflectionClass->getMethod($method)->getParameters();
+            if(isset($parameters[0]) && $parameters[1]){
+                $this->jsonRpcService[$class][$method][] = $parameters[0]->getType()->getName();
+                $this->jsonRpcService[$class][$method][] = $parameters[1]->getType()->getName();
+            }
+        }
+    }
+
+    public function getJsonRpc($class, $method){
+        $class = $this->jsonRpcService[$class] ?? App::error()->setError('您所请求的类不存在', Error::NOT_FOUND);
         return $class[$method] ?? App::error()->setError('您所请求的方法'.$method.'不存在', Error::NOT_FOUND);
     }
 
