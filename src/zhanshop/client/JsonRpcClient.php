@@ -21,6 +21,18 @@ class JsonRpcClient
 
     protected $timeout = 3;
 
+    public function __construct()
+    {
+        $host = App::env()->get('JSONRPC_HOST');
+        if($host){
+            $hosts = explode(':', $host);
+            if(isset($hosts[1])){
+                $this->serverHost = $hosts[0];
+                $this->serverPort = $hosts[1];
+            }
+        }
+    }
+
     /**
      * 已建立的连接
      * @var Client

@@ -28,6 +28,14 @@ class GrpcClient
      */
     protected static array $clients = [];
 
+    public function __construct()
+    {
+        $host = App::env()->get('GRPC_HOST');
+        if($host){
+            $this->serverHost = $host;
+        }
+    }
+
     /**
      * 设置配置
      * @param string $key
