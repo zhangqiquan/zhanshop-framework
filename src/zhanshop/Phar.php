@@ -52,12 +52,10 @@ class Phar
         if($composer['autoload']['psr-4'] ?? []){
             $autoloadFile .= '$psr4 = '.var_export($composer['autoload']['psr-4'] ?? [], true).';'.PHP_EOL.PHP_EOL;
             $autoloadFile .= "spl_autoload_register(function (\$class) use(&\$psr4){".PHP_EOL;
-            $autoloadFile .= PHP_EOL.'  var_dump($class);'.PHP_EOL;
             $autoloadFile .= '  foreach($psr4 as $k => $v){'.PHP_EOL;
             $autoloadFile .= '      if(strpos($class, $k) === 0){'.PHP_EOL;
             $autoloadFile .= '          $class = str_replace($k, \'\', $class);'.PHP_EOL;
             $autoloadFile .= '          $classFile = $v .DIRECTORY_SEPARATOR. str_replace("\\\", DIRECTORY_SEPARATOR, $class).'."'.php';";
-            $autoloadFile .= PHP_EOL.'          var_dump($classFile);'.PHP_EOL;
             $autoloadFile .= '          if (file_exists($classFile)) {'.PHP_EOL;
             $autoloadFile .= '              require_once ($classFile);'.PHP_EOL;
             $autoloadFile .= '              return true;'.PHP_EOL;
