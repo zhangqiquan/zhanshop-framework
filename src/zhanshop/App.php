@@ -29,6 +29,7 @@ use zhanshop\console\Output;
  * @method static Middleware middleware()
  * @method static Task task()
  * @method static Robot robot()
+ * @method static Phar phar()
  */
 class App extends Container
 {
@@ -99,7 +100,8 @@ class App extends Container
         'middleware'      => Middleware::class,
         'aes'             => Aes::class,
         'rsa'             => Rsa::class,
-        'robot'           => Robot::class
+        'robot'           => Robot::class,
+        'phar'            => Phar::class
     ];
 
     /**

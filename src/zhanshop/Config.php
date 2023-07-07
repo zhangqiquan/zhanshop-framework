@@ -199,7 +199,7 @@ class Config
     // 自动注册
     private function autoloadRegister(){
         spl_autoload_register(function ($class) {
-            $classFile = App::rootPath() .DIRECTORY_SEPARATOR. str_replace('\\', '/', $class) . '.php';
+            $classFile = App::rootPath() .DIRECTORY_SEPARATOR. str_replace('\\', DIRECTORY_SEPARATOR, $class) . '.php';
             if (file_exists($classFile)) {
                 require_once ($classFile);
                 return true;
