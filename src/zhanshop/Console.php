@@ -60,6 +60,7 @@ class Console{
      * Http constructor.
      */
     public function __construct(){
+        \Co::set(['hook_flags'=> SWOOLE_HOOK_ALL]);
         $this->init(); // 初始化操作
     }
 

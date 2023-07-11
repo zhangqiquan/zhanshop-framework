@@ -316,8 +316,6 @@ class Server extends Command
         if($this->isRuning()){
             return $this->output->output("程序已在运行...", 'info');
         }
-
-        \Co::set(['hook_flags'=> SWOOLE_HOOK_ALL]);
         $server = null;
         foreach($this->config['servers'] as $k => $v){
             if($k == 0){
