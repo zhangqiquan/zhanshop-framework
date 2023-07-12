@@ -437,16 +437,59 @@ class Server extends Command
         //$this->output->output("程序尚未启动", 'info');
     }
 
+    public function poweron(){
+        if($_SERVER['USER'] != 'root'){
+            App::error()->setError('请使用root用户执行该命令');
+        }
+
+        $pwd = App::rootPath();
+        // 检查文件是否存在
+        $serviceName = basename($pwd).'-zhanshop-'.substr(md5(dirname($pwd)), -4, 4);
+        $serviceFile = '/etc/systemd/system/'.$serviceName.'.service';
+        if(file_exists($serviceFile)){
+            \Swoole\Coroutine\run(function() use ($serviceName, $serviceFile){
+                \Swoole\Coroutine\System::exec('systemctl disable '.$serviceName);
+                unlink($serviceFile);
+            });
+        }
+
+        $phpCommand = 'php';
+        if(isset($_SERVER['_'])){
+            $phpCommand = $_SERVER['_'];
+        }else if(isset($_SERVER['SUDO_COMMAND'])){
+            $phpCommand = explode(' ', $_SERVER['SUDO_COMMAND'])[0];
+        }
+
+        $serviceCode = '[Unit]
+Description='.$pwd.' - project
+[Service]
+Type=forking
+ExecStart='.$phpCommand.' '.$pwd.'/'.$_SERVER['PHP_SELF'].' server start
+ExecReload='.$phpCommand.' '.$pwd.'/'.$_SERVER['PHP_SELF'].' server reload
+ExecStop='.$phpCommand.' '.$pwd.'/'.$_SERVER['PHP_SELF'].' server stop
+Execenable='.$phpCommand.' '.$pwd.'/'.$_SERVER['PHP_SELF'].' server start
+[Install]
+WantedBy=multi-user.target
+';
+
+        \Swoole\Coroutine\run(function() use ($serviceFile, $serviceName, $serviceCode){
+
+            file_put_contents($serviceFile, $serviceCode);
+            \Swoole\Coroutine\System::exec('systemctl enable '.$serviceName);
+            $this->start();
+        });
+
+    }
+
 
     // 支持到多端口
 
     public function usage(&$argv){
         if(!$argv){
             $this->output->output("\n示例用法:\n", 'success');
-            echo 'php cmd.php server {start | stop | reload | restart | status } {true|false}'.'   // 启动Server服务'.PHP_EOL;
-            $this->output->output("\n参数说明：server 后的一个参数{启动|关闭|重载|重启|状态} {后台启动(不指定默认)|非后台启动}");
+            echo 'php cmd.php server {start | stop | reload | restart | status |  poweron } {true|false}'.'   // 启动Server服务'.PHP_EOL;
+            $this->output->output("\n参数说明：server 后的一个参数{启动|关闭|重载|重启|状态|开机启动} {后台启动(不指定默认)|非后台启动}");
             $this->output->output("关于环境：请修改全局环境变量 APP_ENV=dev或者APP_ENV=production 没有指定将会载入dev环境文件");
-            $this->output->output("开机启动: linux上将启动命令添加到 /ect/rc.local 文件中, 或参考：https://blog.csdn.net/hualinger/article/details/125321966\n");
             exit();
         }
     }
