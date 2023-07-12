@@ -476,9 +476,9 @@ WantedBy=multi-user.target
 
             file_put_contents($serviceFile, $serviceCode);
             \Swoole\Coroutine\System::exec('systemctl enable '.$serviceName);
-            $this->start();
-        });
 
+        });
+        $this->start();
     }
 
 
