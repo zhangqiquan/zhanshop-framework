@@ -11,7 +11,6 @@ declare (strict_types=1);
 
 namespace zhanshop;
 
-use zhanshop\console\command\Admin;
 use zhanshop\console\command\ApiCreate;
 use zhanshop\console\command\ApiDoc;
 use zhanshop\console\command\Help;
@@ -20,6 +19,7 @@ use zhanshop\console\command\Phar;
 use zhanshop\console\command\Server;
 use zhanshop\console\Input;
 use zhanshop\console\Output;
+use Swoole\Coroutine;
 /**
  * 控制台程序不要实例化控制台程序
  * @method static Help help()
@@ -60,7 +60,7 @@ class Console{
      * Http constructor.
      */
     public function __construct(){
-        \Co::set(['hook_flags'=> SWOOLE_HOOK_ALL]);
+        Coroutine::set(['hook_flags'=> SWOOLE_HOOK_ALL]);
         $this->init(); // 初始化操作
     }
 
@@ -110,7 +110,7 @@ class Console{
      * @throws \Exception
      */
     public function getApp(mixed $command){
-        $this->commands[$command] ?? App::error()->setError($command.'指令未注册', 500);
+            $this->commands[$command] ?? App::error()->setError($command.'指令未注册', 500);
         if(!isset($this->instance[$command])){
             $this->instance[$command] = new $this->commands[$command]();
         }
