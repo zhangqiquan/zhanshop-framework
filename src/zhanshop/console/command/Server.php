@@ -68,7 +68,7 @@ class Server extends Command
         ],
         // 定时任务是在子进程启动之后就开始执行【定时任务不受reload影响，需要restart后生效】
         'crontab' => [
-            WatchServCronTab::class,
+            //WatchServCronTab::class,
             WatchLogCronTab::class,
         ]
     ];
