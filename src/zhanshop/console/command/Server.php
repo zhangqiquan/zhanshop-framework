@@ -56,7 +56,7 @@ class Server extends Command
             'task_enable_coroutine' => true,
             'max_request' => 200000,
             'max_wait_time' => 2,
-            'enable_static_handler' => true,
+            'enable_static_handler' => false,
             'document_root' => '',
             'http_autoindex' => true,
             'http_index_files' => ['index.html'],
