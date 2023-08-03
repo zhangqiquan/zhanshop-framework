@@ -17,6 +17,8 @@ use zhanshop\console\command\Help;
 use zhanshop\console\command\Http;
 use zhanshop\console\command\Phar;
 use zhanshop\console\command\Server;
+use zhanshop\console\command\software\Dnscheck;
+use zhanshop\console\command\software\ScanPorts;
 use zhanshop\console\Input;
 use zhanshop\console\Output;
 use Swoole\Coroutine;
@@ -46,7 +48,9 @@ class Console{
         'server' => Server::class,
         'phar' => Phar::class,
         'api:create' => ApiCreate::class,
-        'api:manager' => ApiDoc::class
+        'api:manager' => ApiDoc::class,
+        'software:scan:ports' => ScanPorts::class,
+        'software:dns:check' => Dnscheck::class,
     ];
 
     /**
