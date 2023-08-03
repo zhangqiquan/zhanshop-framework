@@ -23,7 +23,7 @@ class Dnscheck extends Command
 
     public function execute(Input $input, Output $output)
     {
-        $host = $input->input('host', '请输入需要ping的地址');
+        $host = $input->input('host', '请输入需要检查的域名');
         echo "\n";
         $ipv4 = gethostbyname($host);
         echo 'IP地址： '.$ipv4.PHP_EOL;
