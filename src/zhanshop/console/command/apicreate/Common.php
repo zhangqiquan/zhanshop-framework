@@ -18,12 +18,36 @@ use zhanshop\Helper;
 abstract class Common
 {
 
+    protected string $appName;
+
+    protected string $version;
+
+    protected string $className;
+
+    protected array $methods;
+
+    protected string $action;
+
+    protected string $title;
+
+    protected string $groupName;
+
+    public function __construct(string $appName, string $version, string $className, array $methods, string $action, string $title, string $groupName)
+    {
+        $this->appName = $appName;
+        $this->version = str_replace('.', '_', $version);
+        $this->className = $className;
+        $this->methods = $methods;
+        $this->action = $action;
+        $this->title = $title;
+        $this->groupName = $groupName;
+    }
     /**
      * 写入代码方法代码
      * @param string $classFile
      * @param string $code
      */
-    private static function writeCode(string $classFile, string $code){
+    private function writeCode(string $classFile, string $code){
         $classCode = file_get_contents($classFile);
         while (true){
             $rightStr = substr($classCode, -1);
@@ -44,12 +68,12 @@ abstract class Common
      * @param string $class
      * @param string $method
      */
-    public static function check(string $classFile){
+    public function check(string $classFile){
 
         if(!file_exists($classFile)){
             echo PHP_EOL."【ok】构建".$classFile.'文件'.PHP_EOL;
             Helper::mkdirs(dirname($classFile)); // 创建class目录
-            self::createClassFile($classFile); // 创建class文件
+            $this->createClassFile($classFile); // 创建class文件
         }
     }
 
@@ -57,12 +81,12 @@ abstract class Common
      * 创建类方法
      * @param string $classFile
      */
-    protected static function createClassMethod(string $classFile, string $title){
-        $methods = static::getClassMethods($classFile);
+    protected function createClassMethod(string $classFile, string $title){
+        $methods = $this->getClassMethods($classFile);
         foreach($methods as $v){
-            $code = static::getClassMethodInitCode($title, $v);
-            self::writeCode($classFile, $code); // 写入代码
-            echo PHP_EOL.'【ok】构建'.$classFile.'文件 -> '.$v.'()'.PHP_EOL;
+            $code = $this->getClassMethodInitCode($v);
+            $this->writeCode($classFile, $code); // 写入代码
+            echo PHP_EOL.'【ok】构建'.$classFile.'文件'.PHP_EOL;
         }
     }
 
@@ -72,26 +96,26 @@ abstract class Common
      * @param string $class
      * @param string|null $code
      */
-    protected static function createClassFile(string $classFile, ?string $code = null){
-        file_put_contents($classFile, $code ?? static::getClassInitCode());
+    protected function createClassFile(string $classFile, ?string $code = null){
+        file_put_contents($classFile, $code ?? $this->getClassInitCode());
     }
 
     /**
      * 获取创建的方法名列表
      * @return mixed
      */
-    abstract protected static function getClassMethods(string $classFile) :array;
+    abstract protected function getClassMethods(string $classFile) :array;
 
     /**
      * 获取初始化class代码
      * @return mixed
      */
-    abstract protected static function getClassInitCode();
+    abstract protected function getClassInitCode();
 
     /**
      * 获取初始化class方法代码
      * @return mixed
      */
-    abstract protected static function getClassMethodInitCode(string $title, string $method);
+    abstract protected function getClassMethodInitCode($method);
 
 }

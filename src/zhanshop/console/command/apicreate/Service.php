@@ -18,31 +18,33 @@ use zhanshop\Helper;
 
 class Service extends Common
 {
-    protected static $input = null;
-    protected static $version = null;
-    protected static $appType = 'http';
-    public static function create(Input $input, string $appType){
-        self::$appType = $appType;
-        self::$input = $input;
 
-        self::$version = str_replace('.', '_', $input->param('version'));
-        $classFile = App::appPath().DIRECTORY_SEPARATOR.self::$appType.DIRECTORY_SEPARATOR.self::$version.DIRECTORY_SEPARATOR.'service'.DIRECTORY_SEPARATOR.$input->param('class').'Service'.'.php';
+    public static function create(Input $input, string $appName){
 
-        self::check($classFile); // 检查控制器是否存在不存在初始化
+        $class = $input->param('class');
+        $class = str_replace('\\', DIRECTORY_SEPARATOR, str_replace('\\controller\\', '\\service\\', $class));
 
-        self::createClassMethod($classFile, $input->param('title'));
+        $classFile = App::rootPath().$class.'Service.php';
+
+        $self = new static($appName, $input->param('version'), pathinfo($classFile, PATHINFO_FILENAME), $input->param('method'), $input->param('action'), $input->param('title'), $input->param('groupname'));
+
+
+        $self->check($classFile); // 检查控制器是否存在不存在初始化
+
+        $self->createClassMethod($classFile, $input->param('title'));
     }
 
     /**
      * 获取控制器初始化代码
      */
-    protected static function getInitClassCode(string $version){
-        $class = self::$input->param('class');
-        $code = Helper::headComment($class.'Service');
+    protected function getInitClassCode(){
+        $code = Helper::headComment($this->className.'Service');
         $code .= "
-namespace app\\".self::$appType."\\$version\\service;
+namespace app\\".($this->appName)."\\".$this->version."\\service;
 
 use zhanshop\\App;
+use zhanshop\Request;
+use zhanshop\Response;
 
 class {$class}Service
 {
@@ -57,19 +59,20 @@ class {$class}Service
      * @return array
      * @throws \ReflectionException
      */
-    protected static function getClassMethods(string $classFile): array
+    protected function getClassMethods(string $classFile): array
     {
-        $class = '\\app\\'.self::$appType.'\\'.self::$version.'\\service\\'.self::$input->param('class').'Service';
+        $class = substr($classFile, strlen(App::rootPath()), 99999);
+        $class = str_replace('/', '\\', rtrim($class, '.php'));
         $ref = new \ReflectionClass(new $class());
 
         $methods = json_decode(json_encode($ref->getMethods()), true);
         if(is_array($methods)) $methods = array_column($methods, 'name');
 
-        $reqTypes =  self::$input->param('reqtype'); // 请求方法
+        $reqTypes =  $this->methods; // 请求方法
 
         $res = [];
         foreach($reqTypes as $v){
-            $reqType = $v.ucwords(self::$input->param('method')); // 驼峰命名
+            $reqType = $v.ucwords($this->action); // 驼峰命名
             if(!in_array($reqType, $methods)){
                 // 创建Service对象RestFul 方法
                 $res[] = $reqType;
@@ -82,17 +85,18 @@ class {$class}Service
      * 获取serviceClass初始化代码
      * @return string
      */
-    protected static function getClassInitCode()
+    protected function getClassInitCode()
     {
-        $class = self::$input->param('class');
-        $version = self::$version;
-        $code = Helper::headComment($class.'Service');
+        $version = $this->version;
+        $code = Helper::headComment($this->className.'Service');
         $code .= "
-namespace app\\".self::$appType."\\$version\service;
+namespace app\\api\\".$this->appName."\\$version\service;
 
 use zhanshop\\App;
+use zhanshop\\Request;
+use zhanshop\\Response;
 
-class {$class}Service
+class {$this->className}
 {
     
 }";
@@ -105,19 +109,16 @@ class {$class}Service
      * @param string $method
      * @return mixed|void
      */
-    protected static function getClassMethodInitCode(string $title, string $method)
+    protected function getClassMethodInitCode($method)
     {
         $curd = '[];';
-        if(self::$input->param('table')){
-            $curd = 'App::database()->model("'.self::$input->param('table').'")->limit(100)->select(); // 数据模型测试代码';
-        }
         $code = "\t/**
-     * $title $method 方法
+     * {$this->title} $method 方法
      * @apiParam {String} Required param 示例参数
      * @apiExplain {json} {\"错误码\":\"错误描述\"}
      * @return array
      */
-    public function $method(mixed &\$request){
+    public function $method(Request &\$request, Response &\$response){
         \$data = $curd
         return \$data;
     }";

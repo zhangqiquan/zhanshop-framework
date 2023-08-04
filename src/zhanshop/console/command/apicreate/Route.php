@@ -18,34 +18,48 @@ use zhanshop\Helper;
 
 class Route
 {
-    protected static $appType = 'http';
-    public static function create(Input $input, string $appType){
-        self::$appType = $appType;
-        $version = $input->param('version');
-        // 驼峰转下划线
-        $uri = '/'.Helper::uncamelize($input->param('class')).'.'.Helper::uncamelize($input->param('method'));
-        $input->offsetSet('uri', $uri);
-        $reqtype = $input->param('reqtype');
-        self::check($version, $reqtype, $version, $uri);
-        // 追入路由对象 即将要写入的新路由
-        App::route()->setVersion($version);
-        App::route()->match($reqtype, $uri, $input->param('class').'@'.$input->param('method'));
+    protected string $appName;
+
+    protected string $version;
+
+    protected string $uri;
+
+    public function __construct($appName, $version, $uri, $middleware)
+    {
+        $this->appName = $appName;
+        $this->version = $version;
+        $this->uri = $uri;
+        App::route()->getRule()->setApp($appName, $version, $middleware); // 设置当前路由版本信息
+    }
+
+    public static function create(Input $input, string $appName){
+        $middlewares = App::config()->get('middleware', []); // 检查是否有全局中间件
+
+        $self = new static($appName, $input->param('version'), $input->param('uri'), $middlewares[$appName] ?? []);
+
+        $self->check(); // 检查路由是否已经存在存在提示不可重复定义
+
+        // 注册路由
+        App::route()->match($input->param('method'), $input->param('uri'), [$input->param('class'), $input->param('action')]);
 
         // 写路由文件
-        self::write($version);
+        $self->write();
 
         echo PHP_EOL."路由生成成功".PHP_EOL;
     }
 
-    // 检查这个路由是否存在
-    public static function check(string $version, array $methods, string $uri, string $action){
+    /**
+     * 检查这个路由是否存在
+     * @return void
+     */
+    public function check(){
 
-        $routeFile = App::rootPath() .DIRECTORY_SEPARATOR. 'route' . DIRECTORY_SEPARATOR.self::$appType .DIRECTORY_SEPARATOR. $version . '.php';
-        if(!file_exists($routeFile)) self::createRouteFile($version);
+        $routeFile = App::rootPath() .DIRECTORY_SEPARATOR. 'route' . DIRECTORY_SEPARATOR. $this->appName .DIRECTORY_SEPARATOR. $this->version . '.php';
+        if(!file_exists($routeFile)) $this->createRouteFile($this->version);
 
         include $routeFile;
         $routes = App::route()->getAll();
-        if(isset($routes[$version][$uri])){
+        if(isset($routes[$this->version][$this->uri])){
             echo "???【警告！当前输入的uri已经存在】???";
         }
     }
@@ -53,19 +67,23 @@ class Route
     /**
      * 重写路由文件
      */
-    public static function write(string $version){
+    public function write(){
         // 对路由进行排序
-        $all = App::route()->getAll();
-        //print_r($all);die;
-        $all[$version] = $all[$version] ?? [];
-        if($all[$version]) ksort($all[$version]);
+        $all = App::route()->getAll()[$this->appName];
+        $all[$this->version] = $all[$this->version] ?? [];
+        if($all[$this->version]) ksort($all[$this->version]);
         $fileData = Helper::headComment('路由文件')."use zhanshop\App;\n\n";
-        foreach($all[$version] as $v){
-            $method = strtoupper("'".implode("','", $v[0])."'");
-            $fileData .= "App::route()->match([".$method."], '".$v[1]."', '".$v[2]."');\n";
+        foreach($all[$this->version] as $k => $v){
+            $methods = $v['methods'];
+            $handler = $v['handler'];
+            $handler[0] = ltrim($handler[0], '\\');
+            $handler[0] = '\\'.$handler[0];
+            $method = strtoupper("'".implode("','", $methods)."'");
+
+            $fileData .= "App::route()->match([".$method."], '".$k."', [".$handler[0].'::class, '."'".$handler[1]."'"."]);\n";
         }
         // 写新的有问题老的没有问题
-        self::createRouteFile($version, $fileData); // 写入路由文件
+        $this->createRouteFile($fileData); // 写入路由文件
     }
 
     /**
@@ -73,7 +91,7 @@ class Route
      * @param string $version
      * @param string|null $code
      */
-    public static function createRouteFile(string $version, ?string $code = null){
-        file_put_contents(App::rootPath().DIRECTORY_SEPARATOR.'route'.DIRECTORY_SEPARATOR.self::$appType.DIRECTORY_SEPARATOR.$version.'.php', $code ?? '<?php'.PHP_EOL);
+    public function createRouteFile(?string $code = null){
+        file_put_contents(App::rootPath().DIRECTORY_SEPARATOR.'route'.DIRECTORY_SEPARATOR. $this->appName .DIRECTORY_SEPARATOR.$this->version.'.php', $code ?? '<?php'.PHP_EOL);
     }
 }

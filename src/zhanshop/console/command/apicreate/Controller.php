@@ -1,6 +1,6 @@
 <?php
 // +----------------------------------------------------------------------
-// | flow-course / Controller.php    [ 2021/10/29 2:45 下午 ]
+// | zhanshop / Controller.php    [ 2021/10/29 2:45 下午 ]
 // +----------------------------------------------------------------------
 // | Copyright (c) 2011~2021 zhangqiquan All rights reserved.
 // +----------------------------------------------------------------------
@@ -16,47 +16,38 @@ use zhanshop\Helper;
 
 class Controller extends Common
 {
-    protected static $input = null;
-    protected static $version = null;
-    protected static $appType = 'http';
-
     /**
      * 创建控制器
      * @param Input $input
      */
-    public static function create(Input $input, string $appType){
-        self::$appType = $appType;
-        self::$input = $input;
-
-        $version = $input->param('version');
+    public static function create(Input $input, string $appName){
         $class = $input->param('class');
-        $method = $input->param('method');
+        $class = str_replace('\\', DIRECTORY_SEPARATOR, $class);
 
-        $version = str_replace('.', '_', $version);
-        self::$version = $version;
-        $classFile = App::appPath().DIRECTORY_SEPARATOR.self::$appType.DIRECTORY_SEPARATOR.$version.DIRECTORY_SEPARATOR.'controller'.DIRECTORY_SEPARATOR.$class.'.php';
+        $classFile = App::rootPath().$class.'.php';
 
-        self::check($classFile); // 检查控制器是否存在不存在初始化
+        $self = new static($appName, $input->param('version'), pathinfo($classFile, PATHINFO_FILENAME), $input->param('method'), $input->param('action'), $input->param('title'), $input->param('groupname'));
+        $self->check($classFile); // 检查控制器是否存在不存在初始化
 
-        self::createClassMethod($classFile, $input->param('title'));
+        $self->createClassMethod($classFile, $input->param('title'));
     }
 
     /**
      * 获取初始化控制器代码
      * @return string
      */
-    protected static function getClassInitCode()
+    protected function getClassInitCode()
     {
-        $class = self::$input->param('class');
-        $code = Helper::headComment($class.'控制器');
-        $version = self::$version;
+        $code = Helper::headComment($this->className.'控制器');
+        $version = $this->version;
         $code .= "
-namespace app\\".self::$appType."\\{$version}\controller;
+namespace app\\api\\".($this->appName)."\\{$version}\controller;
 
-use zhanshop\Request;
-use app\\".self::$appType."\\Controller;
+use zhanshop\\Request;
+use zhanshop\\Response;
+use app\\api\\".($this->appName)."\\Controller;
 
-class $class extends Controller
+class {$this->className} extends Controller
 {
     
 }";
@@ -67,18 +58,16 @@ class $class extends Controller
      * 获取初始化控制器方法代码
      * @return string
      */
-    protected static function getClassMethodInitCode(string $title, string $method)
+    protected function getClassMethodInitCode($method)
     {
-        $group = self::$input->param('groupname');
         $code = "
      /**
-     * $title
-     * @apiGroup $group
-     * @return array
+     * {$this->title}
+     * @apiGroup {$this->groupName}
+     * @return mixed
      */
-    public function $method(Request &\$request){
-        \$data = \$this->restful(\$request, false);
-        return \$data;
+    public function {$this->action}(Request &\$request, Response &\$response){
+        return '{$this->action}生成方法';
     }";
         return $code;
     }
@@ -87,10 +76,11 @@ class $class extends Controller
      * 获取需要创建的方法名列表
      * @return array
      */
-    protected static function getClassMethods(string $classFile): array
+    protected function getClassMethods(string $classFile): array
     {
-        $method = self::$input->param('method');
-        $class = '\\app\\'.self::$appType.'\\'.self::$version.'\\controller\\'.self::$input->param('class');
+        $method = $this->methods;
+        $class = substr($classFile, strlen(App::rootPath()), 99999);
+        $class = str_replace('/', '\\', rtrim($class, '.php'));
         $ref = new \ReflectionClass(new $class());
 
         $methods = json_decode(json_encode($ref->getMethods()), true);
