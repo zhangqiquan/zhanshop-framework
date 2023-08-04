@@ -20,7 +20,7 @@ class ApiDocService
 
     public function __construct(string $appType){
         $this->appType = $appType;
-        $this->model = new Sqlite();
+        $this->model = new Sqlite(App::runtimePath().DIRECTORY_SEPARATOR.'doc'.DIRECTORY_SEPARATOR.'apiDoc.db');
         $this->tableExist();
     }
 
