@@ -38,7 +38,7 @@ class ApiDoc extends Command
             return $this->help();
         }
         $method = $all[0];
-        $this->appName = $all[1] ?? 'all';
+        $this->appName = $all[1] ?? 'index';
         $this->service = App::make(ApiDocService::class, [$this->appName]);
         $this->$method();
     }
@@ -53,11 +53,12 @@ class ApiDoc extends Command
             $versionInfo = pathinfo($vv);
             if($versionInfo['extension'] == 'php'){
                 App::route()->getRule()->setApp($appInfo['filename'], $versionInfo['filename'], $middleware);
-                $routeFile = App::routePath() .DIRECTORY_SEPARATOR.$v.'/'. $vv;
+                $routeFile = App::routePath() .DIRECTORY_SEPARATOR.$this->appName. DIRECTORY_SEPARATOR. $vv;
                 include $routeFile; // 事先载入路由
                 try {
-                    $this->updateAllApiDoc($appInfo['filename'], App::route()->getAll($appInfo['filename']));
+                    $this->updateAllApiDoc(str_replace('.php', '', $vv), App::route()->getAll()[$this->appName]);
                 }catch (\Throwable $e){
+                    var_dump($e);
                     continue;
                 }
                 App::route()->clean(); // 清理掉
@@ -67,19 +68,20 @@ class ApiDoc extends Command
 
     protected $runNun = 1;
 
-    protected function updateAllApiDoc(string $version, array $data){
+    protected function updateAllApiDoc(string $version, array $routes){
         $version_ = str_replace('.', '_' , $version);
-        foreach($data as $v){
+        $data = $routes[$version];
+        foreach($data as $k => $v){
+            print_r($v);
             echo '###'.$this->runNun++;
             $apiDocData = [];
-            $requestTypes = $v[0];
-            $action = $v[2];
-            $uri = $v[1];
+            $action = $v['handler'][0].'@'.$v['handler'][1];
+            $uri = $k;
             try {
                 $apiDocData['version'] = $version;
                 $apiDocData['uri'] = $uri;
                 $apiDocData['action'] = $action;
-                $apiDocData['method'] = json_encode($requestTypes, JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
+                $apiDocData['method'] = json_encode($v['methods'], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
                 $apiDocData['title'] = $this->service->getApiDocTitle($version_, $action); // 拿到apiDoc标题
                 $apiDocData['groupname'] = $this->service->getApiDocGroup($version_, $action); // 拿到apiDoc分组
                 // 去除所有空格

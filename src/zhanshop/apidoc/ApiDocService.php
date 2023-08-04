@@ -11,6 +11,7 @@ declare (strict_types=1);
 namespace zhanshop\apidoc;
 
 use zhanshop\App;
+use zhanshop\Helper;
 
 class ApiDocService
 {
@@ -20,6 +21,7 @@ class ApiDocService
 
     public function __construct(string $appType){
         $this->appType = $appType;
+        Helper::mkdirs(App::runtimePath().DIRECTORY_SEPARATOR.'doc');
         $this->model = new Sqlite(App::runtimePath().DIRECTORY_SEPARATOR.'doc'.DIRECTORY_SEPARATOR.'apiDoc.db');
         $this->tableExist();
     }
@@ -38,16 +40,13 @@ class ApiDocService
     }
 
     protected function tableExist(){
-        try {
-            $this->model->query("select * from apidoc limit 1");
-        }catch (\Throwable $e){
-            if($e->getCode() == 10501){
-                $sql = 'CREATE TABLE IF NOT EXISTS "apidoc" ( "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "app_type" TEXT, "version" TEXT, "action" TEXT, "uri" TEXT,  "method" TEXT,
+        $count = $this->model->table('sqlite_master')->where(['type' => 'table', 'name' => 'apidoc'])->count();
+        if($count == 0){
+            $sql = 'CREATE TABLE IF NOT EXISTS "apidoc" ( "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "app_type" TEXT, "version" TEXT, "action" TEXT, "uri" TEXT,  "method" TEXT,
     "title" TEXT, "detail" TEXT,  "groupname" TEXT, "param" TEXT, "response" TEXT, "success" TEXT, "failure" TEXT, "explain" TEXT );
     UPDATE "main"."sqlite_sequence" SET seq = 1 WHERE name = \'apidoc\';
     PRAGMA foreign_keys = true;';
-                $this->model->execute($sql);
-            }
+            $this->model->execute($sql);
         }
     }
 
