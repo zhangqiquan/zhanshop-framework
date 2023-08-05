@@ -60,8 +60,8 @@ class WebHandle
                 }
             }
 
-
-            App::route()->match(['POST'], '/apiDoc', [ApiDocController::class, 'apidoc']);
+            App::route()->getRule()->setApp($v, 'v1', []);
+            App::route()->match(['POST'], '/api.doc', [ApiDocController::class, 'apidoc'])->extra([$v]);
         }
     }
 

@@ -65,7 +65,7 @@ CREATE TABLE "apidoc" (
     }
 
     public function getApiMenu(){
-        $subSql = "select id,version,uri,title,groupname from ".' apidoc where app_type = "'.$this->appType.'" order by `id` desc';
+        $subSql = "select id,version,uri,title,groupname from ".' apidoc where app = "'.$this->appName.'" order by `id` desc';
         $sql = "select * from({$subSql}) as a order by version asc";
         $data = $this->model->query($sql);
         $uniqueData = [];

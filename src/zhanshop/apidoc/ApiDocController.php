@@ -14,24 +14,46 @@ use zhanshop\App;
 use zhanshop\Error;
 use zhanshop\Request;
 use zhanshop\apidoc\ApiDocService;
+use zhanshop\Response;
 
 class ApiDocController
 {
-    protected $appType = 'http';
-
     protected $apiPwd = 'zhangqiquan';
+
+    protected $appName = '';
+
+    protected $service = null;
+
+    protected function auth($auth){
+        if($auth != $this->apiPwd) App::error()->setError("请先输入访问密码", 10001);
+    }
+
+    protected function method(string $method){
+        if($method == 'GET'){
+            $method = 'apis';
+        }
+        if(!in_array($method, ['login', 'apis', 'detail', 'debug', 'cross', 'update'])) App::error()->setError('api文档'.$method.'方法未定义', Error::NOT_FOUND);
+        return $method;
+    }
     /**
      * api文档入口
      * @param Request $request
      * @return mixed
      * @throws \Exception
      */
-    public function apidoc(Request &$request){
+    public function apidoc(Request &$request, Response &$response){
+        $roure = $request->getRoure();
+        $appName = $roure['extra'][0] ?? null;
+        if($appName == false){
+            return null;
+        }
+
         if(($_SERVER['APP_ENV'] ?? 'dev') == 'production') App::error()->setError('访问的接口不存在', Error::NOT_FOUND);
-        $method = $request->method();
-        if(!in_array($method, ['login', 'apis', 'detail', 'debug', 'cross', 'update'])) App::error()->setError('访问的Doc不存在', Error::NOT_FOUND);
-        $this->service = new ApiDocService($this->appType);
-        if($request->post('_auth') == false || $request->post('_auth') != $this->apiPwd) App::error()->setError("请先输入访问密码", 10001);
+
+        $method = $this->method($request->method());
+
+        $this->service = new ApiDocService($appName);
+
         return $this->$method($request);
     }
 
@@ -43,7 +65,7 @@ class ApiDocController
     protected function apis(Request &$request){
         return [
             'menu' => $this->service->getApiMenu(),
-            'apptype' => $this->appType,
+            'apptype' => $this->appName,
         ];
     }
 
