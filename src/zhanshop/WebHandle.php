@@ -11,6 +11,7 @@ declare (strict_types=1);
 namespace zhanshop;
 
 use app\admin\v4_0_0\middleware\Test;
+use zhanshop\apidoc\ApiDocController;
 use zhanshop\cache\CacheManager;
 use zhanshop\console\command\Server;
 use zhanshop\database\DbManager;
@@ -49,16 +50,18 @@ class WebHandle
             $routePath = App::routePath().DIRECTORY_SEPARATOR.$v;
             if(!file_exists($routePath)) continue;
             $files = scandir($routePath);
-            $appInfo = pathinfo($v);
-            $middleware = $middlewares[$appInfo['filename']] ?? [];
+            $middleware = $middlewares[$v] ?? [];
             foreach ($files as $kk => $vv){
                 $versionInfo = pathinfo($vv);
                 if($versionInfo['extension'] == 'php'){
-                    App::route()->getRule()->setApp($appInfo['filename'], $versionInfo['filename'], $middleware);
+                    App::route()->getRule()->setApp($v, $versionInfo['filename'], $middleware);
                     $routeFile = App::routePath() .DIRECTORY_SEPARATOR.$v.'/'. $vv;
                     require_once $routeFile; // 事先载入路由
                 }
             }
+
+
+            App::route()->match(['POST'], '/apiDoc', [ApiDocController::class, 'apidoc']);
         }
     }
 

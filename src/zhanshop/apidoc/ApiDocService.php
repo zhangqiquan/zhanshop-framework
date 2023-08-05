@@ -15,24 +15,24 @@ use zhanshop\Helper;
 
 class ApiDocService
 {
-    protected $appType = 'http';
+    protected $appName = 'http';
 
     protected $model;
 
-    public function __construct(string $appType){
-        $this->appType = $appType;
+    public function __construct(string $appName){
+        $this->appName = $appName;
         Helper::mkdirs(App::runtimePath().DIRECTORY_SEPARATOR.'doc');
         $this->model = new Sqlite(App::runtimePath().DIRECTORY_SEPARATOR.'doc'.DIRECTORY_SEPARATOR.'apiDoc.db');
         $this->tableExist();
     }
 
     public function rollback(){
-        $maxId = $this->model->table('apidoc')->where(['app_type' => $this->appType])->max('id');
+        $maxId = $this->model->table('apidoc')->where(['app' => $this->appName])->max('id');
         $this->model->table('apidoc')->where(['id' => $maxId])->delete();
     }
 
     public function delete(string $version, string $uri){
-        $this->model->table('apidoc')->where(['app_type' => $this->appType, 'version' => $version, 'uri' => $uri])->delete();
+        $this->model->table('apidoc')->where(['app' => $this->appName, 'version' => $version, 'uri' => $uri])->delete();
     }
 
     public function clean(){
@@ -42,10 +42,24 @@ class ApiDocService
     protected function tableExist(){
         $count = $this->model->table('sqlite_master')->where(['type' => 'table', 'name' => 'apidoc'])->count();
         if($count == 0){
-            $sql = 'CREATE TABLE IF NOT EXISTS "apidoc" ( "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "app_type" TEXT, "version" TEXT, "action" TEXT, "uri" TEXT,  "method" TEXT,
-    "title" TEXT, "detail" TEXT,  "groupname" TEXT, "param" TEXT, "response" TEXT, "success" TEXT, "failure" TEXT, "explain" TEXT );
-    UPDATE "main"."sqlite_sequence" SET seq = 1 WHERE name = \'apidoc\';
-    PRAGMA foreign_keys = true;';
+            $sql = 'DROP TABLE IF EXISTS "apidoc";
+CREATE TABLE "apidoc" (
+  "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  "app" TEXT,
+  "version" TEXT,
+  "uri" TEXT,
+  "handler" TEXT,
+  "method" TEXT,
+  "title" TEXT,
+  "detail" TEXT,
+  "groupname" TEXT,
+  "param" TEXT,
+  "response" TEXT,
+  "success" TEXT,
+  "failure" TEXT,
+  "explain" TEXT,
+  CONSTRAINT "unique" UNIQUE ("app", "version", "uri")
+);';
             $this->model->execute($sql);
         }
     }
@@ -86,12 +100,12 @@ class ApiDocService
      * @return array|string|string[]|null
      * @throws \ReflectionException
      */
-    public function getApiDocTitle(string $version, string $action){
-        echo PHP_EOL.'#获取'.$version.'/'.$action.'的apiDoc标题#';
-        $action = explode('@', $action);
-        $class = '\\app\\'.$this->appType.'\\'.$version.'\\controller\\'.$action[0];
-        $rc = new \ReflectionClass($class);
-        $rc = $rc->getMethod($action[1]);
+    public function getApiDocTitle(array $handler){
+        //echo PHP_EOL.'#获取'.$version.'/'.$action.'的apiDoc标题#';
+        //$action = explode('@', $action);
+        //$class = '\\app\\'.$this->appType.'\\'.$version.'\\controller\\'.$action[0];
+        $rc = new \ReflectionClass($handler[0]);
+        $rc = $rc->getMethod($handler[1]);
         $comment = $rc->getDocComment();
         unset($rc);
         unset($rc);
@@ -110,13 +124,13 @@ class ApiDocService
      * @return array|string|string[]|null
      * @throws \ReflectionException
      */
-    public function getApiDocGroup(string $version, string $action){
-        echo PHP_EOL.'#获取'.$version.'/'.$action.'的apiDoc分组#';
-        $action = explode('@', $action);
-        $class = '\\app\\'.$this->appType.'\\'.$version.'\\controller\\'.$action[0];
-        $rc = new \ReflectionClass($class);
+    public function getApiDocGroup(array $handler){
+        //echo PHP_EOL.'#获取'.$version.'/'.$action.'的apiDoc分组#';
+        //$action = explode('@', $action);
+        //$class = '\\app\\'.$this->appType.'\\'.$version.'\\controller\\'.$action[0];
+        $rc = new \ReflectionClass($handler[0]);
 
-        $rc = $rc->getMethod($action[1]);
+        $rc = $rc->getMethod($handler[1]);
         $comment = $rc->getDocComment();
         unset($rc);
         if($comment){
@@ -187,13 +201,10 @@ class ApiDocService
      * @return array
      * @throws \ReflectionException
      */
-    public function getApiDocParam(string $version, string $action, string $requestType){
-        echo PHP_EOL.'#获取'.$version.'/'.$action.'的service的'.$requestType.'参数#';
-        $action = explode('@', $action);
-        $class = '\\app\\'.$this->appType.'\\'.str_replace('.', '_', $version).'\\service\\'.$action[0].'Service';
-        $rc = new \ReflectionClass($class);
+    public function getApiDocParam(array $handler, string $action){
+        $rc = new \ReflectionClass($handler[0]);
 
-        $rc = $rc->getMethod($requestType.ucwords($action[1]));
+        $rc = $rc->getMethod($action);
         $comment = $rc->getDocComment();
         unset($rc);
         $data = [];
@@ -225,12 +236,9 @@ class ApiDocService
      * @return array|string
      * @throws \ReflectionException
      */
-    public function getApiDocExplain(string $version, string $action, string $requestType){
-        echo PHP_EOL.'#获取'.$version.'/'.$action.'的service的'.$requestType.'异常解释#';
-        $action = explode('@', $action);
-        $class = '\\app\\'.$this->appType.'\\'.$version.'\\service\\'.$action[0].'Service';
-        $rc = new \ReflectionClass($class);
-        $rc = $rc->getMethod($requestType.ucwords($action[1]));
+    public function getApiDocExplain(array $handler, string $action){
+        $rc = new \ReflectionClass($handler[0]);
+        $rc = $rc->getMethod($action);
         $comment = $rc->getDocComment();
         unset($rc);
         if($comment){
@@ -246,8 +254,8 @@ class ApiDocService
     }
 
     public function maintain(array $data){
-        $data['app_type'] = $this->appType;
-        $row = $this->model->table("apidoc")->where(['app_type' => $this->appType, 'version' => $data['version'], 'uri' => $data['uri']])->find();
+        $data['app'] = $this->appName;
+        $row = $this->model->table("apidoc")->where(['app' => $this->appName, 'version' => $data['version'], 'uri' => $data['uri']])->find();
         if($row){
             $this->model->table("apidoc")->where(['id' => $row['id']])->update($data);
         }else{

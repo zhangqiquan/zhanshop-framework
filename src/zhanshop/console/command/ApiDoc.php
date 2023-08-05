@@ -58,7 +58,6 @@ class ApiDoc extends Command
                 try {
                     $this->updateAllApiDoc(str_replace('.php', '', $vv), App::route()->getAll()[$this->appName]);
                 }catch (\Throwable $e){
-                    var_dump($e);
                     continue;
                 }
                 App::route()->clean(); // 清理掉
@@ -72,37 +71,37 @@ class ApiDoc extends Command
         $version_ = str_replace('.', '_' , $version);
         $data = $routes[$version];
         foreach($data as $k => $v){
-            print_r($v);
-            echo '###'.$this->runNun++;
+            //echo '###'.$this->runNun++;
             $apiDocData = [];
-            $action = $v['handler'][0].'@'.$v['handler'][1];
+            $handler = $v['handler'];
             $uri = $k;
             try {
                 $apiDocData['version'] = $version;
                 $apiDocData['uri'] = $uri;
-                $apiDocData['action'] = $action;
+                $apiDocData['handler'] = json_encode($handler, JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
                 $apiDocData['method'] = json_encode($v['methods'], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
-                $apiDocData['title'] = $this->service->getApiDocTitle($version_, $action); // 拿到apiDoc标题
-                $apiDocData['groupname'] = $this->service->getApiDocGroup($version_, $action); // 拿到apiDoc分组
+                $apiDocData['title'] = $this->service->getApiDocTitle($handler); // 拿到apiDoc标题
+                $apiDocData['groupname'] = $this->service->getApiDocGroup($handler); // 拿到apiDoc分组
                 // 去除所有空格
                 if($apiDocData['groupname'] == false){
-                    $this->output->output('【警告】@apiGroup 分组名称未定义'.$version.'/'.$action, 'info');
+                    $this->output->output('【警告】@apiGroup 分组名称未定义'.implode(':', $handler), 'info');
                     continue;
                     //App::error()->setError('@apiGroup 分组名称未定义'.$version.'/'.$action);
                 }
-                foreach($requestTypes as $vv){
-                    $apiDocData['param'][$vv] = $this->service->getApiDocParam($version_, $action, strtolower($vv)); // 拿到文档参数
-                    $apiDocData['explain'][$vv] = $this->service->getApiDocExplain($version_, $action, strtolower($vv)); // 拿到错误代码解析
+                foreach($v['methods'] as $vv){
+                    // 获取service
+                    $apiDocData['param'][$vv] = $this->service->getApiDocParam($v['service'], strtolower($vv).$v['service'][1]); // 拿到文档参数
+                    $apiDocData['explain'][$vv] = $this->service->getApiDocExplain($v['service'], strtolower($vv).$v['service'][1]); // 拿到错误代码解析
                 }
                 $apiDocData['param'] = json_encode($apiDocData['param'], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
                 $apiDocData['explain'] = json_encode($apiDocData['explain'], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
                 $this->service->maintain($apiDocData); // 更新维护文档
-                $this->output->output(PHP_EOL.'【成功】'.str_replace('_', '.', $version_).$uri, 'success');
+                //$this->output->output(PHP_EOL.'【成功】'.str_replace('_', '.', $version_).$uri, 'success');
             }catch (\Throwable $e){
                 echo "【错误】";
                 $this->output->exception($e);
             }
-            echo PHP_EOL.'======================================================================================'.PHP_EOL;
+            //echo PHP_EOL.'OK'.PHP_EOL;
         }
     }
     // 维护单个文档

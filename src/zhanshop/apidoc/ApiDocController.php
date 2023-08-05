@@ -20,19 +20,6 @@ class ApiDocController
     protected $appType = 'http';
 
     protected $apiPwd = 'zhangqiquan';
-
-    protected ApiDocService $service;
-    /**
-     * 前置中间件
-     * @var array
-     */
-    protected $beforeMiddleware = [];
-
-    /**
-     * 后置中间件
-     * @var array
-     */
-    protected $afterMiddleware = [];
     /**
      * api文档入口
      * @param Request $request

@@ -131,7 +131,7 @@ class Rule
      */
     public function clear(): void
     {
-        $this->rules = [];
+        $this->bind = [];
     }
 
     /**
