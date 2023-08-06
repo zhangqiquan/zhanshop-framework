@@ -21,11 +21,13 @@ class ApiDocController
     protected $apiPwd = 'zhangqiquan';
 
     protected $appName = '';
-
+    /**
+     * @var ApiDocService
+     */
     protected $service = null;
 
     protected function auth($auth){
-        if($auth != $this->apiPwd) App::error()->setError("请先输入访问密码", 10001);
+        if($auth != $this->apiPwd) App::error()->setError("请先输入访问密码", 1001);
     }
 
     protected function method(string $method){
@@ -44,6 +46,7 @@ class ApiDocController
     public function apidoc(Request &$request, Response &$response){
         $roure = $request->getRoure();
         $appName = $roure['extra'][0] ?? null;
+        $this->appName = $appName;
         if($appName == false){
             return null;
         }
@@ -54,7 +57,8 @@ class ApiDocController
 
         $this->service = new ApiDocService($appName);
 
-        return $this->$method($request);
+        $data = $this->$method($request);
+        return $this->result($data);
     }
 
     /**
@@ -65,7 +69,8 @@ class ApiDocController
     protected function apis(Request &$request){
         return [
             'menu' => $this->service->getApiMenu(),
-            'apptype' => $this->appName,
+            'title' => App::config()->get('app.app_name', 'ZhanShop'),
+            'app' => $this->appName,
         ];
     }
 
@@ -75,11 +80,12 @@ class ApiDocController
      * @return void
      */
     protected function detail(Request &$request){
-        $input = &App::validate()->check($request->post(), [
+        $data = $request->validate([
+            'protocol' => 'Required',
             'uri' => 'Required',
             'version' => 'Required',
-        ]);
-        return $this->service->getDetail($input['version'], $input['uri']);
+        ])->getData();
+        return $this->service->getDetail($data['protocol'], $data['version'], $data['uri']);
     }
 
     public function cross(){

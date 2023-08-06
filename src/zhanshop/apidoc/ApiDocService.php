@@ -42,10 +42,10 @@ class ApiDocService
     protected function tableExist(){
         $count = $this->model->table('sqlite_master')->where(['type' => 'table', 'name' => 'apidoc'])->count();
         if($count == 0){
-            $sql = 'DROP TABLE IF EXISTS "apidoc";
-CREATE TABLE "apidoc" (
+            $sql = 'CREATE TABLE "apidoc" (
   "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   "app" TEXT,
+  "protocol" TEXT DEFAULT http,
   "version" TEXT,
   "uri" TEXT,
   "handler" TEXT,
@@ -58,14 +58,14 @@ CREATE TABLE "apidoc" (
   "success" TEXT,
   "failure" TEXT,
   "explain" TEXT,
-  CONSTRAINT "unique" UNIQUE ("app", "version", "uri")
+  CONSTRAINT "unique" UNIQUE ("app" ASC, "version" ASC, "uri" ASC, "protocol")
 );';
             $this->model->execute($sql);
         }
     }
 
     public function getApiMenu(){
-        $subSql = "select id,version,uri,title,groupname from ".' apidoc where app = "'.$this->appName.'" order by `id` desc';
+        $subSql = "select id,version,protocol,uri,title,groupname from ".' apidoc where app = "'.$this->appName.'" order by `id` desc';
         $sql = "select * from({$subSql}) as a order by version asc";
         $data = $this->model->query($sql);
         $uniqueData = [];
@@ -82,6 +82,7 @@ CREATE TABLE "apidoc" (
             foreach($data as $kk => $vv){
                 if($vv['groupname'] == $v){
                     $result[$k]['apis'][] = [
+                        'protocol' => $vv['protocol'],
                         'uri' => $vv['uri'],
                         'title' => $vv['title'],
                         'version' => $vv['version'],
@@ -145,8 +146,8 @@ CREATE TABLE "apidoc" (
         }
     }
 
-    public function getDetail(string $version, string $uri){
-        $data = $this->model->table('apidoc')->where(['app_type' => $this->appType, 'uri' => $uri, 'version' => $version])->find();
+    public function getDetail(string $protocol, string $version, string $uri){
+        $data = $this->model->table('apidoc')->where(['protocol' => $protocol, 'app' => $this->appName, 'uri' => $uri, 'version' => $version])->find();
         if($data){
             $data['method'] = json_decode(strtoupper($data['method'] ?? '[]'), true);
             $data['param'] = json_decode($data['param'] ?? '[]', true);
@@ -164,10 +165,10 @@ CREATE TABLE "apidoc" (
                 $data['explain'] = $explain;
             }
         }
-        $versions = $this->model->table('apidoc')->where(['app_type' => $this->appType, 'uri' => $uri])->group('version')->field('version')->order('id desc')->select();
+        $versions = $this->model->table('apidoc')->where(['protocol' => $protocol, 'app' => $this->appName, 'uri' => $uri])->group('version')->field('version')->order('id desc')->select();
         //var_dump($versions);
         return [
-            'data' => $data,
+            'detail' => $data,
             'versions' => array_column($versions, 'version'),
         ];
     }
