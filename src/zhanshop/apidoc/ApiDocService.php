@@ -150,10 +150,52 @@ class ApiDocService
         $data = $this->model->table('apidoc')->where(['protocol' => $protocol, 'app' => $this->appName, 'uri' => $uri, 'version' => $version])->find();
         if($data){
             $data['method'] = json_decode(strtoupper($data['method'] ?? '[]'), true);
+
+            $data['header'] = json_decode($data['header'] ?? '[]', true);
+            if($data['header'] == false){
+                foreach($data['method'] as $v){
+                    $data['header'][$v] = null;
+                }
+            }
+
             $data['param'] = json_decode($data['param'] ?? '[]', true);
+            if($data['param'] == false){
+                foreach($data['method'] as $v){
+                    $data['param'][$v] = null;
+                }
+            }
+
+            $data['response'] = json_decode($data['response'] ?? '[]', true);
+            if($data['response'] == false){
+                foreach($data['method'] as $v){
+                    $data['response'][$v] = $data['response'][$v] ?? null;
+                }
+            }
+
             $data['success'] = json_decode($data['success'] ?? '[]', true);
+            if($data['success'] == false){
+                foreach($data['method'] as $v){
+                    $data['success'][$v] = null;
+                }
+            }
             $data['failure'] = json_decode($data['failure'] ?? '[]', true);
+            if($data['failure'] == false){
+                foreach($data['method'] as $v){
+                    $data['failure'][$v] = null;
+                }
+            }
             $data['explain'] = json_decode($data['explain'] ?? '[]', true);
+            if($data['explain'] == false){
+                foreach($data['method'] as $v){
+                    $data['explain'][$v] = null;
+                }
+            }
+            $data['description'] = json_decode($data['description'] ?? '[]', true);
+            if($data['description'] == false){
+                foreach($data['method'] as $v){
+                    $data['description'][$v] = null;
+                }
+            }
             $explain = [];
             if($data['explain']){
                 foreach($data['explain'] as $v){
@@ -213,6 +255,64 @@ class ApiDocService
             $arr = explode("\n", $comment);
             foreach ($arr as $k => $v){
                 if(strpos($v, 'apiParam')){
+                    $rows = array_values(array_filter(explode(' ', str_replace(["\n", "\t", "\r"], '', $v))));
+                    $param = [
+                        'field' => $rows[4],
+                        'type' => $rows[2],
+                        'verify' => $rows[3],
+                        'description' => ''
+                    ];
+                    unset($rows[0],$rows[1],$rows[2],$rows[3],$rows[4]);
+                    $param['description'] = implode(' ', $rows);
+                    $data[] = $param;
+                }
+            }
+        }
+        return $data;
+    }
+
+    /**
+     * 获取apiDoc描述
+     * @param array $handler
+     * @param string $action
+     * @return string
+     */
+    public function getApiDoDesc(array $handler, string $action){
+        $rc = new \ReflectionClass($handler[0]);
+        $rc = $rc->getMethod($action);
+        $comment = $rc->getDocComment();
+        unset($rc);
+        if($comment){
+            $arr = explode("\n", $comment);
+            foreach ($arr as $k => $v){
+                if(strpos($v, 'apiDesc')){
+                    $rows = array_values(array_filter(explode(' ', str_replace(["\n", "\t", "\r"], '', $v))));
+                    unset($rows[0],$rows[1]);
+                    return implode(' ', $rows);
+                }
+            }
+        }
+        return '';
+    }
+
+    /**
+     * 获取apiDoc请求头参数
+     * @param array $handler
+     * @param string $action
+     * @return array
+     * @throws \ReflectionException
+     */
+    public function getApiDocHeader(array $handler, string $action){
+        $rc = new \ReflectionClass($handler[0]);
+
+        $rc = $rc->getMethod($action);
+        $comment = $rc->getDocComment();
+        unset($rc);
+        $data = [];
+        if($comment){
+            $arr = explode("\n", $comment);
+            foreach ($arr as $k => $v){
+                if(strpos($v, 'apiHeader')){
                     $rows = array_values(array_filter(explode(' ', str_replace(["\n", "\t", "\r"], '', $v))));
                     $param = [
                         'field' => $rows[4],
