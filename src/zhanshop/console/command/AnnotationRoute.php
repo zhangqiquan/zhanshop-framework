@@ -44,7 +44,7 @@ class AnnotationRoute extends Command
         foreach ($this->versionRoutes as $app => $versionRoutes){
             $routeDir = App::routePath().DIRECTORY_SEPARATOR.$app;
             Helper::mkdirs($routeDir);
-
+            // 相同路由请求方式不一样的中间件必须一致
             foreach ($versionRoutes as $version => $groupRoute){
                 $versionRouteCode = Helper::headComment($app.'/'.$version);
                 foreach($groupRoute as $group => $routes){
@@ -55,14 +55,19 @@ class AnnotationRoute extends Command
                     foreach($middlewareTmps as $middleware){
                         $middlewares = array_unique(array_merge($middlewares, $middleware));
                     }
-                    foreach($routes as $route){
-                        // 如果为空或者 所有中间件都不存在 unset
-                        $isInmiddleware = false;
-                        foreach($route['middleware'] as $mk => $middleware){
-                            // 当前路由中间件 是否包含在所有中
+
+                    foreach($middlewares as $mk => $middleware){
+                        foreach($routes as $uri => $route){
+                            if(!in_array($middleware, $route['middleware'])){
+                                unset($middlewares[$mk]);
+                            }
+                        }
+                    }
+                    foreach($routes as $uri => $route){
+                        foreach ($route['middleware'] as $mk => $middleware){
+                            var_dump($middleware, $middlewares);
                             if(in_array($middleware, $middlewares)){
-                                $isInmiddleware = true;
-                                unset($routes[$mk]); // 消掉自身让它使用全局的
+                                unset($routes[$uri]['middleware'][$mk]);
                             }
                         }
                     }
@@ -80,7 +85,11 @@ class AnnotationRoute extends Command
                         }
                         $versionRouteCode .= ';'.PHP_EOL;
                     }
-                    $versionRouteCode .= '});'.PHP_EOL.PHP_EOL;
+                    $versionRouteCode .= '})';
+                    if($middlewares){
+                        $versionRouteCode .= "->middleware(".json_encode($middlewares).")";
+                    }
+                    $versionRouteCode .= ';'.PHP_EOL.PHP_EOL; // 全局中间件加进去
                 }
                 print_r($versionRouteCode);die;
                 //App::route()->group('/index', function (){
