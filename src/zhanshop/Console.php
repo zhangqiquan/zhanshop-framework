@@ -11,6 +11,7 @@ declare (strict_types=1);
 
 namespace zhanshop;
 
+use zhanshop\console\command\AnnotationRoute;
 use zhanshop\console\command\ApiCreate;
 use zhanshop\console\command\ApiDoc;
 use zhanshop\console\command\Help;
@@ -47,6 +48,7 @@ class Console{
         'help'       => Help::class,
         'server' => Server::class,
         'phar' => Phar::class,
+        'annotation:route' => AnnotationRoute::class,
         'api:create' => ApiCreate::class,
         'api:manager' => ApiDoc::class,
         'software:scan:ports' => ScanPorts::class,
