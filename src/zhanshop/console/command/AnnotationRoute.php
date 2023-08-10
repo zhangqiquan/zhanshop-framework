@@ -14,6 +14,7 @@ use zhanshop\App;
 use zhanshop\console\Command;
 use zhanshop\console\Input;
 use zhanshop\console\Output;
+use zhanshop\Helper;
 use zhanshop\Log;
 
 class AnnotationRoute extends Command
@@ -34,7 +35,64 @@ class AnnotationRoute extends Command
             $class = str_replace([DIRECTORY_SEPARATOR, '.php'], ['\\', ''], str_replace(App::rootPath(), '', $v));
             $this->generateClass($class);
         }
-        print_r($this->versionRoutes);
+        //print_r($this->versionRoutes);die;
+        $this->write();
+
+    }
+
+    public function write(){
+        foreach ($this->versionRoutes as $app => $versionRoutes){
+            $routeDir = App::routePath().DIRECTORY_SEPARATOR.$app;
+            Helper::mkdirs($routeDir);
+
+            foreach ($versionRoutes as $version => $groupRoute){
+                $versionRouteCode = Helper::headComment($app.'/'.$version);
+                foreach($groupRoute as $group => $routes){
+                    $versionRouteCode .= "App::route()->group('/{$group}', function (){".PHP_EOL;
+                    // 拿到相同的中间件
+                    $middlewareTmps = array_column($routes, 'middleware');
+                    $middlewares = [];
+                    foreach($middlewareTmps as $middleware){
+                        $middlewares = array_unique(array_merge($middlewares, $middleware));
+                    }
+                    foreach($routes as $route){
+                        // 如果为空或者 所有中间件都不存在 unset
+                        $isInmiddleware = false;
+                        foreach($route['middleware'] as $mk => $middleware){
+                            // 当前路由中间件 是否包含在所有中
+                            if(in_array($middleware, $middlewares)){
+                                $isInmiddleware = true;
+                                unset($routes[$mk]); // 消掉自身让它使用全局的
+                            }
+                        }
+                    }
+
+                    foreach($routes as $route){
+                        $uri = explode('/', $route['uri'])[0];
+                        $class = $route['handler'][0];
+                        $action = $route['handler'][1];
+                        $versionRouteCode .= "      App::route()->match(".json_encode($route['method']).", '.".$uri."', [".$class."::class, '".$action."'])";
+                        if($route['extra']){
+                            $versionRouteCode .= '->extra('.json_encode($route['extra']).')';
+                        }
+                        if($route['middleware']){
+                            $versionRouteCode .= '->middleware('.json_encode($route['middleware']).')';
+                        }
+                        $versionRouteCode .= ';'.PHP_EOL;
+                    }
+                    $versionRouteCode .= '});'.PHP_EOL.PHP_EOL;
+                }
+                print_r($versionRouteCode);die;
+                //App::route()->group('/index', function (){
+
+                //$versionRouteCode .= 'App::route()->group('/index', function (){';
+                var_dump($version);
+                print_r($groupRoute);
+            }
+            //$routeCode = "<?php\n".Helper::headComment($k.'/'.);
+
+
+        }
     }
 
     protected function generateClass(string $class)
@@ -45,7 +103,15 @@ class AnnotationRoute extends Command
             foreach($reflection->getMethods() as $method){
                 $route = $this->generateMethod($method);
                 if($route){
-                    $routes[] = $route;
+                    if(isset($routes[$route['uri']])){
+                        $method = array_merge($routes[$route['uri']]['method'], $route['method']);
+                        $uniqueMethod = array_unique($method);
+                        if(count($method) != count($uniqueMethod)) App::error()->setError(print_r($route, true).'路由存在重复定义');
+                        $routes[$route['uri']]['method'] = $method;
+                    }else{
+                        $routes[$route['uri']] = $route;
+                    }
+
                 }
             }
         }catch (\Throwable $exception){
@@ -54,12 +120,18 @@ class AnnotationRoute extends Command
 
         if($routes){
             $classPath = explode('\\', $class);
+            $app = $classPath[3] ?? '';
+            if($app == false){
+                Log::errorLog(SWOOLE_LOG_ERROR,  $class.'中无法确定app');
+                exit();
+            }
             $version = $classPath[4] ?? '';
             if($version == false){
                 Log::errorLog(SWOOLE_LOG_ERROR,  $class.'中无法确定版本号');
                 exit();
             }
-            $this->versionRoutes[$version][] = $routes;
+            $prefix = lcfirst($classPath[count($classPath) - 1]);
+            $this->versionRoutes[$app][$version][$prefix] = $routes;
         }
     }
 
@@ -92,7 +164,7 @@ class Annotation{
     public function __construct($method, string $notes,)
     {
         $this->method = $method;
-        $this->notes = $notes;
+        $this->notes = str_replace(['\'', '"', '#'], '', $notes);
     }
 
     public function title(){
@@ -105,22 +177,14 @@ class Annotation{
 
     public function group(){
         $arr = explode("\n", $this->notes);
-        $prefix = '@ApiGroup(';
+        $prefix = '@ApiGroup';
         foreach ($arr as $k => $v){
             if(strpos($v, $prefix) !== false){
                 $route = str_replace(['*', $prefix], '', $v);
-                print_r($route);die;
-//                $arr = explode(', ', $route);
-//                $middleware = [];
-//                foreach($arr as $k => $v){
-//                    $class = str_replace(' ', '', $v);
-//                    $middleware[] = $class;
-//                }
-//                return $middleware;
+                return str_replace(' ', '', $route);
             }
         }
-
-        return [];
+        return "未定义组";
     }
 
     public function route(){
@@ -138,11 +202,20 @@ class Annotation{
                     die;
                 }
 
+                $uri = str_replace(' ', '', $arr[0]);
+                $uris = explode('/', $uri);
+                $extras = [];
+                if(count($uris) > 1){
+                    unset($uris[0]);
+                    foreach($uris as $extra){
+                        $extras[] = str_replace(['{', '}'], '', $extra);
+                    }
+                }
                 return [
-                    'uri' => str_replace(' ', '', $arr[0]),
-                    'method' => $method,
+                    'uri' => $uri,
+                    'method' => [strtoupper($method)],
                     'handler' => [$this->method->class, lcfirst(substr($this->method->name, strlen($method), 9999))],
-                    'extra' => str_replace(' ', '', $arr[2] ?? [])
+                    'extra' => $extras
                 ];
             }
         }
