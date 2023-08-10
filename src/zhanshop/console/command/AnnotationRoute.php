@@ -24,45 +24,64 @@ class AnnotationRoute extends Command
         $this->setTitle('注解生成路由')->setDescription('一键生成基于控制器配置的注解路由');
     }
 
+    protected $versionRoutes = [];
+
     public function execute(Input $input, Output $output)
     {
         $apiDir = App::appPath() . DIRECTORY_SEPARATOR . 'api';
         $controllerFiles = glob($apiDir . DIRECTORY_SEPARATOR . '*' . DIRECTORY_SEPARATOR . '*' . DIRECTORY_SEPARATOR . 'controller' . DIRECTORY_SEPARATOR . '*.php');
         foreach ($controllerFiles as $k => $v) {
             $class = str_replace([DIRECTORY_SEPARATOR, '.php'], ['\\', ''], str_replace(App::rootPath(), '', $v));
-            $this->generate($class);
+            $this->generateClass($class);
         }
+        print_r($this->versionRoutes);
     }
-    protected    $groupRoute = [];
-    protected    $route = [];
-    protected function generate(string $class)
+
+    protected function generateClass(string $class)
     {
-        $this->groupRoute = [];
+        $routes = [];
         try {
             $reflection= new \ReflectionClass($class);
             foreach($reflection->getMethods() as $method){
-                $this->generateMethod($method);
+                $route = $this->generateMethod($method);
+                if($route){
+                    $routes[] = $route;
+                }
             }
         }catch (\Throwable $exception){
-                Log::errorLog(SWOOLE_LOG_ERROR,  $exception->getMessage());
+            Log::errorLog(SWOOLE_LOG_ERROR,  $exception->getMessage());
+        }
+
+        if($routes){
+            $classPath = explode('\\', $class);
+            $version = $classPath[4] ?? '';
+            if($version == false){
+                Log::errorLog(SWOOLE_LOG_ERROR,  $class.'中无法确定版本号');
+                exit();
+            }
+            $this->versionRoutes[$version][] = $routes;
         }
     }
 
+    /**
+     * 生成控制器方法路由
+     * @param $method
+     * @return array|false
+     */
     protected function generateMethod($method){
-        var_dump($method->getDocComment());
-                $annotation = new Annotation($method, $method->getDocComment());
-        $annotation->route();
-        //反射
-        $m = new ReflectionMethod($this, $name);
-
-        //方法注释
-        $note = mid(trim($m . ''), '/**', '*/');
-
-        //取指定标签 funcName 的值
-        $matched = preg_match('/@funcName\s*([^\s]*)/i', $note, $matches);
-        $this->route[] = [
-        ];
-        print_r($method);
+        $docComment = $method->getDocComment();
+        if($docComment == false) return false;
+        $annotation = new Annotation($method,  $docComment);
+        $route = $annotation->route();
+        if($route){
+            $route['middleware'] = $annotation->middleware();
+            $route['title'] = $annotation->title();
+            $route['group'] = $annotation->group();
+            $route['validate'] = $annotation->validate();
+            // 对进行相同的进行分组
+            return $route;
+        }
+        return [];
     }
 }
 
@@ -77,52 +96,87 @@ class Annotation{
     }
 
     public function title(){
+        $arr = explode("\n", $this->notes);
+        if(isset($arr[1])){
+            return str_replace('*', '', preg_replace('/\s+/',  '', $arr[1]));
+        }
+        return $this->method->name;
+    }
 
+    public function group(){
+        $arr = explode("\n", $this->notes);
+        $prefix = '@ApiGroup(';
+        foreach ($arr as $k => $v){
+            if(strpos($v, $prefix) !== false){
+                $route = str_replace(['*', $prefix], '', $v);
+                print_r($route);die;
+//                $arr = explode(', ', $route);
+//                $middleware = [];
+//                foreach($arr as $k => $v){
+//                    $class = str_replace(' ', '', $v);
+//                    $middleware[] = $class;
+//                }
+//                return $middleware;
+            }
+        }
+
+        return [];
     }
 
     public function route(){
         $arr = explode("\n", $this->notes);
         $prefix = '@Route(';
         foreach ($arr as $k => $v){
-            if(strpos($v, '@Route(')){
+            if(strpos($v, $prefix) !== false){
                 $route = str_replace(['*', $prefix, ')'], '', $v);
-                var_dump($route);
                 $arr = explode(', ', $route);
-                                if($arr == false){
-                                        $this->route['uri'] = str_replace(' ', '', $arr[0]);
-                                    $this->route['methods'] = str_replace(' ', '', $arr[1]);
-                                    $this->route['handler'] = [$this->method];
-                                    $this->route['extra'] = str_replace(' ', '', $arr[2]);
-                                    $this->route['cross_domain'] = $arr[1];
-                                    $this->route['middleware'] = $arr[1];
-                                    $this->route['cache'] = $arr['cache'];
-                                    /**
-                                     * 'methods' => $methods,
-                                     * 'handler' => $handler,
-                                     * 'service' => [str_replace('\\controller\\', '\\service\\', $handler[0]).'Service', ucfirst($handler[1])],
-                                     * 'middleware' => array_merge($this->currentGroup->getMiddleware(), $this->globalMiddleware),
-                                     * 'cache' => $this->currentGroup->getCache(),
-                                     * 'extra' => [],
-                                     * 'cross_domain' => $this->currentGroup->getCrossDomain()
-                                     */
-                                }
-                var_dump($arr);
+                // 这里的方法只能有一个
+                $method = str_replace(' ', '', $arr[1] ?? 'GET');
+                $method = strtolower($method);
+                if(strpos($this->method->name, $method) !== 0){
+                    Log::errorLog(SWOOLE_LOG_ERROR,  $this->method->class.'->'.$this->method->name.' Route注解指定的是'.$method.'而方法却是'.$this->method->name.'前缀不一致');
+                    die;
+                }
+
+                return [
+                    'uri' => str_replace(' ', '', $arr[0]),
+                    'method' => $method,
+                    'handler' => [$this->method->class, lcfirst(substr($this->method->name, strlen($method), 9999))],
+                    'extra' => str_replace(' ', '', $arr[2] ?? [])
+                ];
             }
         }
 
-                Log::errorLog(SWOOLE_LOG_WARNING,   $this->method->class.'->'.$this->method->name.'没有匹配到@Route注解');
+        return [];
+
     }
 
     public function middleware(){
+        $arr = explode("\n", $this->notes);
+        $prefix = '@Middleware(';
+        foreach ($arr as $k => $v){
+            if(strpos($v, $prefix) !== false){
+                $route = str_replace(['*', $prefix, ')'], '', $v);
+                $arr = explode(', ', $route);
+                $middleware = [];
+                foreach($arr as $k => $v){
+                    $class = str_replace(' ', '', $v);
+                    $middleware[] = $class;
+                }
+                return $middleware;
+            }
+        }
 
-    }
-
-    public function crossDomain(){
-
+        return [];
     }
 
     public function validate(){
-
+        $class = str_replace('\\controller\\', '\\validate\\', $this->method->class.ucfirst($this->method->name));
+        $classPath = App::rootPath().str_replace('\\',  DIRECTORY_SEPARATOR, $class).'.php';
+        if(file_exists($classPath)){
+            return $class;
+        }
+        return null;
     }
 
     // 响应说明放在编辑里面
