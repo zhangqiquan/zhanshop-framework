@@ -106,6 +106,7 @@ class AnnotationRoute extends Command
     // 生成apiDoc
     public function apiDoc(){
         $model = (new ApiDocModel())->getQuery();
+        $allDos = $model->table('apidoc')->column('id', 'id');
         foreach ($this->versionRoutes as $app => $versionRoutes){
             $routeDir = App::routePath().DIRECTORY_SEPARATOR.$app;
             // 相同路由请求方式不一样的中间件必须一致
@@ -129,7 +130,7 @@ class AnnotationRoute extends Command
                         $insetData = [
                             'protocol' => 'http',
                             'app' => $app,
-                            'version' => $version,
+                            'version' => str_replace('_', '.', $version),
                             'uri' => $group.'.'.$route['uri'],
                             'method' => $route['method'][0],
                             'title' => $route['title'],
@@ -148,6 +149,7 @@ class AnnotationRoute extends Command
                         if($row){
                             // 更新
                             $model->table('apidoc')->where(['id' => $row['id']])->update($insetData);
+                            unset($allDos[$row['id']]);
                         }else{
                             // 插入
                             $model->table('apidoc')->insert($insetData);
@@ -156,6 +158,8 @@ class AnnotationRoute extends Command
                 }
             }
         }
+
+        $model->table('apidoc')->whereIn('id', $allDos)->delete(); // 删除已经被处理的文档
     }
 
     protected function generateClass(string $class)

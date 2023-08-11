@@ -43,7 +43,7 @@ class ApiDocController
      * @return mixed
      * @throws \Exception
      */
-    public function apidoc(Request &$request, Response &$response){
+    public function postApidoc(Request &$request, Response &$response){
         $roure = $request->getRoure();
         $appName = $roure['extra'][0] ?? null;
         $this->appName = $appName;
@@ -80,7 +80,7 @@ class ApiDocController
      * @return void
      */
     protected function detail(Request &$request){
-        $data = $request->validate([
+        $data = $request->validateRule([
             'protocol' => 'Required',
             'uri' => 'Required',
             'version' => 'Required',
@@ -169,13 +169,13 @@ class SampleCode{
     public static function vue3($detail, &$request){
         $headerCode = '{'.PHP_EOL;
 
-        foreach($detail['header'] as $v){
+        foreach($detail['header'] ?? [] as $v){
             $headerCode .= '        "'.$v['name'].'": '. (is_int($v['default'] ?? '') ? $v['default'] : ("\"".($v['default'] ?? '')."\",")).' //'.$v['description'].PHP_EOL;
         }
         $headerCode .= '    }';
 
         $bodyCode = '{'.PHP_EOL;
-        foreach($detail['body'] as $v){
+        foreach($detail['body'] ?? [] as $v){
             if(isset($v['children']) && $v['children']){
                 self::jqueryRequestParam($v['name'], $v['type'], $bodyCode, $v['children']);
             }else{

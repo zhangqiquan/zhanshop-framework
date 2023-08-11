@@ -327,11 +327,12 @@ class Request
      * @throws \Exception
      */
     public function validate(){
-        $validate = $this->getRoure()['validate'];
+        $roure = $this->getRoure();
+        $validate = $roure['validate'];
         if($validate && isset($validate[0])){
             $class = App::make($validate[0]);
             return new Validate($this->param(), $class->rule, $class->message);
         }
-        App::error()->setError("验证器未定义");
+        App::error()->setError($roure['handler'][0].':'.$roure['handler'][1]."关联的验证器未定义");
     }
 }
