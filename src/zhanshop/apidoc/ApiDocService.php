@@ -148,37 +148,20 @@ class ApiDocService
     }
 
     public function getDetail(string $protocol, string $version, string $uri){
-        $data = $this->model->table('apidoc')->where(['protocol' => $protocol, 'app' => $this->appName, 'uri' => $uri, 'version' => $version])->find();
-        if($data){
-            $data['method'] = json_decode(strtoupper($data['method'] ?? '[]'), true);
+        $listData = $this->model->table('apidoc')->where(['protocol' => $protocol, 'app' => $this->appName, 'uri' => $uri, 'version' => $version])->order('id', 'asc')->select();
+        $data = [
 
-            $data['header'] = json_decode($data['header'] ?? '[]', true);
-
-            $data['param'] = json_decode($data['param'] ?? '[]', true);
-
-            $data['response'] = json_decode($data['response'] ?? '[]', true);
-
-            $data['success'] = json_decode($data['success'] ?? '[]', true);
-
-            $data['failure'] = json_decode($data['failure'] ?? '[]', true);
-
-            $data['explain'] = json_decode($data['explain'] ?? '[]', true);
-
-            $data['description'] = json_decode($data['description'] ?? '[]', true);
-
-            $explain = [];
-            if($data['explain']){
-                foreach($data['explain'] as $v){
-                    if($v){
-                        $json = json_decode($v, true);
-                        $explain = $explain + $json ?? [];
-                    }
-                }
-                $data['explain'] = $explain;
-            }
+        ];
+        foreach($listData as $k => $v){
+            $v['header'] = json_decode($data['header'] ?? '[]', true);
+            $v['param'] = json_decode($data['param'] ?? '[]', true);
+            $v['response'] = json_decode($data['response'] ?? '[]', true);
+            $v['success'] = json_decode($data['success'] ?? '[]', true);
+            $v['failure'] = json_decode($data['failure'] ?? '[]', true);
+            $v['explain'] = json_decode($data['explain'] ?? '[]', true);
+            $data[$v['method']] = $v;
         }
-        $versions = $this->model->table('apidoc')->where(['protocol' => $protocol, 'app' => $this->appName, 'uri' => $uri])->group('version')->field('version')->order('id desc')->select();
-        //var_dump($versions);
+        $versions = $this->model->table('apidoc')->where(['protocol' => $protocol, 'app' => $this->appName, 'uri' => $uri])->group('version')->order('version', 'desc')->select();
         return [
             'detail' => $data,
             'versions' => array_column($versions, 'version'),
