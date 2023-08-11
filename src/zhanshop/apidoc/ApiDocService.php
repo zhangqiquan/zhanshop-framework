@@ -65,21 +65,22 @@ class ApiDocService
     }
 
     public function getApiMenu(){
-        $subSql = "select id,version,protocol,uri,title,groupname from ".' apidoc where app = "'.$this->appName.'" order by `id` desc';
-        $sql = "select * from({$subSql}) as a order by version asc";
-        $data = $this->model->query($sql);
-        $uniqueData = [];
-        foreach($data as $k => $v){
-            $uniqueData[$v['uri']] = $v;
+        $data = $this->model->table("apidoc")->where(['app' => $this->appName])->order('id', 'asc')->field('protocol,version,uri,title,groupname')->limit(5000)->select();
+
+        $routes = [];
+        foreach ($data as $k => $v){
+            $key = $v['version'].'/'.$v['uri'].'-'.$v['groupname'];
+            if(!isset($routes[$key])){
+                $routes[$key] = $v;
+            }
         }
-        $data = array_values($uniqueData);
-        $groups = array_values(array_unique(array_column($data, 'groupname')));
+        $groups = array_values(array_filter(array_unique(array_column($data, 'groupname'))));
 
         $result = [];
 
         foreach($groups as $k => $v){
             $result[$k]['title'] = $v;
-            foreach($data as $kk => $vv){
+            foreach($routes as $kk => $vv){
                 if($vv['groupname'] == $v){
                     $result[$k]['apis'][] = [
                         'protocol' => $vv['protocol'],
@@ -87,7 +88,7 @@ class ApiDocService
                         'title' => $vv['title'],
                         'version' => $vv['version'],
                     ];
-                    unset($data[$kk]);
+                    unset($routes[$kk]);
                 }
             }
         }
