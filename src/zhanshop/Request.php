@@ -318,4 +318,14 @@ class Request
     public function validateData(array $data, array $rules, array $message = []){
         return new Validate($data, $rules, $message);
     }
+
+    /**
+     * 使用验证配置类
+     * @param string $class
+     * @return Validate
+     */
+    public function validateClass(string $class){
+        $class = App::make($class);
+        return new Validate($this->param(), $class->rule, $class->message);
+    }
 }
