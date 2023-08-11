@@ -67,7 +67,9 @@ class Rule
      * @return void
      */
     public function addRule(string $uri, array &$handler, array $methods = ['GET', 'POST', 'PUT', 'DELETE']) :Rule{
-        $this->currentUri = $this->currentGroup->getPrefix().$uri;
+        $prefix = $this->currentGroup->getPrefix();
+        $this->currentUri = $prefix ? $prefix.'.'.$uri : $uri;
+        $handler[1] = ucfirst($handler[1]);
         $this->bind[$this->currentAppName][$this->currentAppVersion][$this->currentUri] = [
             'methods' => $methods,
             'handler' => $handler,

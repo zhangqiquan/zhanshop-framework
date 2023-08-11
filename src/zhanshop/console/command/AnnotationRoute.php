@@ -47,6 +47,7 @@ class AnnotationRoute extends Command
             // 相同路由请求方式不一样的中间件必须一致
             foreach ($versionRoutes as $version => $groupRoute){
                 $versionRouteCode = Helper::headComment($app.'/'.$version);
+                $versionRouteCode .= 'use zhanshop\App;'.PHP_EOL.PHP_EOL;
                 foreach($groupRoute as $group => $routes){
                     $versionRouteCode .= "App::route()->group('/{$group}', function (){".PHP_EOL;
                     // 拿到相同的中间件
@@ -65,7 +66,6 @@ class AnnotationRoute extends Command
                     }
                     foreach($routes as $uri => $route){
                         foreach ($route['middleware'] as $mk => $middleware){
-                            var_dump($middleware, $middlewares);
                             if(in_array($middleware, $middlewares)){
                                 unset($routes[$uri]['middleware'][$mk]);
                             }
@@ -76,31 +76,25 @@ class AnnotationRoute extends Command
                         $uri = explode('/', $route['uri'])[0];
                         $class = $route['handler'][0];
                         $action = $route['handler'][1];
-                        $versionRouteCode .= "      App::route()->match(".json_encode($route['method']).", '.".$uri."', [".$class."::class, '".$action."'])";
+                        $versionRouteCode .= "      App::route()->match(".json_encode($route['method']).", \"".$uri."\", [\\".$class."::class, '".$action."'])";
                         if($route['extra']){
                             $versionRouteCode .= '->extra('.json_encode($route['extra']).')';
                         }
                         if($route['middleware']){
-                            $versionRouteCode .= '->middleware('.json_encode($route['middleware']).')';
+                            $middleware = '['.implode(', ', array_values($route['middleware'])).']';
+                            $versionRouteCode .= '->middleware('.$middleware.')';
                         }
                         $versionRouteCode .= ';'.PHP_EOL;
                     }
                     $versionRouteCode .= '})';
                     if($middlewares){
-                        $versionRouteCode .= "->middleware(".json_encode($middlewares).")";
+                        $middlewares = '['.implode(', ', array_values($middlewares)).']';
+                        $versionRouteCode .= "->middleware(".$middlewares.")";
                     }
                     $versionRouteCode .= ';'.PHP_EOL.PHP_EOL; // 全局中间件加进去
                 }
-                print_r($versionRouteCode);die;
-                //App::route()->group('/index', function (){
-
-                //$versionRouteCode .= 'App::route()->group('/index', function (){';
-                var_dump($version);
-                print_r($groupRoute);
+                file_put_contents($routeDir.DIRECTORY_SEPARATOR.$version.'.php', $versionRouteCode);
             }
-            //$routeCode = "<?php\n".Helper::headComment($k.'/'.);
-
-
         }
     }
 
@@ -117,6 +111,10 @@ class AnnotationRoute extends Command
                         $uniqueMethod = array_unique($method);
                         if(count($method) != count($uniqueMethod)) App::error()->setError(print_r($route, true).'路由存在重复定义');
                         $routes[$route['uri']]['method'] = $method;
+
+                        $middleware = array_merge($routes[$route['uri']]['middleware'], $route['middleware']);
+                        $uniqueMiddleware = array_unique($middleware);
+                        $routes[$route['uri']]['middleware'] = $uniqueMiddleware;
                     }else{
                         $routes[$route['uri']] = $route;
                     }
@@ -234,6 +232,7 @@ class Annotation{
     }
 
     public function middleware(){
+        $middlewarePath = App::appPath().DIRECTORY_SEPARATOR.'middleware'.DIRECTORY_SEPARATOR;
         $arr = explode("\n", $this->notes);
         $prefix = '@Middleware(';
         foreach ($arr as $k => $v){
@@ -243,7 +242,13 @@ class Annotation{
                 $middleware = [];
                 foreach($arr as $k => $v){
                     $class = str_replace(' ', '', $v);
-                    $middleware[] = $class;
+                    // 检查中间件是否存在
+                    $file = $middlewarePath.str_replace(['\\', '::class'], [DIRECTORY_SEPARATOR, '.php'], $class);
+                    if(!file_exists($file)){
+                        Log::errorLog(SWOOLE_LOG_ERROR,  $this->method->class.'->'.$this->method->name.' Middleware注解指定 '.$class.' 中间件未定义');
+                        die;
+                    }
+                    $middleware[] = '\\app\\middleware\\'.str_replace('/', '\\', $class);
                 }
                 return $middleware;
             }

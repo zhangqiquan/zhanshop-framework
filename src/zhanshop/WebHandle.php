@@ -117,12 +117,10 @@ class WebHandle
             $dispatch = App::make(Dispatch::class);
 
             $dispatch->check($appName, $request);
-
             // 执行前置中间件
             $this->beforeMiddleware($request, $servResponse);
 
             $data = $dispatch->run($appName, $request, $servResponse);
-
             $servResponse->setData($data);
             // 执行后置中间件
             $this->afterMiddleware($request, $servResponse);

@@ -171,7 +171,10 @@ class Response
 
             $this->rawResponse->status($this->status);
             $this->rawResponse->end($respData);
+        }else{
+            $this->rawResponse->end();
         }
+
     }
 
     /**
