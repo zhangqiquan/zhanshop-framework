@@ -268,7 +268,9 @@ class Request
             return $this->extData ?? [];
         }
 
-        return $this->extData[$name] ?? $default;
+        $val = $this->extData[$name] ?? $default;
+        if($val === null) App::error()->setError($name.'参数无法获取', Error::BAD_REQUEST);
+        return $val;
     }
 
     /**
