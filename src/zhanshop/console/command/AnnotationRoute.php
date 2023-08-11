@@ -28,6 +28,7 @@ class AnnotationRoute extends Command
     }
 
     protected $versionRoutes = [];
+    protected $versionOriginalRoutes = [];
 
     public function execute(Input $input, Output $output)
     {
@@ -107,53 +108,55 @@ class AnnotationRoute extends Command
     public function apiDoc(){
         $model = (new ApiDocModel())->getQuery();
         $allDos = $model->table('apidoc')->column('id', 'id');
-        foreach ($this->versionRoutes as $app => $versionRoutes){
+        foreach ($this->versionOriginalRoutes as $app => $versionRoutes){
             $routeDir = App::routePath().DIRECTORY_SEPARATOR.$app;
             // 相同路由请求方式不一样的中间件必须一致
             foreach ($versionRoutes as $version => $groupRoute){
                 $versionRouteCode = Helper::headComment($app.'/'.$version);
                 $versionRouteCode .= 'use zhanshop\App;'.PHP_EOL.PHP_EOL;
                 foreach($groupRoute as $group => $routes){
-
                     foreach($routes as $route){
-                        $param = [];
-                        if($route['validate']){
-                            $validate = App::make($route['validate']);
-                            foreach($validate->rule as $field => $rule){
-                                $param[$field] = [
-                                    'rule' => $rule,
-                                    'title' => $validate->message[$field] ?? $field,
-                                    'description' => $validate->description[$field] ?? null,
-                                ];
+                        foreach($route as $rowRoute){
+                            $param = [];
+                            if($rowRoute['validate']){
+                                $validate = App::make($rowRoute['validate']);
+                                foreach($validate->rule as $field => $rule){
+                                    $param[$field] = [
+                                        'rule' => $rule,
+                                        'title' => $validate->message[$field] ?? $field,
+                                        'description' => $validate->description[$field] ?? null,
+                                    ];
+                                }
+                            }
+                            $insetData = [
+                                'protocol' => 'http',
+                                'app' => $app,
+                                'version' => str_replace('_', '.', $version),
+                                'uri' => $group.'.'.$rowRoute['uri'],
+                                'method' => $rowRoute['method'][0],
+                                'title' => $rowRoute['title'],
+                                'groupname' => $rowRoute['group'],
+                                'header' => json_encode($rowRoute['header'] ?? [], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE),
+                                'param' => json_encode($param, JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE)
+                            ];
+
+                            $row = $model->table('apidoc')->where([
+                                'protocol' => $insetData['protocol'],
+                                'app' => $insetData['app'],
+                                'version' => $insetData['version'],
+                                'uri' => $insetData['uri'],
+                                'method' => $insetData['method'],
+                            ])->find();
+                            if($row){
+                                // 更新
+                                $model->table('apidoc')->where(['id' => $row['id']])->update($insetData);
+                                unset($allDos[$row['id']]);
+                            }else{
+                                // 插入
+                                $model->table('apidoc')->insert($insetData);
                             }
                         }
-                        $insetData = [
-                            'protocol' => 'http',
-                            'app' => $app,
-                            'version' => str_replace('_', '.', $version),
-                            'uri' => $group.'.'.$route['uri'],
-                            'method' => $route['method'][0],
-                            'title' => $route['title'],
-                            'groupname' => $route['group'],
-                            'header' => json_encode($route['header'] ?? [], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE),
-                            'param' => json_encode($param, JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE)
-                        ];
 
-                        $row = $model->table('apidoc')->where([
-                            'protocol' => $insetData['protocol'],
-                            'app' => $insetData['app'],
-                            'version' => $insetData['version'],
-                            'uri' => $insetData['uri'],
-                            'method' => $insetData['method'],
-                        ])->find();
-                        if($row){
-                            // 更新
-                            $model->table('apidoc')->where(['id' => $row['id']])->update($insetData);
-                            unset($allDos[$row['id']]);
-                        }else{
-                            // 插入
-                            $model->table('apidoc')->insert($insetData);
-                        }
                     }
                 }
             }
@@ -165,10 +168,12 @@ class AnnotationRoute extends Command
     protected function generateClass(string $class)
     {
         $routes = [];
+        $originalRoutes = [];
         try {
             $reflection= new \ReflectionClass($class);
             foreach($reflection->getMethods() as $method){
                 $route = $this->generateMethod($method);
+
                 if($route){
                     if(isset($routes[$route['uri']])){
                         $method = array_merge($routes[$route['uri']]['method'], $route['method']);
@@ -182,7 +187,7 @@ class AnnotationRoute extends Command
                     }else{
                         $routes[$route['uri']] = $route;
                     }
-
+                    $originalRoutes[$route['uri']][] = $route;
                 }
             }
         }catch (\Throwable $exception){
@@ -203,6 +208,7 @@ class AnnotationRoute extends Command
             }
             $prefix = lcfirst($classPath[count($classPath) - 1]);
             $this->versionRoutes[$app][$version][$prefix] = $routes;
+            $this->versionOriginalRoutes[$app][$version][$prefix] = $originalRoutes;
         }
     }
 
