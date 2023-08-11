@@ -77,6 +77,7 @@ class Rule
             'middleware' => array_merge($this->currentGroup->getMiddleware(), $this->globalMiddleware),
             'cache' => $this->currentGroup->getCache(),
             'extra' => [],
+            'validate' => [],
             'cross_domain' => $this->currentGroup->getCrossDomain()
         ];
         return $this; // 测试分组路由

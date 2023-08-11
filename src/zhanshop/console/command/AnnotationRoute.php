@@ -10,6 +10,8 @@ declare (strict_types=1);
 
 namespace zhanshop\console\command;
 
+use zhanshop\apidoc\ApiDocModel;
+use zhanshop\apidoc\ApiDocService;
 use zhanshop\App;
 use zhanshop\console\Command;
 use zhanshop\console\Input;
@@ -37,7 +39,7 @@ class AnnotationRoute extends Command
         }
         //print_r($this->versionRoutes);die;
         $this->write();
-
+        $this->apiDoc();
     }
 
     public function write(){
@@ -80,6 +82,9 @@ class AnnotationRoute extends Command
                         if($route['extra']){
                             $versionRouteCode .= '->extra('.json_encode($route['extra']).')';
                         }
+                        if($route['validate']){
+                            $versionRouteCode .= '->validate(['.'\\'.$route['validate'].'::class])';
+                        }
                         if($route['middleware']){
                             $middleware = '['.implode(', ', array_values($route['middleware'])).']';
                             $versionRouteCode .= '->middleware('.$middleware.')';
@@ -94,6 +99,61 @@ class AnnotationRoute extends Command
                     $versionRouteCode .= ';'.PHP_EOL.PHP_EOL; // 全局中间件加进去
                 }
                 file_put_contents($routeDir.DIRECTORY_SEPARATOR.str_replace('_', '.', $version).'.php', $versionRouteCode);
+            }
+        }
+    }
+
+    // 生成apiDoc
+    public function apiDoc(){
+        $model = (new ApiDocModel())->getQuery();
+        foreach ($this->versionRoutes as $app => $versionRoutes){
+            $routeDir = App::routePath().DIRECTORY_SEPARATOR.$app;
+            // 相同路由请求方式不一样的中间件必须一致
+            foreach ($versionRoutes as $version => $groupRoute){
+                $versionRouteCode = Helper::headComment($app.'/'.$version);
+                $versionRouteCode .= 'use zhanshop\App;'.PHP_EOL.PHP_EOL;
+                foreach($groupRoute as $group => $routes){
+
+                    foreach($routes as $route){
+                        $param = [];
+                        if($route['validate']){
+                            $validate = App::make($route['validate']);
+                            foreach($validate->rule as $field => $rule){
+                                $param[$field] = [
+                                    'rule' => $rule,
+                                    'title' => $validate->message[$field] ?? $field,
+                                    'description' => $validate->description[$field] ?? null,
+                                ];
+                            }
+                        }
+                        $insetData = [
+                            'protocol' => 'http',
+                            'app' => $app,
+                            'version' => $version,
+                            'uri' => $group.'.'.$route['uri'],
+                            'method' => $route['method'][0],
+                            'title' => $route['title'],
+                            'groupname' => $route['group'],
+                            'header' => json_encode($route['header'] ?? [], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE),
+                            'param' => json_encode($param, JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE)
+                        ];
+
+                        $row = $model->table('apidoc')->where([
+                            'protocol' => $insetData['protocol'],
+                            'app' => $insetData['app'],
+                            'version' => $insetData['version'],
+                            'uri' => $insetData['uri'],
+                            'method' => $insetData['method'],
+                        ])->find();
+                        if($row){
+                            // 更新
+                            $model->table('apidoc')->where(['id' => $row['id']])->update($insetData);
+                        }else{
+                            // 插入
+                            $model->table('apidoc')->insert($insetData);
+                        }
+                    }
+                }
             }
         }
     }
@@ -156,6 +216,7 @@ class AnnotationRoute extends Command
             $route['middleware'] = $annotation->middleware();
             $route['title'] = $annotation->title();
             $route['group'] = $annotation->group();
+            $route['header'] = $annotation->header();
             $route['validate'] = $annotation->validate();
             // 对进行相同的进行分组
             return $route;
@@ -230,7 +291,7 @@ class Annotation{
         return [];
 
     }
-
+    // 中间件支持多个
     public function middleware(){
         $middlewarePath = App::appPath().DIRECTORY_SEPARATOR.'middleware'.DIRECTORY_SEPARATOR;
         $arr = explode("\n", $this->notes);
@@ -259,11 +320,37 @@ class Annotation{
 
     public function validate(){
         $class = str_replace('\\controller\\', '\\validate\\', $this->method->class.ucfirst($this->method->name));
-        $classPath = App::rootPath().str_replace('\\',  DIRECTORY_SEPARATOR, $class).'.php';
+        $classPath = App::rootPath().DIRECTORY_SEPARATOR.str_replace('\\',  DIRECTORY_SEPARATOR, $class).'.php';
         if(file_exists($classPath)){
             return $class;
         }
         return null;
+    }
+
+    public function header(){
+        $middlewarePath = App::appPath().DIRECTORY_SEPARATOR.'middleware'.DIRECTORY_SEPARATOR;
+        $arr = explode("\n", $this->notes);
+        $prefix = '@Header(';
+        foreach ($arr as $k => $v){
+            if(strpos($v, $prefix) !== false){
+                $route = str_replace(['*', $prefix, ')'], '', $v);
+                $arr = explode(', ', $route);
+                $headers = [];
+                foreach($arr as $k => $v){
+                    $header = str_replace(' ', '', $v); //
+                    $header = explode('=', $header);
+                    $val = $header[1] ?? null;
+                    if($val == false){
+                        Log::errorLog(SWOOLE_LOG_ERROR,  $this->method->class.'->'.$this->method->name.' Header注解指定 '.$header[0].'后面应该包含一个=字段说明');
+                        die;
+                    }
+                    $headers[$header[0]] = $val;
+                }
+                return $headers;
+            }
+        }
+
+        return [];
     }
 
     // 响应说明放在编辑里面

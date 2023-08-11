@@ -64,59 +64,6 @@ class ApiDocService
         }
     }
 
-    public function getApiMenu(){
-        $subSql = "select id,version,protocol,uri,title,groupname from ".' apidoc where app = "'.$this->appName.'" order by `id` desc';
-        $sql = "select * from({$subSql}) as a order by version asc";
-        $data = $this->model->query($sql);
-        $uniqueData = [];
-        foreach($data as $k => $v){
-            $uniqueData[$v['uri']] = $v;
-        }
-        $data = array_values($uniqueData);
-        $groups = array_values(array_unique(array_column($data, 'groupname')));
-
-        $result = [];
-
-        foreach($groups as $k => $v){
-            $result[$k]['title'] = $v;
-            foreach($data as $kk => $vv){
-                if($vv['groupname'] == $v){
-                    $result[$k]['apis'][] = [
-                        'protocol' => $vv['protocol'],
-                        'uri' => $vv['uri'],
-                        'title' => $vv['title'],
-                        'version' => $vv['version'],
-                    ];
-                    unset($data[$kk]);
-                }
-            }
-        }
-        return $result;
-    }
-
-    /**
-     * 获取ApiDoc标题
-     * @param $class
-     * @param $method
-     * @return array|string|string[]|null
-     * @throws \ReflectionException
-     */
-    public function getApiDocTitle(array $handler){
-        //echo PHP_EOL.'#获取'.$version.'/'.$action.'的apiDoc标题#';
-        //$action = explode('@', $action);
-        //$class = '\\app\\'.$this->appType.'\\'.$version.'\\controller\\'.$action[0];
-        $rc = new \ReflectionClass($handler[0]);
-        $rc = $rc->getMethod($handler[1]);
-        $comment = $rc->getDocComment();
-        unset($rc);
-        unset($rc);
-        if($comment){
-            $arr = explode("\n", $comment);
-            if(isset($arr[1])){
-                return str_replace('*', '', preg_replace('/\s+/',  '', $arr[1]));
-            }
-        }
-    }
 
     /**
      * 获取ApiDoc分组
@@ -363,4 +310,6 @@ class ApiDocService
             $this->model->table("apidoc")->insert($data);
         }
     }
+
+    
 }

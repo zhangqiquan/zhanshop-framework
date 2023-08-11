@@ -293,12 +293,12 @@ class Request
     }
 
     /**
-     * 请求参数验证
+     * 请求参数验证规则
      * @param array $rules
      * @param array $message
      * @return Validate
      */
-    public function validate(array $rules, array $message = []){
+    public function validateRule(array $rules, array $message = []){
         $params = $this->param();
         return new Validate($params ?? [], $rules, $message);
     }
@@ -323,11 +323,15 @@ class Request
 
     /**
      * 使用验证配置类
-     * @param string $class
-     * @return Validate
+     * @return void|Validate
+     * @throws \Exception
      */
-    public function validateClass(string $class){
-        $class = App::make($class);
-        return new Validate($this->param(), $class->rule, $class->message);
+    public function validate(){
+        $validate = $this->getRoure()['validate'];
+        if($validate && isset($validate[0])){
+            $class = App::make($validate[0]);
+            return new Validate($this->param(), $class->rule, $class->message);
+        }
+        App::error()->setError("验证器未定义");
     }
 }
