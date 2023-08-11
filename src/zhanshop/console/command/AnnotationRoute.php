@@ -93,7 +93,7 @@ class AnnotationRoute extends Command
                     }
                     $versionRouteCode .= ';'.PHP_EOL.PHP_EOL; // 全局中间件加进去
                 }
-                file_put_contents($routeDir.DIRECTORY_SEPARATOR.$version.'.php', $versionRouteCode);
+                file_put_contents($routeDir.DIRECTORY_SEPARATOR.str_replace('_', '.', $version).'.php', $versionRouteCode);
             }
         }
     }
