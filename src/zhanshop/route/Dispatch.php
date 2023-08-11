@@ -35,7 +35,7 @@ class Dispatch
         // 检查路由是否存在
         $params = explode("/", $request->server('request_uri'));
         $version = $params[1] ? $params[1] : 'v1';
-        $uri     = isset($params[2]) ? '/'.$params[2] : '/';
+        $uri     = isset($params[2]) ? '/'.$params[2] : '/index.index';
         $route = App::route()->getRule()->getBind($name, $version, $uri);
         if(!$route) App::error()->setError('您所访问的API不存在', Error::NOT_FOUND);
         $this->method = $request->server('request_method', 'GET');
