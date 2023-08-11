@@ -149,19 +149,35 @@ class ApiDocService
 
     public function getDetail(string $protocol, string $version, string $uri){
         $listData = $this->model->table('apidoc')->where(['protocol' => $protocol, 'app' => $this->appName, 'uri' => $uri, 'version' => $version])->order('id', 'asc')->select();
-        $data = [
-
-        ];
+        //print_r($listData);
+        $data = [];
         foreach($listData as $k => $v){
-            $v['header'] = json_decode($data['header'] ?? '[]', true);
-            $v['param'] = json_decode($data['param'] ?? '[]', true);
-            $v['response'] = json_decode($data['response'] ?? '[]', true);
-            $v['success'] = json_decode($data['success'] ?? '[]', true);
-            $v['failure'] = json_decode($data['failure'] ?? '[]', true);
-            $v['explain'] = json_decode($data['explain'] ?? '[]', true);
-            $data[$v['method']] = $v;
+            $v['header'] = json_decode($v['header'] ?? '[]', true);
+            if($v['header']){
+                $header = [];
+                foreach($v['header'] as $field => $head){
+                    $header[] = ['field' => $field, 'description' => $head];
+                }
+                $v['header'] = $header;
+            }
+
+            $v['param'] = json_decode($v['param'] ?? '[]', true);
+            if($v['param']){
+                $param = [];
+                foreach($v['param'] as $field => $rule){
+                    $param[] = ['field' => $field, 'verify' => $rule['rule'], 'description' => $rule['title'].' '.$rule['description']];
+                }
+                $v['param'] = $param;
+            }
+
+            $v['response'] = json_decode($v['response'] ?? '[]', true);
+            $v['success'] = json_decode($v['success'] ?? '[]', true);
+            $v['failure'] = json_decode($v['failure'] ?? '[]', true);
+            $v['explain'] = json_decode($v['explain'] ?? '[]', true);
+            $data[] = $v;
         }
         $versions = $this->model->table('apidoc')->where(['protocol' => $protocol, 'app' => $this->appName, 'uri' => $uri])->group('version')->order('version', 'desc')->select();
+        print_r($data);
         return [
             'detail' => $data,
             'versions' => array_column($versions, 'version'),
