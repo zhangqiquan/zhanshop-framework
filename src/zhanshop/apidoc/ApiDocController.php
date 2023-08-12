@@ -188,7 +188,7 @@ class SampleCode{
         $code = "// vuejs示例代码 //
 axios.request({
     // 请求的接口地址
-    url: \"".($request->header('origin'))."\",
+    url: \"".($request->header('origin').'/'.$request->post('version').'/'.$request->post('uri'))."\",
     //请求方法
     method: \"".strtoupper($method)."\",
     //超时时间设置，单位毫秒
@@ -218,13 +218,8 @@ axios.request({
         $headerCode .= '    }';
 
         $bodyCode = '{'.PHP_EOL;
-        foreach($detail['body'] as $v){
-            if(isset($v['children']) && $v['children']){
-                self::jqueryRequestParam($v['name'], $v['type'], $bodyCode, $v['children']);
-            }else{
-                $bodyCode .= '        "'.$v['name'].'": '.(is_int($v['default'] ?? '') ? $v['default'] : ("\"".($v['default'] ?? '')."\",")).' //'.$v['description'].PHP_EOL;
-            }
-
+        foreach($detail['param'] ?? [] as $v){
+            $bodyCode .= '        "'.$v['field'].'": '.("\"".($v['default'] ?? '')."\",").' //'.$v['description'].PHP_EOL;
         }
         $bodyCode .= '    }';
         $uri = $request->param('uri');
@@ -234,7 +229,7 @@ axios.request({
         $code = "// jquery示例代码 //
 var request = $.ajax({
     //请求的接口地址
-    url: '".$detail['detail']['server_url']."',
+    url: '".($request->header('origin').'/'.$request->post('version').'/'.$request->post('uri'))."',
     //请求方法
     method: '".strtoupper($method)."',
      //超时时间设置，单位毫秒
