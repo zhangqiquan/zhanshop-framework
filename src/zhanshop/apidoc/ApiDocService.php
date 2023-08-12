@@ -147,8 +147,10 @@ class ApiDocService
         }
     }
 
-    public function getDetail(string $protocol, string $version, string $uri){
-        $listData = $this->model->table('apidoc')->where(['protocol' => $protocol, 'app' => $this->appName, 'uri' => $uri, 'version' => $version])->order('id', 'asc')->select();
+    public function getDetail(string $protocol, string $version, string $uri, $method = ''){
+        $where = ['protocol' => $protocol, 'app' => $this->appName, 'uri' => $uri, 'version' => $version];
+        if($method) $where['method'] = $method;
+        $listData = $this->model->table('apidoc')->where($where)->order('id', 'asc')->select();
         //print_r($listData);
         $data = [];
         foreach($listData as $k => $v){

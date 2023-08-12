@@ -127,8 +127,10 @@ class ApiDocController
     }
 
     public function samplecode(Request &$request){
+        $method = $request->param('method');
         $language = $request->param('language');
-        $code = SampleCode::$language($this->service->getDetail($request->param('protocol'), $request->param('version'), $request->param('uri')), $request);
+        //print_r($this->service->getDetail($request->param('protocol'), $request->param('version'), $request->param('uri'), $method));
+        $code = SampleCode::$language($this->service->getDetail($request->param('protocol'), $request->param('version'), $request->param('uri'), $method)['detail'][0], $request);
         return $code;
     }
 
@@ -170,18 +172,13 @@ class SampleCode{
         $headerCode = '{'.PHP_EOL;
 
         foreach($detail['header'] ?? [] as $v){
-            $headerCode .= '        "'.$v['name'].'": '. (is_int($v['default'] ?? '') ? $v['default'] : ("\"".($v['default'] ?? '')."\",")).' //'.$v['description'].PHP_EOL;
+            $headerCode .= '        "'.$v['field'].'": '.("\""."\",").' //'.$v['description'].PHP_EOL;
         }
         $headerCode .= '    }';
 
         $bodyCode = '{'.PHP_EOL;
-        foreach($detail['body'] ?? [] as $v){
-            if(isset($v['children']) && $v['children']){
-                self::jqueryRequestParam($v['name'], $v['type'], $bodyCode, $v['children']);
-            }else{
-                $bodyCode .= '        "'.$v['name'].'": '.(is_int($v['default'] ?? '') ? $v['default'] : ("\"".($v['default'] ?? '')."\",")).' //'.$v['description'].PHP_EOL;
-            }
-
+        foreach($detail['param'] ?? [] as $v){
+            $bodyCode .= '        "'.$v['field'].'": '.("\"".($v['default'] ?? '')."\",").' //'.$v['description'].PHP_EOL;
         }
         $bodyCode .= '    }';
         $uri = $request->param('uri');
@@ -191,7 +188,7 @@ class SampleCode{
         $code = "// vuejs示例代码 //
 axios.request({
     // 请求的接口地址
-    url: \"".$detail['detail']['server_url']."\",
+    url: \"".($request->header('origin'))."\",
     //请求方法
     method: \"".strtoupper($method)."\",
     //超时时间设置，单位毫秒
