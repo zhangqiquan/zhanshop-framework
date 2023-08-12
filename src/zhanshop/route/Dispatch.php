@@ -36,14 +36,9 @@ class Dispatch
         $params = explode("/", $request->server('request_uri'));
         $version = $params[1] ? $params[1] : 'v1';
         $uri     = isset($params[2]) ? '/'.$params[2] : '/index.index';
-        $route = App::route()->getRule()->getBind($name, $version, $uri);
-        if(!$route) App::error()->setError('您所访问的API不存在', Error::NOT_FOUND);
         $this->method = $request->server('request_method', 'GET');
-
-        // 检查是否满足请求类型
-        if(!in_array($this->method, $route['methods'])){
-            App::error()->setError('您所访问的API不支持'.$this->method.'请求', Error::BAD_REQUEST);
-        }
+        $route = App::route()->getRule()->getBind($name, $version, $uri, $this->method);
+        if(!$route) App::error()->setError('您所访问的API不存在', Error::NOT_FOUND);
 
         foreach ($route['extra'] as $k => $v){
             $request->setData($v, $params[$k + 3] ?? null);
@@ -62,8 +57,7 @@ class Dispatch
      */
     public function run(string &$name, Request &$request, Response &$servResponse){
         $roure = $request->getRoure();
-        $method = strtolower($this->method);
-        $action = $method.$roure['handler'][1];
+        $action = $roure['handler'][1];
         $controller = $roure['handler'][0];
         // 在台式机上测试性能strtolower
         return App::make($controller)->$action($request, $servResponse);

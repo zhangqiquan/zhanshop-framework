@@ -33,26 +33,32 @@ class ApiDocModel
 
     protected function tableExist()
     {
-        $count = $this->model->table('sqlite_master')->where(['type' => 'table', 'name' => 'apidoc'])->count();
-        if ($count == 0) {
+        try {
             $sql = 'CREATE TABLE "apidoc" (
-  "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-  "app" TEXT,
-  "protocol" TEXT DEFAULT http,
-  "version" TEXT,
-  "uri" TEXT,
-  "handler" TEXT,
-  "method" TEXT,
-  "title" TEXT,
-  "detail" TEXT,
-  "groupname" TEXT,
-  "param" TEXT,
-  "response" TEXT,
-  "success" TEXT,
-  "failure" TEXT,
-  "explain" TEXT,
-  CONSTRAINT "unique" UNIQUE ("app" ASC, "version" ASC, "uri" ASC, "protocol")
-);';
+"id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+"app" TEXT,
+"protocol" TEXT DEFAULT http,
+"version" TEXT,
+"uri" TEXT,
+"handler" TEXT,
+"method" TEXT,
+"title" TEXT,
+"description" TEXT,
+"detail" TEXT,
+"groupname" TEXT,
+"header" TEXT,
+"param" TEXT,
+"response" TEXT,
+"success" TEXT,
+"failure" TEXT,
+"explain" TEXT,
+CONSTRAINT "unique" UNIQUE ("app" ASC, "version" ASC, "uri" ASC, "protocol" ASC, "method")
+);
+UPDATE "main"."sqlite_sequence" SET seq = 1 WHERE name = \'apidoc\';';
+            $this->model->execute($sql);
+        }catch (\Throwable $e){
+
         }
+
     }
 }

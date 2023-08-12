@@ -61,7 +61,7 @@ class WebHandle
             }
 
             App::route()->getRule()->setApp($v, 'v1', []);
-            App::route()->match(['POST'], '/api.doc', [ApiDocController::class, 'apidoc'])->extra([$v]);
+            App::route()->rule('POST', '/api.doc', [ApiDocController::class, 'postApidoc'])->extra([$v]);
         }
     }
 

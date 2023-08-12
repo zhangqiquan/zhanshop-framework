@@ -37,6 +37,12 @@ class Rule
     protected $currentUri = '';
 
     /**
+     * 当前请求方法
+     * @var string
+     */
+    protected $currentMethod = 'GET';
+
+    /**
      * 当前APP的全局中间件
      * @var array
      */
@@ -69,11 +75,12 @@ class Rule
     public function addRule(string $uri, array &$handler, string $method = "GET") :Rule{
         $prefix = $this->currentGroup->getPrefix();
         $this->currentUri = $prefix ? $prefix.'.'.$uri : $uri;
-        $handler[1] = ucfirst($handler[1]);
+        $this->currentMethod = $method;
+        //$handler[1] = ucfirst($handler[1]);
         $this->bind[$this->currentAppName][$this->currentAppVersion][$this->currentUri][$method] = [
             'method' => $method,
             'handler' => $handler,
-            'service' => [str_replace('\\controller\\', '\\service\\', $handler[0]).'Service', ucfirst($handler[1])],
+            'service' => [str_replace('\\controller\\', '\\service\\', $handler[0]).'Service', $handler[1]],
             'middleware' => array_merge($this->currentGroup->getMiddleware(), $this->globalMiddleware),
             'cache' => $this->currentGroup->getCache(),
             'extra' => [],
@@ -89,7 +96,7 @@ class Rule
      * @return void
      */
     public function extra(array $params) :Rule{
-        $this->bind[$this->currentAppName][$this->currentAppVersion][$this->currentUri]['extra'] = $params;
+        $this->bind[$this->currentAppName][$this->currentAppVersion][$this->currentUri][$this->currentMethod]['extra'] = $params;
         return $this;
     }
 
@@ -99,7 +106,7 @@ class Rule
      * @return void
      */
     public function validate(array $validate) :Rule{
-        $this->bind[$this->currentAppName][$this->currentAppVersion][$this->currentUri]['validate'] = $validate;
+        $this->bind[$this->currentAppName][$this->currentAppVersion][$this->currentUri][$this->currentMethod]['validate'] = $validate;
         return $this;
     }
 
@@ -109,22 +116,8 @@ class Rule
      * @return void
      */
     public function middleware(array $class) :Rule{
-        $this->bind[$this->currentAppName][$this->currentAppVersion][$this->currentUri]['middleware'] = array_merge($class, $this->bind[$this->currentAppName][$this->currentAppVersion][$this->currentUri]['middleware']);
+        $this->bind[$this->currentAppName][$this->currentAppVersion][$this->currentUri][$this->currentMethod]['middleware'] = array_merge($class, $this->bind[$this->currentAppName][$this->currentAppVersion][$this->currentUri][$this->currentMethod]['middleware']);
         return $this;
-    }
-
-    /**
-     * 设置header请求头缓存
-     * @param int $time
-     * @return void
-     */
-    public function cache(int $time) :Rule{
-        $this->bind[$this->currentAppName][$this->currentAppVersion][$this->currentUri]['cache'] = $time;
-        return $this;
-    }
-
-    public function crossDomain(array $option){
-        $this->bind[$this->currentAppName][$this->currentAppVersion][$this->currentUri]['cross_domain'] = array_merge($option, $this->currentGroup->getCrossDomain());
     }
 
     /**
@@ -144,8 +137,8 @@ class Rule
      * @param $uri
      * @return array|mixed
      */
-    public function getBind(string &$name, string &$version,  string &$uri){
-        return $this->bind[$name][$version][$uri] ?? [];
+    public function getBind(string &$name, string &$version,  string &$uri, string &$method){
+        return $this->bind[$name][$version][$uri][$method] ?? [];
     }
 
     /**

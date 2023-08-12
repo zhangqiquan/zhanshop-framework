@@ -37,16 +37,12 @@ class Route
     }
 
     /**
-     * 注册路由
-     * @param array $methods
+     * 注册路由规则
+     * @param string $method
      * @param string $uri
-     * @param string $action
-     * @param array $middleware
+     * @param array $handler
+     * @return Rule
      */
-    public function match(array $methods, string $uri, array $handler): Rule{
-        return $this->rule->addRule($uri, $handler, $methods);
-    }
-
     public function rule(string $method, string $uri, array $handler): Rule{
         return $this->rule->addRule($uri, $handler, $method);
     }

@@ -144,7 +144,7 @@ class AnnotationRoute extends Command
                                 'app' => $app,
                                 'version' => str_replace('_', '.', $version),
                                 'uri' => $group.'.'.$rowRoute['uri'],
-                                'method' => $rowRoute['method'][0],
+                                'method' => $rowRoute['method'],
                                 'title' => $rowRoute['title'],
                                 'groupname' => $rowRoute['group'],
                                 'header' => json_encode($rowRoute['header'] ?? [], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE),
@@ -289,7 +289,7 @@ class Annotation{
                 return [
                     'uri' => $uri,
                     'method' => strtoupper($method),
-                    'handler' => [$this->method->class, lcfirst(substr($this->method->name, strlen($method), 9999))],
+                    'handler' => [$this->method->class, $this->method->name],
                     'extra' => $extras
                 ];
             }
