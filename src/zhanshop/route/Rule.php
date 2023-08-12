@@ -66,12 +66,12 @@ class Rule
      * @param array $handler
      * @return void
      */
-    public function addRule(string $uri, array &$handler, array $methods = ['GET', 'POST', 'PUT', 'DELETE']) :Rule{
+    public function addRule(string $uri, array &$handler, string $method = "GET") :Rule{
         $prefix = $this->currentGroup->getPrefix();
         $this->currentUri = $prefix ? $prefix.'.'.$uri : $uri;
         $handler[1] = ucfirst($handler[1]);
-        $this->bind[$this->currentAppName][$this->currentAppVersion][$this->currentUri] = [
-            'methods' => $methods,
+        $this->bind[$this->currentAppName][$this->currentAppVersion][$this->currentUri][$method] = [
+            'method' => $method,
             'handler' => $handler,
             'service' => [str_replace('\\controller\\', '\\service\\', $handler[0]).'Service', ucfirst($handler[1])],
             'middleware' => array_merge($this->currentGroup->getMiddleware(), $this->globalMiddleware),

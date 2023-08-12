@@ -54,7 +54,7 @@ class Server extends Command
             'log_rotation' => SWOOLE_LOG_ROTATION_DAILY, // 每日日志
             'task_worker_num' => 1,
             'task_enable_coroutine' => true,
-            'max_request' => 200000,
+            'max_request' => 0,
             'max_wait_time' => 2,
             'enable_static_handler' => false,
             'document_root' => '',

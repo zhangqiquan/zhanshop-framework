@@ -28,7 +28,6 @@ class AnnotationRoute extends Command
     }
 
     protected $versionRoutes = [];
-    protected $versionOriginalRoutes = [];
 
     public function execute(Input $input, Output $output)
     {
@@ -52,46 +51,58 @@ class AnnotationRoute extends Command
                 $versionRouteCode = Helper::headComment($app.'/'.$version);
                 $versionRouteCode .= 'use zhanshop\App;'.PHP_EOL.PHP_EOL;
                 foreach($groupRoute as $group => $routes){
-                    $versionRouteCode .= "App::route()->group('/{$group}', function (){".PHP_EOL;
-                    // 拿到相同的中间件
-                    $middlewareTmps = array_column($routes, 'middleware');
+                    $versionRouteCode .= "App::route()->group(\"/{$group}\", function (){".PHP_EOL;
+                    // 拿到当前分组的所有中间件
                     $middlewares = [];
-                    foreach($middlewareTmps as $middleware){
-                        $middlewares = array_unique(array_merge($middlewares, $middleware));
+                    foreach($routes as $route){
+                        foreach($route as $rowRoute) {
+                            $middlewares = array_merge($middlewares, $rowRoute['middleware']);
+                        }
                     }
+                    $middlewares = array_unique($middlewares); // 拿到当前分组的所有中间件
 
+                    // 排除那些不在分组内都存在的中间件
                     foreach($middlewares as $mk => $middleware){
-                        foreach($routes as $uri => $route){
-                            if(!in_array($middleware, $route['middleware'])){
-                                unset($middlewares[$mk]);
+                        foreach($routes as $route){
+                            foreach($route as $rowRoute) {
+                                if(!in_array($middleware, $rowRoute['middleware'])){
+                                    unset($middlewares[$mk]);
+                                }
                             }
                         }
                     }
+
+                    // 排除那些路由中的中间件在全局中的中间件
                     foreach($routes as $uri => $route){
-                        foreach ($route['middleware'] as $mk => $middleware){
-                            if(in_array($middleware, $middlewares)){
-                                unset($routes[$uri]['middleware'][$mk]);
+                        foreach($route as $rowKey => $rowRoute) {
+                            foreach ($rowRoute['middleware'] as $mk => $middleware){
+                                if(in_array($middleware, $middlewares)){
+                                    unset($routes[$uri][$rowKey]['middleware'][$mk]);
+                                }
                             }
                         }
                     }
 
                     foreach($routes as $route){
-                        $uri = explode('/', $route['uri'])[0];
-                        $class = $route['handler'][0];
-                        $action = $route['handler'][1];
-                        $versionRouteCode .= "      App::route()->match(".json_encode($route['method']).", \"".$uri."\", [\\".$class."::class, '".$action."'])";
-                        if($route['extra']){
-                            $versionRouteCode .= '->extra('.json_encode($route['extra']).')';
+                        foreach($route as $rowKey => $rowRoute) {
+                            $uri = explode('/', $rowRoute['uri'])[0];
+                            $class = $rowRoute['handler'][0];
+                            $action = $rowRoute['handler'][1];
+                            $versionRouteCode .= "      App::route()->rule(\"".$rowRoute['method']."\", \"".$uri."\", [\\".$class."::class, \"".$action."\"])";
+                            if($rowRoute['extra']){
+                                $versionRouteCode .= '->extra('.json_encode($rowRoute['extra']).')';
+                            }
+                            if($rowRoute['validate']){
+                                $versionRouteCode .= '->validate(['.'\\'.$rowRoute['validate'].'::class])';
+                            }
+                            if($rowRoute['middleware']){
+                                $middleware = '['.implode(', ', array_values($rowRoute['middleware'])).']';
+                                $versionRouteCode .= '->middleware('.$middleware.')';
+                            }
+                            $versionRouteCode .= ';'.PHP_EOL;
                         }
-                        if($route['validate']){
-                            $versionRouteCode .= '->validate(['.'\\'.$route['validate'].'::class])';
-                        }
-                        if($route['middleware']){
-                            $middleware = '['.implode(', ', array_values($route['middleware'])).']';
-                            $versionRouteCode .= '->middleware('.$middleware.')';
-                        }
-                        $versionRouteCode .= ';'.PHP_EOL;
                     }
+
                     $versionRouteCode .= '})';
                     if($middlewares){
                         $middlewares = '['.implode(', ', array_values($middlewares)).']';
@@ -108,7 +119,7 @@ class AnnotationRoute extends Command
     public function apiDoc(){
         $model = (new ApiDocModel())->getQuery();
         $allDos = $model->table('apidoc')->column('id', 'id');
-        foreach ($this->versionOriginalRoutes as $app => $versionRoutes){
+        foreach ($this->versionRoutes as $app => $versionRoutes){
             $routeDir = App::routePath().DIRECTORY_SEPARATOR.$app;
             // 相同路由请求方式不一样的中间件必须一致
             foreach ($versionRoutes as $version => $groupRoute){
@@ -168,26 +179,12 @@ class AnnotationRoute extends Command
     protected function generateClass(string $class)
     {
         $routes = [];
-        $originalRoutes = [];
         try {
             $reflection= new \ReflectionClass($class);
             foreach($reflection->getMethods() as $method){
                 $route = $this->generateMethod($method);
-
                 if($route){
-                    if(isset($routes[$route['uri']])){
-                        $method = array_merge($routes[$route['uri']]['method'], $route['method']);
-                        $uniqueMethod = array_unique($method);
-                        if(count($method) != count($uniqueMethod)) App::error()->setError(print_r($route, true).'路由存在重复定义');
-                        $routes[$route['uri']]['method'] = $method;
-
-                        $middleware = array_merge($routes[$route['uri']]['middleware'], $route['middleware']);
-                        $uniqueMiddleware = array_unique($middleware);
-                        $routes[$route['uri']]['middleware'] = $uniqueMiddleware;
-                    }else{
-                        $routes[$route['uri']] = $route;
-                    }
-                    $originalRoutes[$route['uri']][] = $route;
+                    $routes[$route['uri']][] = $route;
                 }
             }
         }catch (\Throwable $exception){
@@ -208,7 +205,7 @@ class AnnotationRoute extends Command
             }
             $prefix = lcfirst($classPath[count($classPath) - 1]);
             $this->versionRoutes[$app][$version][$prefix] = $routes;
-            $this->versionOriginalRoutes[$app][$version][$prefix] = $originalRoutes;
+            //$this->versionOriginalRoutes[$app][$version][$prefix] = $originalRoutes;
         }
     }
 
@@ -291,7 +288,7 @@ class Annotation{
                 }
                 return [
                     'uri' => $uri,
-                    'method' => [strtoupper($method)],
+                    'method' => strtoupper($method),
                     'handler' => [$this->method->class, lcfirst(substr($this->method->name, strlen($method), 9999))],
                     'extra' => $extras
                 ];

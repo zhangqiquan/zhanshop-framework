@@ -47,6 +47,10 @@ class Route
         return $this->rule->addRule($uri, $handler, $methods);
     }
 
+    public function rule(string $method, string $uri, array $handler): Rule{
+        return $this->rule->addRule($uri, $handler, $method);
+    }
+
 
     /**
      * 分组路由
