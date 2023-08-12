@@ -185,11 +185,11 @@ class ApiDocService
             'versions' => array_column($versions, 'version'),
         ];
     }
-    public function debug($uri, $version, $result, $method){
-        $data = $this->model->table('apidoc')->where(['app_type' => $this->appType, 'version' => $version, 'uri' => $uri])->find();
+    public function debug(string $protocol, string $version, string $uri, string $method){
+        $data = $this->model->table('apidoc')->where(['protocol' => $protocol, 'app' => $this->appName, 'version' => $version, 'uri' => $uri, 'method' => $method])->find();
         if($data){
             $success = json_decode($data['success'] ?? "[]", true);
-            $success[strtoupper($method)] = $result;
+            //$success[strtoupper($method)] = $result;
             $data['success'] = json_encode($success, JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
             $this->model->table('apidoc')->where(['id' => $data['id']])->update($data);
         }

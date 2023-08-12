@@ -106,23 +106,18 @@ class ApiDocController
     }
 
     /**
-     * api调试信息
+     * api调试信息.
      * @param Request $request
      * @return void
      */
     protected function debug(Request &$request){
-        $input = &App::validate()->check($request->post(), [
+        $input = $request->validateRule($request->post(), [
+            'protocol' => 'Required',
             'uri' => 'Required',
             'version' => 'Required',
-            'result' => 'Required',
-            'request_method' => 'Required',
-        ]);
-//        if($input['result']){
-//            $json = json_decode($input['result'], true);
-//            if($json) $input['result'] = $json;
-//        }
-
-        return $this->service->debug($input['uri'], $input['version'], $input['result'], $input['request_method']);
+            'method' => 'Required',
+        ])->getData();
+        return $this->service->getDetail($input['protocol'], $input['version'], $input['uri'], $input['method'])['detail'][0];
 
     }
 
