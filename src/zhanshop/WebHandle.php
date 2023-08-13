@@ -143,12 +143,17 @@ class WebHandle
     public function getErrorData(string &$appName, \Throwable &$e){
         try {
             $controller = App::make('\\app\\api\\'.$appName.'\\Controller');
-            $data = [
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTrace(),
-            ];
-            $data = $controller->result($data, $e->getMessage(), $e->getCode());
+            $code = $e->getCode();
+            $data = [];
+            // 404错误不抛出错误详情
+            if($code != 404){
+                $data = [
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTrace(),
+                ];
+            }
+            $data = $controller->result($data, $e->getMessage(), $code);
         }catch (\Throwable $e){
             //Log::errorLog(SWOOLE_LOG_ERROR, $e->getMessage().PHP_EOL.'#@ '.$e->getFile().':'.$e->getLine().PHP_EOL.$e->getTraceAsString());
             $data = $e->getMessage();

@@ -179,7 +179,7 @@ class ApiDocService
             $data[] = $v;
         }
         $versions = $this->model->table('apidoc')->where(['protocol' => $protocol, 'app' => $this->appName, 'uri' => $uri])->group('version')->order('version', 'desc')->select();
-        print_r($data);
+
         return [
             'detail' => $data,
             'versions' => array_column($versions, 'version'),
