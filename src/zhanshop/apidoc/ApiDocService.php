@@ -204,7 +204,7 @@ class ApiDocService
     }
 
     public function update(array $post){
-        return $this->model->table('apidoc')->where(['app_type' => $this->appType, 'version' => $post['version'], 'uri' => $post['uri']])->update($post);
+        return $this->model->table('apidoc')->where(['protocol' => $post['protocol'], 'app' => $this->appName, 'version' => $post['version'], 'uri' => $post['uri'], 'method' => $post['method']])->update($post);
     }
 
     /**

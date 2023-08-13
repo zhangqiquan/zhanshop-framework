@@ -34,7 +34,7 @@ class ApiDocController
         if($method == 'GET'){
             $method = 'apis';
         }
-        if(!in_array($method, ['login', 'apis', 'detail', 'debug', 'cross', 'update', 'samplecode'])) App::error()->setError('api文档'.$method.'方法未定义', Error::NOT_FOUND);
+        if(!in_array($method, ['login', 'apis', 'detail', 'debug', 'success', 'cross', 'update', 'samplecode'])) App::error()->setError('api文档'.$method.'方法未定义', Error::NOT_FOUND);
         return $method;
     }
     /**
@@ -59,6 +59,21 @@ class ApiDocController
 
         $data = $this->$method($request);
         return $this->result($data);
+    }
+
+    /**
+     * 更新成功请求示例
+     * @param Request $request
+     * @return void
+     */
+    public function success(Request &$request){
+        $app = $this->appName;
+        $data = $request->param();
+        $body = $data['body'];
+        unset($data['body']);
+        $data['app'] = $app;
+        $data['success'] = is_array($body) ? json_encode($body, JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE) : $body;
+        $this->service->update($data);
     }
 
     /**
