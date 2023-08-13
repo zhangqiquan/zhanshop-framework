@@ -192,7 +192,7 @@ class SampleCode{
             if(is_array($json) == false && is_string($v['example'])){
                 $v['example'] = '"'.$v['example'].'"';
             }
-            $bodyCode .= '        "'.$v['field'].'": '.$v['example'].' //'.$v['description'].PHP_EOL;
+            $bodyCode .= '        "'.$v['field'].'": '.$v['example'].', //'.$v['description'].PHP_EOL;
         }
         $bodyCode .= '    }';
         $uri = $request->param('uri');
@@ -233,8 +233,11 @@ axios.request({
 
         $bodyCode = '{'.PHP_EOL;
         foreach($detail['param'] ?? [] as $v){
-            $value = (is_int($v['example'] ?? '') ? $v['example'] : ("\"".($v['default'] ?? '')."\","));
-            $bodyCode .= '        "'.$v['field'].'": '.$value.' //'.$v['description'].PHP_EOL;
+            $json = json_decode($v['example'], true);
+            if(is_array($json) == false && is_string($v['example'])){
+                $v['example'] = '"'.$v['example'].'"';
+            }
+            $bodyCode .= '        "'.$v['field'].'": '.$v['example'].', //'.$v['description'].PHP_EOL;
         }
         $bodyCode .= '    }';
         $uri = $request->param('uri');
