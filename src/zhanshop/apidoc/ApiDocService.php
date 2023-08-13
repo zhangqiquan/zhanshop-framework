@@ -158,7 +158,7 @@ class ApiDocService
             if($v['header']){
                 $header = [];
                 foreach($v['header'] as $field => $head){
-                    $header[] = ['field' => $field, 'description' => $head];
+                    $header[] = ['name' => $field, 'description' => $head];
                 }
                 $v['header'] = $header;
             }
@@ -167,7 +167,7 @@ class ApiDocService
             if($v['param']){
                 $param = [];
                 foreach($v['param'] as $field => $rule){
-                    $param[] = ['field' => $field, 'type' => $rule['type'], 'example' => is_array($rule['example']) ? json_encode($rule['example'], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE) : $rule['example'], 'description' => $rule['title'].' '.$rule['description']];
+                    $param[] = ['name' => $field, 'type' => $rule['type'], 'example' => is_array($rule['example']) ? json_encode($rule['example'], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE) : $rule['example'], 'description' => $rule['title'].' '.$rule['description']];
                 }
                 $v['param'] = $param;
             }
@@ -228,7 +228,7 @@ class ApiDocService
                 if(strpos($v, 'apiParam')){
                     $rows = array_values(array_filter(explode(' ', str_replace(["\n", "\t", "\r"], '', $v))));
                     $param = [
-                        'field' => $rows[4],
+                        'name' => $rows[4],
                         'type' => $rows[2],
                         'verify' => $rows[3],
                         'description' => ''
@@ -286,7 +286,7 @@ class ApiDocService
                 if(strpos($v, 'apiHeader')){
                     $rows = array_values(array_filter(explode(' ', str_replace(["\n", "\t", "\r"], '', $v))));
                     $param = [
-                        'field' => $rows[4],
+                        'name' => $rows[4],
                         'type' => $rows[2],
                         'verify' => $rows[3],
                         'description' => ''

@@ -155,34 +155,11 @@ class ApiDocController
 
 class SampleCode{
 
-    protected static function jqueryRequestParam(string $key, string $type, &$bodyCode, $data, $level = 1){
-        $levelHtml = '';
-        for($i = 0; $i < $level; $i++){
-            $levelHtml .= '        ';
-        }
-        $startSymbol = '{';
-        $endSymbol = '}';
-        if($type == 'array'){
-            $startSymbol = '['.PHP_EOL.$levelHtml.'  '.'{';
-            $endSymbol = $levelHtml.'  }'.PHP_EOL.$levelHtml.']';
-        }
-        $bodyCode .= $levelHtml.'"'.$key.'": '.$startSymbol.PHP_EOL;
-        foreach($data as $v){
-            if(isset($v['children']) && $v['children']){
-                self::jqueryRequestParam($v['name'], $v['type'], $bodyCode, $v['children'], $level + 1);
-                //$bodyCode .= '"",';//$v['children'].' //'.$v['description'].PHP_EOL;
-            }else{
-                $bodyCode .= '  '.$levelHtml.'"'.$v['name'].'": ' .(is_int($v['example'] ?? '') ? $v['example'] : ("\"".($v['default'] ?? '')."\",")).' //'.$v['description'].PHP_EOL;
-            }
-        }
-        $bodyCode .= $endSymbol.PHP_EOL;
-    }
-
     public static function vue3($detail, &$request){
         $headerCode = '{'.PHP_EOL;
 
         foreach($detail['header'] ?? [] as $v){
-            $headerCode .= '        "'.$v['field'].'": '.("\""."\",").' //'.$v['description'].PHP_EOL;
+            $headerCode .= '        "'.$v['name'].'": '.("\""."\",").' //'.$v['description'].PHP_EOL;
         }
         $headerCode .= '    }';
 
@@ -192,7 +169,7 @@ class SampleCode{
             if(is_array($json) == false && is_string($v['example'])){
                 $v['example'] = '"'.$v['example'].'"';
             }
-            $bodyCode .= '        "'.$v['field'].'": '.$v['example'].', //'.$v['description'].PHP_EOL;
+            $bodyCode .= '        "'.$v['name'].'": '.$v['example'].', //'.$v['description'].PHP_EOL;
         }
         $bodyCode .= '    }';
         $uri = $request->param('uri');
@@ -268,46 +245,6 @@ request.fail(function(jqXHR) {
         return $code;
     }
 
-    public static function php($detail, &$request){
-        $method = $request->param('method');
-        $headerStr = '    "Content-Type:application/json", '.PHP_EOL;
-        foreach($detail['header'] as $v){
-            $headerStr .= '    "'.$v['name'].':'.$v['default'].'", //'.$v['description'].PHP_EOL;
-        }
-        $headerStr = rtrim($headerStr, PHP_EOL);
-        $bodyCode = '{'.PHP_EOL;
-        foreach($detail['body'] as $v){
-            if(isset($v['children']) && $v['children']){
-                self::jqueryRequestParam($v['name'], $v['type'], $bodyCode, $v['children']);
-            }else{
-                $bodyCode .= '        "'.$v['name'].'": '.(is_int($v['default'] ?? '') ? $v['default'] : ("\"".($v['default'] ?? '')."\",")).' //'.$v['description'].PHP_EOL;
-            }
-        }
-        $bodyCode .= '    }';
-        $code = "<?php\n\$ch = curl_init();
-curl_setopt(\$ch, CURLOPT_URL, '".$detail['detail']['server_url']."');
-curl_setopt(\$ch, CURLOPT_CUSTOMREQUEST, '".strtoupper($method)."'); //设置请求方式
-curl_setopt(\$ch, CURLOPT_SSL_VERIFYPEER, false);
-curl_setopt(\$ch, CURLOPT_SSL_VERIFYHOST,false);
-
-// 请求头 
-curl_setopt(\$ch, CURLOPT_HTTPHEADER, [
-$headerStr
-]);
-
-// 请求参数
-curl_setopt(\$ch, CURLOPT_POST, 1);
-curl_setopt(\$ch, CURLOPT_POSTFIELDS, '".$bodyCode."');
-
-// 解析方式IPV4
-curl_setopt(\$ch, CURLOPT_IPRESOLVE, 1);
-
-\$output = curl_exec(\$ch);
-\$code = curl_getinfo(\$ch, CURLINFO_HTTP_CODE);
-
-echo '响应状态:'.\$code.',结果:'.\$output;".PHP_EOL;
-        return $code;
-    }
 
     public static function java($detail, &$request){
         return '';
