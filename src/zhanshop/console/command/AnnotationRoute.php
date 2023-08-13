@@ -132,9 +132,15 @@ class AnnotationRoute extends Command
                             if($rowRoute['validate']){
                                 $validate = App::make($rowRoute['validate']);
                                 foreach($validate->rule as $field => $rule){
+                                    $filedType = 'string';
+                                    if(strpos($rule, 'int') !== false) $filedType = 'int';
+                                    if(strpos($rule, 'file') !== false) $filedType = 'file';
+                                    if(strpos($rule, 'array') !== false) $filedType = 'object';
                                     $param[$field] = [
                                         'rule' => $rule,
+                                        'type' => $filedType,
                                         'title' => $validate->message[$field] ?? $field,
+                                        'example' => $validate->example[$field] ?? null,
                                         'description' => $validate->description[$field] ?? null,
                                     ];
                                 }

@@ -167,7 +167,7 @@ class ApiDocService
             if($v['param']){
                 $param = [];
                 foreach($v['param'] as $field => $rule){
-                    $param[] = ['field' => $field, 'verify' => $rule['rule'], 'description' => $rule['title'].' '.$rule['description']];
+                    $param[] = ['field' => $field, 'type' => $rule['type'], 'example' => is_array($rule['example']) ? json_encode($rule['example'], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE) : $rule['example'], 'description' => $rule['title'].' '.$rule['description']];
                 }
                 $v['param'] = $param;
             }

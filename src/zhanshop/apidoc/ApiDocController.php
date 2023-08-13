@@ -172,7 +172,7 @@ class SampleCode{
                 self::jqueryRequestParam($v['name'], $v['type'], $bodyCode, $v['children'], $level + 1);
                 //$bodyCode .= '"",';//$v['children'].' //'.$v['description'].PHP_EOL;
             }else{
-                $bodyCode .= '  '.$levelHtml.'"'.$v['name'].'": ' .(is_int($v['default'] ?? '') ? $v['default'] : ("\"".($v['default'] ?? '')."\",")).' //'.$v['description'].PHP_EOL;
+                $bodyCode .= '  '.$levelHtml.'"'.$v['name'].'": ' .(is_int($v['example'] ?? '') ? $v['example'] : ("\"".($v['default'] ?? '')."\",")).' //'.$v['description'].PHP_EOL;
             }
         }
         $bodyCode .= $endSymbol.PHP_EOL;
@@ -188,7 +188,11 @@ class SampleCode{
 
         $bodyCode = '{'.PHP_EOL;
         foreach($detail['param'] ?? [] as $v){
-            $bodyCode .= '        "'.$v['field'].'": '.("\"".($v['default'] ?? '')."\",").' //'.$v['description'].PHP_EOL;
+            $json = json_decode($v['example'], true);
+            if(is_array($json) == false && is_string($v['example'])){
+                $v['example'] = '"'.$v['example'].'"';
+            }
+            $bodyCode .= '        "'.$v['field'].'": '.$v['example'].' //'.$v['description'].PHP_EOL;
         }
         $bodyCode .= '    }';
         $uri = $request->param('uri');
@@ -229,7 +233,8 @@ axios.request({
 
         $bodyCode = '{'.PHP_EOL;
         foreach($detail['param'] ?? [] as $v){
-            $bodyCode .= '        "'.$v['field'].'": '.("\"".($v['default'] ?? '')."\",").' //'.$v['description'].PHP_EOL;
+            $value = (is_int($v['example'] ?? '') ? $v['example'] : ("\"".($v['default'] ?? '')."\","));
+            $bodyCode .= '        "'.$v['field'].'": '.$value.' //'.$v['description'].PHP_EOL;
         }
         $bodyCode .= '    }';
         $uri = $request->param('uri');
