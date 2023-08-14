@@ -165,15 +165,18 @@ class SampleCode{
 
         $bodyCode = '{'.PHP_EOL;
         foreach($detail['param'] ?? [] as $v){
-            $json = json_decode($v['example'], true);
+            $json = json_decode((string)($v['example'] ?? ""), true);
             if(is_array($json) == false && is_string($v['example'])){
                 $v['example'] = '"'.$v['example'].'"';
+            }
+            if($v['example'] === null){
+                $v['example'] = '""';
             }
             $bodyCode .= '        "'.$v['name'].'": '.$v['example'].', //'.$v['description'].PHP_EOL;
         }
         $bodyCode .= '    }';
         $uri = $request->param('uri');
-        $method = $request->param('method');
+        $method = $request->param('method', "GET");
         $type = $request->param('type');
         $version = $request->param('version');
         $code = "// vuejs示例代码 //
@@ -214,7 +217,7 @@ axios.request({
             if(is_array($json) == false && is_string($v['example'])){
                 $v['example'] = '"'.$v['example'].'"';
             }
-            $bodyCode .= '        "'.$v['field'].'": '.$v['example'].', //'.$v['description'].PHP_EOL;
+            $bodyCode .= '        "'.$v['name'].'": '.$v['example'].', //'.$v['description'].PHP_EOL;
         }
         $bodyCode .= '    }';
         $uri = $request->param('uri');
