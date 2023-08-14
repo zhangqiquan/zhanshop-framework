@@ -105,7 +105,7 @@ class ServEvent
         $msg = $workerId."号工作进程启动, 进程".getmypid();
         Log::errorLog(SWOOLE_LOG_DEBUG, $msg);
         App::make(Robot::class)->send($msg);
-        
+
         App::cleanAll(); // 清空销毁APP容器的所有对象
 
         App::webhandle($this); // webServer处理
@@ -172,7 +172,7 @@ class ServEvent
     public function onRequest(mixed $request, mixed $response, int $protocol = Server::HTTP, string $appName = 'index') :void{
         $response->header('Server', 'zhanshop');
         $response->header('Access-Control-Allow-Origin', '*');
-        // $response->header('Access-Control-Allow-Headers', ['servers']['cross']);
+        $response->header('Access-Control-Allow-Headers', '*');
         $response->header('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE');
         $response->header('Access-Control-Max-Age', '3600');
         if ($request->server['path_info'] == '/favicon.ico' || $request->server['request_uri'] == '/favicon.ico' || $request->server['request_method'] == 'OPTIONS') {
