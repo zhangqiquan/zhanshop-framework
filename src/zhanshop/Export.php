@@ -25,6 +25,15 @@ class Export
             'vertical-align' => 'middle', // top（上对齐）、bottom（下对齐）、middle（垂直居中对齐）
             'background-color' => '#ffffff', // 背景颜色
         ],
+        'bold' => [
+            'color' => '#000000',
+            'bold' => true,
+            'font-family' => '微软雅黑',
+            'font-size' => '12px', // 字体大小
+            'text-align' => 'left', // left（左对齐）、right（右对齐）、center（水平居中对齐）
+            'vertical-align' => 'middle', // top（上对齐）、bottom（下对齐）、middle（垂直居中对齐）
+            'background-color' => '#ffffff', // 背景颜色
+        ],
     ];
 
     public function __construct(array $style = [])
