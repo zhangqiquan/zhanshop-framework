@@ -94,12 +94,12 @@ class ScanPorts extends Command
     public function ports(string $ip, array $ports){
         foreach($ports as $v){
             if(is_numeric($v)){
-                $this->scan($ip, $port);
+                $this->scan($ip, (int)$v);
             }
         }
     }
 
-    public function scan($ip, $port){
+    public function scan(string $ip, int $port){
         $status = self::check($ip, $port);
         $description = $this->portDescription[$port] ?? '未知端口用途';
         $length = 8 - mb_strlen((string)$port);
@@ -113,7 +113,7 @@ class ScanPorts extends Command
         }
     }
 
-    public static function check($ip, $port, $protocol = SOL_TCP){
+    public static function check(string $ip, int $port, $protocol = SOL_TCP){
         $sock = socket_create(AF_INET, SOCK_STREAM, $protocol);
 
         socket_set_option($sock,SOL_SOCKET,SO_RCVTIMEO, array("sec" => 0, "usec"=> 300000) );
