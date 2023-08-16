@@ -11,6 +11,7 @@ declare (strict_types=1);
 namespace zhanshop\database;
 
 use zhanshop\App;
+use zhanshop\Error;
 
 class Query
 {
@@ -244,6 +245,13 @@ class Query
         $sql = $this->builder->find($this);
         $data = $this->query($sql, $this->getBind(), $pdo);
         return $data[0] ?? null;
+    }
+
+    public function failException(mixed $pdo = null){
+        if($this->deleteTime) $this->where([$this->deleteTime => 0]);
+        $sql = $this->builder->find($this);
+        $data = $this->query($sql, $this->getBind(), $pdo);
+        return $data[0] ?? App::error()->setError("您所查询的数据不存在", Error::NOT_FOUND);
     }
 
     public function select(mixed $pdo = null){
