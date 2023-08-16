@@ -88,7 +88,7 @@ abstract class Command
      */
     protected function useLog(){
         if($this->useLog == false){
-            App::log(false)->execute();
+            App::log(false);
             $this->useLog = true;
         }
     }
