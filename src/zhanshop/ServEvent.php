@@ -146,7 +146,7 @@ class ServEvent
         // bt 紧接着输入 bt 并回车，就可以看到出现问题的调用栈
         // f 1 || f 0 可以通过键入 f 数字 来查看指定的调用栈帧
         // 将以上信息都贴在 issue 中
-        $msg = '工作进程'.$worker_id.',所属进程'.$worker_pid.'退出码'.$exit_code.'退出信号';
+        $msg = '工作进程'.$worker_id.',所属进程'.$worker_pid.'退出码'.$exit_code.'退出信号'.$signal;
         Log::errorLog(SWOOLE_LOG_ERROR, $msg);
         App::make(Robot::class)->send($msg);
     }
