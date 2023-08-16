@@ -87,10 +87,7 @@ abstract class Command
      * @return void
      */
     protected function useLog(){
-        if($this->useLog == false){
-            App::log(false);
-            $this->useLog = true;
-        }
+        $this->useLog = true;
     }
 
     /**
@@ -145,6 +142,8 @@ abstract class Command
      * @return void
      */
     public function initialize(){
-
+        if($this->useLog){
+            App::log(false)->execute();
+        }
     }
 }
