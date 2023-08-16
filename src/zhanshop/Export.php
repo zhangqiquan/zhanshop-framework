@@ -166,7 +166,7 @@ class XlsWorksheet{
                 $widthStyle = ' ss:Width="'.$width.'"';
             }
             $column .= '<Column ss:Index="'.($k+1).'" '.$widthStyle.'/>';
-            $content .= '<Cell ss:StyleID="'.$v['style'].'"><Data ss:Type="'.ucfirst($v['type']).'">'.$v['value'].'</Data></Cell>';
+            $content .= '<Cell ss:StyleID="'.$v['style'].'"><Data ss:Type="'.ucfirst($v['type']).'">'.htmlspecialchars($v['value']).'</Data></Cell>';
         }
         $content .= '</Row>';
         return $column.$content;
@@ -181,7 +181,7 @@ class XlsWorksheet{
 
         $content = '<Row ss:Height="'.intval($lineHeight).'">';
         foreach($cellDatas as $k => $v){
-            $content .= '<Cell ss:StyleID="'.$v['style'].'"><Data ss:Type="'.ucfirst($v['type']).'">'.$v['value'].'</Data></Cell>';
+            $content .= '<Cell ss:StyleID="'.$v['style'].'"><Data ss:Type="'.ucfirst($v['type']).'">'.htmlspecialchars($v['value']).'</Data></Cell>';
         }
         $content .= '</Row>';
         return $content;
