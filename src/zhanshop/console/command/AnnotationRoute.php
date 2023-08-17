@@ -139,7 +139,11 @@ class AnnotationRoute extends Command
 
                             $data['title'] = $rowRoute['title'];
                             $data['catname'] = $rowRoute['group'];
+
+                            $data['header'] = json_encode($rowRoute['header'], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
                             $data['update_time'] = $updateTime;
+
+                            print_r($data);
 
                             if($apiDocId == false){
                                 // 插入
@@ -333,9 +337,15 @@ class Annotation{
                         Log::errorLog(SWOOLE_LOG_ERROR,  $this->method->class.'->'.$this->method->name.' Header注解指定 '.$header[0].'后面应该包含一个=字段说明');
                         die;
                     }
-                    $headers[$header[0]] = $val;
+                    $headers[$header[0]] = [
+                        'name' => $header[0],
+                        'type' => 'string',
+                        'default' => '',
+                        'example' => '',
+                        'description' => $val
+                    ];
                 }
-                return $headers;
+                return array_values($headers);
             }
         }
 
