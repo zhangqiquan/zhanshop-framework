@@ -17,7 +17,7 @@ class Mysql
     public function &insert(Query &$query){
         $data = $query->getOptions("data", true);
         if($data){
-            $field = '`'.implode('`, `', array_keys($data[0])).'`';
+            $field = implode(', ', array_keys($data[0]));
             $sql = 'INSERT INTO '.$query->getOptions('table').' ('.$field.') VALUES';
 
             foreach ($data as $k => $v){
@@ -27,7 +27,7 @@ class Mysql
                 $sql .= ' (';
                 $num = 0;
                 foreach ($v as $kk => $vv){
-                    $key = 'zhanshop_'.$kk.$k;
+                    $key = 'zhanshop_'.str_replace('.', '__', $kk).$k;
                     $query->setBind($key, $vv);
                     if($num != 0) $sql .= ', ';
                     $sql .= ':'.$key;
@@ -63,11 +63,11 @@ class Mysql
                     $setVal .= ', ';
                 }
                 if(is_object($v) && isset($v->data)){
-                    $setVal .= '`'.$k.'` = '.$v->data;
+                    $setVal .= $k.' = '.$v->data;
                 }else{
-                    $key = 'zhanshop_set_'.$k;
+                    $key = 'zhanshop_set_'.str_replace('.', '__', $k);
                     $query->setBind($key, $v);
-                    $setVal .= '`'.$k.'` = :'.$key;
+                    $setVal .= $k.' = :'.$key;
                     $num++;
                 }
             }
@@ -162,7 +162,7 @@ class Mysql
             if($firstKey != $k){
                 $whereStr .= ' AND ';
             }
-            $bindKey = 'ZhanShopBind_Where_'.$k;
+            $bindKey = 'ZhanShopBind_Where_'.str_replace('.', '__', $k);
             $whereStr .= $k.' = :'.$bindKey;
             $query->setBind($bindKey, $v);
         }
