@@ -83,7 +83,7 @@ class ApiDocController
      */
     protected function apis(Request &$request){
         return [
-            'menu' => $this->service->getApiMenu(),
+            'menu' => $this->service->menu(),
             'title' => App::config()->get('app.app_name', 'ZhanShop'),
             'app' => $this->appName,
         ];
