@@ -113,7 +113,7 @@ class PDOConnectionPool
                 $this->recoveryPDO($pdo);
             }catch (\Throwable $e){
                 $this->recoveryPDO($pdo);
-                if($e->getCode() == 2006 || strpos($e->getMessage(), '2006') || strpos($e->getMessage(), 'ackets ') || strpos($e->getMessage(), 'failed ') || strpos($e->getMessage(), ' closed')){
+                if($e->getCode() == 2006 || strpos($e->getMessage(), '2006') || strpos($e->getMessage(), 'ackets ') || strpos($e->getMessage(), 'failed ') || strpos($e->getMessage(), 'close')){
                     $this->reconnect(); // 重连
                     $pdo = $this->getPDO();
                     $result = $this->_query($pdo, $sql, $bind);
