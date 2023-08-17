@@ -102,6 +102,7 @@ class Console{
             \Swoole\Coroutine\run(function() use (&$instance, &$input){
                 $instance->initialize(); // 初始化
                 $instance->execute($input, $this->output); // 执行控制台app
+                \Swoole\Timer::clearAll();
             });
         }else{
             $instance->execute($input, $this->output); // 执行控制台app

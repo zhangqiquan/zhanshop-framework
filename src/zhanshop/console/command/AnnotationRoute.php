@@ -24,7 +24,7 @@ class AnnotationRoute extends Command
 
     public function configure()
     {
-        $this->setTitle('注解生成路由')->setDescription('一键生成基于控制器配置的注解路由');
+        $this->useDatabase()->setTitle('注解生成路由')->setDescription('一键生成基于控制器配置的注解路由');
     }
 
     protected $versionRoutes = [];
@@ -117,69 +117,45 @@ class AnnotationRoute extends Command
 
     // 生成apiDoc
     public function apiDoc(){
-        $model = (new ApiDocModel())->getQuery();
-        $allDos = $model->table('apidoc')->column('id', 'id');
+        $updateTime = time();
+//        $model = (new ApiDocModel())->getQuery();
+        //$allApiDoc = App::database()->
+//        $allDos = $model->table('apidoc')->column('id', 'id');
         foreach ($this->versionRoutes as $app => $versionRoutes){
             $routeDir = App::routePath().DIRECTORY_SEPARATOR.$app;
             // 相同路由请求方式不一样的中间件必须一致
             foreach ($versionRoutes as $version => $groupRoute){
-                $versionRouteCode = Helper::headComment($app.'/'.$version);
-                $versionRouteCode .= 'use zhanshop\App;'.PHP_EOL.PHP_EOL;
                 foreach($groupRoute as $group => $routes){
                     foreach($routes as $route){
                         foreach($route as $rowRoute){
-                            $param = [];
-                            if($rowRoute['validate']){
-                                $validate = App::make($rowRoute['validate']);
-                                foreach($validate->rule as $field => $rule){
-                                    $filedType = 'string';
-                                    if(strpos($rule, 'int') !== false) $filedType = 'int';
-                                    if(strpos($rule, 'file') !== false) $filedType = 'file';
-                                    if(strpos($rule, 'array') !== false) $filedType = 'object';
-                                    $param[$field] = [
-                                        'rule' => $rule,
-                                        'type' => $filedType,
-                                        'title' => $validate->message[$field] ?? $field,
-                                        'example' => $validate->example[$field] ?? null,
-                                        'description' => $validate->description[$field] ?? null,
-                                    ];
-                                }
-                            }
-                            $insetData = [
-                                'protocol' => 'http',
+                            $data = [
                                 'app' => $app,
+                                'protocol' => 'http',
                                 'version' => str_replace('_', '.', $version),
                                 'uri' => $group.'.'.$rowRoute['uri'],
                                 'method' => $rowRoute['method'],
-                                'title' => $rowRoute['title'],
-                                'groupname' => $rowRoute['group'],
-                                'header' => json_encode($rowRoute['header'] ?? [], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE),
-                                'param' => json_encode($param, JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE)
                             ];
+                            $apiDocId = App::database()->model("apidoc")->where($data)->value('id');
 
-                            $row = $model->table('apidoc')->where([
-                                'protocol' => $insetData['protocol'],
-                                'app' => $insetData['app'],
-                                'version' => $insetData['version'],
-                                'uri' => $insetData['uri'],
-                                'method' => $insetData['method'],
-                            ])->find();
-                            if($row){
-                                // 更新
-                                $model->table('apidoc')->where(['id' => $row['id']])->update($insetData);
-                                unset($allDos[$row['id']]);
-                            }else{
+                            $data['title'] = $rowRoute['title'];
+                            $data['catname'] = $rowRoute['group'];
+                            $data['update_time'] = $updateTime;
+
+                            if($apiDocId == false){
                                 // 插入
-                                $model->table('apidoc')->insert($insetData);
+                                $data['create_time'] = $updateTime;
+                                App::database()->model("apidoc")->insert($data);
+                            }else{
+                                // 更新
+                                $data['delete_time'] = 0;
+                                App::database()->model("apidoc")->where(['id' => $apiDocId])->update($data);
                             }
                         }
-
                     }
                 }
             }
         }
-
-        $model->table('apidoc')->whereIn('id', $allDos)->delete(); // 删除已经被处理的文档
+        App::database()->model("apidoc")->whereRaw("update_time != ".$updateTime)->update(['delete_time' => time()]); // 删除已经被处理的文档
     }
 
     protected function generateClass(string $class)
