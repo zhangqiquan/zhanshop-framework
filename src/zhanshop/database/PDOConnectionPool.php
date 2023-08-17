@@ -42,7 +42,11 @@ class PDOConnectionPool
      * @return void
      */
     public function reconnect(){
-        $this->pool->close();
+        try{
+            $this->pool->close();
+        }catch (\Throwable $e){
+
+        }
         $this->pool = new PDOPool($this->pdoConfig, $this->maxConnections);
     }
 
