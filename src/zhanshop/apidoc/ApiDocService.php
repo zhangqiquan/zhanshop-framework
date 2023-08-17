@@ -21,7 +21,27 @@ class ApiDocService
     }
 
     public function menu(){
-        $list = App::database()->model("apidoc")->where(['app' => $this->app])->field('*')->field('id,title,catname,app,app,protocol,version,uri')->order('id asc')->select();
-        print_r($list);
+        // 开启了ONLY_FULL_GROUP_BY的设置，如果select 的字段不在 group by 中 报非法 就是group得比 field多
+        $list = App::database()->model("apidoc")->where(['app' => $this->app])->field('id,title,catname,protocol,app,version,uri')->order('id asc')->select();
+
+        $menus = [];
+
+        $groupNames = array_unique(array_column($list, 'catname'));
+
+        foreach($groupNames as $k => $v){
+            $menus[$k]['title'] = $v;
+            $menus[$k]['apis'] = [];
+            foreach($list as $vv){
+                if($vv['catname'] == $v){
+                    $menus[$k]['apis'][$vv['protocol'].'/'.$vv['uri']] = [
+                        'protocol' => $vv['protocol'],
+                        'uri' => $vv['uri'],
+                        'title' => $vv['title'],
+                    ];
+                }
+            }
+            $menus[$k]['apis'] = array_values($menus[$k]['apis']);
+        }
+        return $menus;
     }
 }
