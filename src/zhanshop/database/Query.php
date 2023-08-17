@@ -247,11 +247,9 @@ class Query
         return $data[0] ?? null;
     }
 
-    public function failException(mixed $pdo = null){
-        if($this->deleteTime) $this->where([$this->deleteTime => 0]);
-        $sql = $this->builder->find($this);
-        $data = $this->query($sql, $this->getBind(), $pdo);
-        return $data[0] ?? App::error()->setError("您所查询的数据不存在", Error::NOT_FOUND);
+    public function findOrFail(mixed $pdo = null){
+        $data = $this->find($pdo);
+        return $data ?? App::error()->setError("您所查询的数据不存在", Error::NOT_FOUND);
     }
 
     public function select(mixed $pdo = null){
@@ -259,6 +257,11 @@ class Query
         $sql = $this->builder->select($this);
         $data = $this->query($sql, $this->getBind(), $pdo);
         return $data;
+    }
+
+    public function selectOrFail(mixed $pdo = null){
+        $data = $this->select($pdo);
+        return $data ? $data : App::error()->setError("您所查询的数据不存在", Error::NOT_FOUND);
     }
 
     public function finder(int $page, int $limit = 20, mixed $pdo = null){
