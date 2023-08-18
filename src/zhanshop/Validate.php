@@ -76,7 +76,7 @@ class Validate
     }
 
     /**
-     * 最大长度
+     * 最大值
      * @param string $key
      * @param int $maxLength
      * @param mixed $val
@@ -84,12 +84,12 @@ class Validate
      */
     protected function max(string $key, mixed $val, int $max){
         if($val > $max){
-            $this->errors[] = ($this->message[$key] ?? $key).'不能大于'.$max.'个字符';
+            $this->errors[] = ($this->message[$key] ?? $key).'不能大于'.$max;
         }
     }
 
     /**
-     * 最小长度
+     * 最小值
      * @param string $key
      * @param int $minLength
      * @param mixed $val
@@ -97,7 +97,7 @@ class Validate
      */
     protected function min(string $key, mixed $val, int $min){
         if($val < $min){
-            $this->errors[] = ($this->message[$key] ?? $key).'不能小于'.$min.'个字符';
+            $this->errors[] = ($this->message[$key] ?? $key).'不能小于'.$min;
         }
     }
 
@@ -196,7 +196,7 @@ class Validate
      */
     protected function mobile(string $key ,mixed $val){
         $rule = '/^1[3-9]\d{9}$/';
-        if($this->regex($key, $val, $rule, true) == false) $this->errors[] = ($this->message[$key] ?? $key).'格式不正确';
+        if($this->regex($key, $val, $rule, true) == false) $this->errors[] = ($this->message[$key] ?? $key).'手机号码格式不正确';
     }
 
     /**
@@ -230,7 +230,10 @@ class Validate
      * @param mixed $val
      * @return void
      */
-    protected function length(string $key, mixed $val, int $minLength = 0, int $maxLength = 0){
+    protected function length(string $key, mixed $val, mixed $minLength, mixed $maxLength){
+        $val = (string) $val;
+        $minLength = (int) $minLength;
+        $maxLength = (int) $maxLength;
         if($minLength && $maxLength){
             $error = '';
             $strlen = mb_strlen($val);
