@@ -10,12 +10,10 @@ declare (strict_types=1);
 
 namespace zhanshop;
 
-use app\admin\v4_0_0\middleware\Test;
-use zhanshop\apidoc\ApiDocController;
 use zhanshop\cache\CacheManager;
-use zhanshop\console\command\Server;
 use zhanshop\database\DbManager;
 use zhanshop\route\Dispatch;
+use zhanshop\service\ApiDoc;
 
 class WebHandle
 {
@@ -61,7 +59,7 @@ class WebHandle
             }
 
             App::route()->getRule()->setApp($v, 'v1', []);
-            App::route()->rule('POST', '/api.doc', [ApiDocController::class, 'postApidoc'])->extra([$v]);
+            App::route()->rule('POST', '/api.doc', [ApiDoc::class, 'call'])->extra([$v]);
         }
     }
 
