@@ -84,7 +84,7 @@ class Validate
      */
     protected function max(string $key, mixed $val, int $max){
         if($val > $max){
-            $this->errors[] = ($this->message[$key] ?? $key).'不能大于'.$max;
+            $this->errors[] = ($this->message[$key] ?? $key).'不能大于'.$max.'个字符';
         }
     }
 
@@ -97,7 +97,7 @@ class Validate
      */
     protected function min(string $key, mixed $val, int $min){
         if($val < $min){
-            $this->errors[] = ($this->message[$key] ?? $key).'不能小于'.$min;
+            $this->errors[] = ($this->message[$key] ?? $key).'不能小于'.$min.'个字符';
         }
     }
 
@@ -196,7 +196,7 @@ class Validate
      */
     protected function mobile(string $key ,mixed $val){
         $rule = '/^1[3-9]\d{9}$/';
-        if($this->regex($key, $rule, $val, true) == false) $this->errors[] = ($this->message[$key] ?? $key).'手机号码格式不正确';
+        if($this->regex($key, $val, $rule, true) == false) $this->errors[] = ($this->message[$key] ?? $key).'格式不正确';
     }
 
     /**
@@ -207,7 +207,7 @@ class Validate
      */
     protected function card(string $key ,mixed $val){
         $rule = '/(^[1-9]\d{5}(18|19|([23]\d))\d{2}((0[1-9])|(10|11|12))(([0-2][1-9])|10|20|30|31)\d{3}[0-9Xx]$)|(^[1-9]\d{5}\d{2}((0[1-9])|(10|11|12))(([0-2][1-9])|10|20|30|31)\d{3}$)/';
-        if($this->regex($key, $rule, $val, true) == false) $this->errors[] = ($this->message[$key] ?? $key).'手机号码格式不正确';
+        if($this->regex($key, $val, $rule, true) == false) $this->errors[] = ($this->message[$key] ?? $key).'手机号码格式不正确';
     }
 
     /**
