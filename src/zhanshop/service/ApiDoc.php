@@ -49,7 +49,7 @@ class ApiDoc
      * 获取菜单列表
      * @return array
      */
-    public function apis(Request &$request, Response &$response){
+    public function index(Request &$request, Response &$response){
         $app = $request->getRoure()['extra'][0];
         return [
             'menu' => App::make(ApiDocService::class)->menu($app),
