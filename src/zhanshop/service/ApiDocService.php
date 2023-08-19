@@ -11,6 +11,7 @@ declare (strict_types=1);
 namespace zhanshop\service;
 
 use zhanshop\App;
+use zhanshop\helper\FileSystem;
 
 class ApiDocService
 {
@@ -35,5 +36,53 @@ class ApiDocService
             $menus[$k]['apis'] = array_values($menus[$k]['apis']);
         }
         return $menus;
+    }
+
+
+    public function apiRequestParamCode($class, $method){
+        // 使用反射拿代码
+        $rc = new \ReflectionClass($class);
+        $method = $rc->getMethod($method);
+        $startLine = $method->getStartLine();
+        $endLine = $method->getEndLine();
+        $code = FileSystem::extract($method->getFileName(), $startLine + 1, $endLine);
+        $validate = explode(')->getData()', $code)[0];
+        $ruleCode = explode('[', str_replace([' ', '"', "'", ","], '', $validate));
+
+        $params = [];
+        if(isset($ruleCode[1])){
+            $rules = explode("\n", $ruleCode[1]);
+            foreach($rules as $k => $v){
+                $fields = explode('=>', $v);
+                if(count($fields) == 2){
+                    $field = $fields[0];
+                    $verify = $fields[1];
+                    $type = 'string';
+                    if(strpos($verify, 'int') !== false) $type = 'int';
+                    if(strpos($verify, 'array') !== false) $type = 'object';
+                    $params[$field] = [
+                        'name' => $field,
+                        'type' => $type,
+                        'default' => '',
+                        'example' => '',
+                        'description' => '',
+                    ];
+                }
+            }
+        }
+
+        if(isset($ruleCode[2])){
+            $rules = explode("\n", $ruleCode[2]);
+            foreach($rules as $k => $v){
+                $arr = explode('=>', $v);
+                if(count($arr) == 2){
+                    if(isset($params[$arr[0]])){
+                        $params[$arr[0]]['description'] = $arr[1];
+                    }
+                }
+            }
+        }
+
+        return array_values($params);
     }
 }
