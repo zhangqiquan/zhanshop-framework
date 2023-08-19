@@ -59,7 +59,8 @@ class ApiDocService
                     $verify = $fields[1];
                     $type = 'string';
                     if(strpos($verify, 'int') !== false) $type = 'int';
-                    if(strpos($verify, 'array') !== false) $type = 'object';
+                    if(strpos($verify, 'array') !== false) $type = 'array';
+                    if(strpos($verify, 'object') !== false) $type = 'object';
                     $params[$field] = [
                         'name' => $field,
                         'type' => $type,
