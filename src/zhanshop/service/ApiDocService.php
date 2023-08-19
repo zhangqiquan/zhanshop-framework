@@ -15,6 +15,11 @@ use zhanshop\helper\FileSystem;
 
 class ApiDocService
 {
+    /**
+     * 所有api菜单
+     * @param string $app
+     * @return array
+     */
     public function menu(string $app){
         $list = App::database()->model("apidoc")->where(['app' => $app])->field('id,title,catname,protocol,app,version,uri')->order('id asc')->select();
         $menus = [];
@@ -38,7 +43,51 @@ class ApiDocService
         return $menus;
     }
 
+    public function detail(string $app, string $protocol, string $uri, string $version = '', string $method = ""){
+        $where = ['app' => $app, 'protocol' => $protocol, 'uri' => $uri];
+        if($method) $where['method'] = $method;
 
+        if($version == false){
+            $version = App::database()->model("apidoc")->where($where)->order('version desc')->order('id asc')->value('version');
+            $where['version'] = $version;
+        }
+
+        $listData = App::database()->model("apidoc")->where($where)->order('id asc')->selectOrFail();
+
+        $data = [];
+        foreach($listData as $v){
+            $v['header'] = json_decode($v['header'] ?? '[]', true);
+            if($v['header']){
+                $header = [];
+                foreach($v['header'] as $field => $head){
+                    $header[] = ['name' => $field, 'type' => 'string', 'default' => '', 'example' => '', 'description' => $head];
+                }
+                $v['header'] = $header;
+            }
+
+            $v['param'] = json_decode($v['param'] ?? '[]', true);
+
+            $v['response'] = json_decode($v['response'] ?? '[]', true);
+            $v['success'] = json_decode($v['success'] ?? '[]', true);
+            $v['failure'] = json_decode($v['failure'] ?? '[]', true);
+            $v['explain'] = json_decode($v['explain'] ?? '[]', true);
+            $data[] = $v;
+        }
+        unset($where['version']);
+        $versions = App::database()->model("apidoc")->where($where)->field('version')->order('version', 'desc')->select();
+        return [
+            'detail' => $data,
+            'versions' => array_column($versions, 'version'),
+        ];
+    }
+
+    /**
+     * 获取控制器入参验证代码
+     * @param $class
+     * @param $method
+     * @return array
+     * @throws \ReflectionException
+     */
     public function apiRequestParamCode($class, $method){
         // 使用反射拿代码
         $rc = new \ReflectionClass($class);
