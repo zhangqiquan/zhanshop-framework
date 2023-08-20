@@ -60,7 +60,7 @@ class ApiDocService
             if($v['header']){
                 $header = [];
                 foreach($v['header'] as $field => $head){
-                    $header[] = ['name' => $field, 'type' => 'string', 'default' => '', 'example' => '', 'description' => $head];
+                    $header[] = ['name' => $field, 'type' => 'string', 'default' => '', 'example' => '', 'description' => $head['description']];
                 }
                 $v['header'] = $header;
             }
