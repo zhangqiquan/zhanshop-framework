@@ -15,7 +15,6 @@ class ApiSampleCode{
     protected static $paramCode = "";
     protected static function paramCode(array &$param, int $tn = 1){
         $tstr = str_repeat("    ", $tn);
-        print_r(self::$paramCode);
         if(self::$paramCode == false || self::$paramCode[mb_strlen(self::$paramCode) - 1] == ':'){
             self::$paramCode .= '{'.PHP_EOL;
         }else{
@@ -81,27 +80,25 @@ axios.request({
         return $code;
     }
 
-    public static function jquery($detail, &$request){
+    public static function jquery(string $url, string $method, array $header, array $param){
         $headerCode = '{'.PHP_EOL;
 
-        foreach($detail['header'] as $v){
-            $headerCode .= '        "'.$v['name'].'": '. (is_int($v['default'] ?? '') ? $v['default'] : ("\"".($v['default'] ?? '')."\",")).' //'.$v['description'].PHP_EOL;
+        foreach($header as $v){
+            $headerCode .= '        "'.$v['name'].'": '.("\""."\",").' //'.$v['description'].PHP_EOL;
         }
         $headerCode .= '    }';
+        self::$paramCode = "";
 
-        $bodyCode = '{'.PHP_EOL;
-        foreach($detail['param'] ?? [] as $v){
-            $bodyCode .= '        "'.$v['field'].'": '.("\"".($v['default'] ?? '')."\",").' //'.$v['description'].PHP_EOL;
+        self::paramCode($param);
+        $bodyCode = self::$paramCode;
+        self::$paramCode = "";
+        if($method == 'GET'){
+            $bodyCode = '{}';
         }
-        $bodyCode .= '    }';
-        $uri = $request->param('uri');
-        $method = $request->param('method');
-        $type = $request->param('type');
-        $version = $request->param('version');
         $code = "// jquery示例代码 //
 var request = $.ajax({
     //请求的接口地址
-    url: '".($request->header('origin').'/'.$request->post('version').'/'.$request->post('uri'))."',
+    url: '".$url."',
     //请求方法
     method: '".strtoupper($method)."',
      //超时时间设置，单位毫秒
