@@ -76,4 +76,19 @@ class ApiDoc
         ])->getData();
         return App::make(ApiDocService::class)->detail($app, $data['protocol'], $data['uri'], $data['version']);
     }
+
+    public function samplecode(Request &$request, Response &$response){
+        $app = $request->getRoure()['extra'][0];
+        $data = $request->validateRule([
+            'protocol' => 'required',
+            'version' => '',
+            'uri' => 'required',
+            'method' => 'required',
+            'language' => 'required',
+        ])->getData();
+        $language = $data['language'];
+        $apiDoc = App::make(ApiDocService::class)->detail($app, $data['protocol'], $data['uri'], $data['version'], $data['method'])['detail'][0];
+        $code = ApiSampleCode::$language($request->header('origin').'/'.$apiDoc['version'].'/'.$apiDoc['uri'], $apiDoc['method'], $apiDoc['header'], $apiDoc['param']);
+        return $code;
+    }
 }
