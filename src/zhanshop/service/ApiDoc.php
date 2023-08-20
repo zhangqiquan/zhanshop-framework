@@ -71,23 +71,23 @@ class ApiDoc
         $app = $request->getRoure()['extra'][0];
         $data = $request->validateRule([
             'protocol' => 'required',
-            'version' => '',
+            'version' => 'string',
             'uri' => 'required'
         ])->getData();
-        return App::make(ApiDocService::class)->detail($app, $data['protocol'], $data['uri'], $data['version']);
+        return App::make(ApiDocService::class)->detail($app, $data['protocol'], $data['uri'], $data['version'] ?? "");
     }
 
     public function samplecode(Request &$request, Response &$response){
         $app = $request->getRoure()['extra'][0];
         $data = $request->validateRule([
             'protocol' => 'required',
-            'version' => '',
+            'version' => 'string',
             'uri' => 'required',
             'method' => 'required',
             'language' => 'required',
         ])->getData();
         $language = $data['language'];
-        $apiDoc = App::make(ApiDocService::class)->detail($app, $data['protocol'], $data['uri'], $data['version'], $data['method'])['detail'][0];
+        $apiDoc = App::make(ApiDocService::class)->detail($app, $data['protocol'], $data['uri'], $data['version'] ?? "", $data['method'])['detail'][0];
         $code = ApiSampleCode::$language($request->header('origin').'/'.$apiDoc['version'].'/'.$apiDoc['uri'], $apiDoc['method'], $apiDoc['header'], $apiDoc['param']);
         return $code;
     }
@@ -102,11 +102,11 @@ class ApiDoc
         $app = $request->getRoure()['extra'][0];
         $data = $request->validateRule([
             'protocol' => 'required',
-            'version' => '',
+            'version' => 'string',
             'uri' => 'required',
             'method' => 'required'
         ])->getData();
-        $apiDoc = App::make(ApiDocService::class)->detail($app, $data['protocol'], $data['uri'], $data['version'], $data['method'])['detail'][0];
+        $apiDoc = App::make(ApiDocService::class)->detail($app, $data['protocol'], $data['uri'], $data['version'] ?? "", $data['method'])['detail'][0];
         return $apiDoc;
     }
 
@@ -114,12 +114,12 @@ class ApiDoc
         $app = $request->getRoure()['extra'][0];
         $data = $request->validateRule([
             'protocol' => 'required',
-            'version' => '',
+            'version' => 'string',
             'uri' => 'required',
             'method' => 'required',
             'body' => 'required',
         ])->getData();
-        $apiDoc = App::make(ApiDocService::class)->detail($app, $data['protocol'], $data['uri'], $data['version'], $data['method'])['detail'][0];
+        $apiDoc = App::make(ApiDocService::class)->detail($app, $data['protocol'], $data['uri'], $data['version'] ?? "", $data['method'])['detail'][0];
         if(is_array($data['body'])){
             $data['body'] = json_encode($data['body'], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
         }
@@ -130,12 +130,12 @@ class ApiDoc
         $app = $request->getRoure()['extra'][0];
         $data = $request->validateRule([
             'protocol' => 'required',
-            'version' => '',
+            'version' => 'string',
             'uri' => 'required',
             'method' => 'required',
             'body' => 'required',
         ])->getData();
-        $apiDoc = App::make(ApiDocService::class)->detail($app, $data['protocol'], $data['uri'], $data['version'], $data['method'])['detail'][0];
+        $apiDoc = App::make(ApiDocService::class)->detail($app, $data['protocol'], $data['uri'], $data['version'] ?? "", $data['method'])['detail'][0];
         if(is_array($data['body'])){
             $data['body']['data'] = null;
             $data['body'] = json_encode($data['body'], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
