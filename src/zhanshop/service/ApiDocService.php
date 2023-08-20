@@ -83,6 +83,15 @@ class ApiDocService
         ];
     }
 
+
+    public function success(int $id, string $success){
+        App::database()->model("apidoc")->where(['id' => $id])->update(['success' => $success]);
+    }
+
+    public function failure(int $id, string $success){
+        App::database()->model("apidoc")->where(['id' => $id])->update(['failure' => $success]);
+    }
+
     /**
      * 获取控制器入参验证代码
      * @param $class
