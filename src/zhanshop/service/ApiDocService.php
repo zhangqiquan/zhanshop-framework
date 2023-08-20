@@ -76,7 +76,7 @@ class ApiDocService
             $data[] = $v;
         }
         unset($where['version']);
-        $versions = App::database()->model("apidoc")->where($where)->field('version')->order('version', 'desc')->select();
+        $versions = App::database()->model("apidoc")->where($where)->field('version')->order('version desc')->select();
         return [
             'detail' => $data,
             'versions' => array_column($versions, 'version'),
