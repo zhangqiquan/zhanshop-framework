@@ -31,11 +31,13 @@ class ApiDocService
             $menus[$k]['apis'] = [];
             foreach($list as $vv){
                 if($vv['catname'] == $v){
-                    $menus[$k]['apis'][$vv['protocol'].'/'.$vv['uri']] = [
-                        'protocol' => $vv['protocol'],
-                        'uri' => $vv['uri'],
-                        'title' => $vv['title'],
-                    ];
+                    if(!isset($menus[$k]['apis'][$vv['protocol'].'/'.$vv['uri']])){
+                        $menus[$k]['apis'][$vv['protocol'].'/'.$vv['uri']] = [
+                            'protocol' => $vv['protocol'],
+                            'uri' => $vv['uri'],
+                            'title' => $vv['title'],
+                        ];
+                    }
                 }
             }
             $menus[$k]['apis'] = array_values($menus[$k]['apis']);
@@ -60,7 +62,7 @@ class ApiDocService
             if($v['header']){
                 $header = [];
                 foreach($v['header'] as $field => $head){
-                    $header[] = ['name' => $field, 'type' => 'string', 'default' => '', 'example' => '', 'description' => $head['description']];
+                    $header[] = ['name' => $head['name'], 'type' => 'string', 'default' => '', 'example' => '', 'description' => $head['description']];
                 }
                 $v['header'] = $header;
             }
