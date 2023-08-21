@@ -52,6 +52,8 @@ class ApiDocService
         if($version == false){
             $version = App::database()->model("apidoc")->where($where)->order('version desc')->order('id asc')->value('version');
             $where['version'] = $version;
+        }else{
+            $where['version'] = $version;
         }
 
         $listData = App::database()->model("apidoc")->where($where)->order('id asc')->selectOrFail();
