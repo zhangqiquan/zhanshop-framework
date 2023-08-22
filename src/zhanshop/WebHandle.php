@@ -87,7 +87,9 @@ class WebHandle
      */
     public function afterMiddleware(Request &$request, Response &$servResponse){
         foreach ($request->getRoure()['middleware'] as $k => $v){
-            App::make($v)->handle($request, $servResponse);
+            if(property_exists($v, 'isAfter')){
+                App::make($v)->handle($request, $servResponse);
+            }
         }
     }
 
