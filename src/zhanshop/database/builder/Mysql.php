@@ -78,10 +78,15 @@ class Mysql
     }
 
     public function count(Query &$query){
-        $where = $query->getOptions("where", true);
-        $whereStr = $this->parseWhere($query, $where);
+        $joinStr = $this->parseJoin($query, $query->getOptions("join", true));
+        $whereStr = $this->parseWhere($query, $query->getOptions("where", true));
+        $havingStr = $this->parseHaving($query, $query->getOptions("having", true));
+        $groupStr = $this->parseGroup($query, $query->getOptions("group", true));
+        $alias = $this->parseAlias($query, $query->getOptions('alias', true));
+        $distinct = $query->getOptions('distinct', true);
         $field = $query->getOptions('field', true);
-        $sql = 'SELECT COUNT('.($field ?? '*').') AS __count FROM '.$query->getOptions('table').$whereStr;
+
+        $sql = 'SELECT count('.($distinct ? ' DISTINCT' : '').' '.($field ?? '*').') as __count FROM '.$query->getOptions('table').$alias.$joinStr.$whereStr.$groupStr.$havingStr;
         return $sql;
     }
 
