@@ -92,34 +92,54 @@ class Mysql
 
     // 聚合查询只有where条件有效
     public function avg(Query &$query){
-        $where = $query->getOptions("where", true);
-        $whereStr = $this->parseWhere($query, $where);
+        $joinStr = $this->parseJoin($query, $query->getOptions("join", true));
+        $whereStr = $this->parseWhere($query, $query->getOptions("where", true));
+        $havingStr = $this->parseHaving($query, $query->getOptions("having", true));
+        $groupStr = $this->parseGroup($query, $query->getOptions("group", true));
+        $alias = $this->parseAlias($query, $query->getOptions('alias', true));
+        $distinct = $query->getOptions('distinct', true);
         $field = $query->getOptions('field', true);
-        $sql = 'SELECT AVG('.($field ?? '*').') AS __avg FROM '.$query->getOptions('table').$whereStr;
+
+        $sql = 'SELECT AVG('.($distinct ? ' DISTINCT' : '').' '.($field ?? '*').') as __avg FROM '.$query->getOptions('table').$alias.$joinStr.$whereStr.$groupStr.$havingStr;
         return $sql;
     }
 
     public function min(Query &$query){
-        $where = $query->getOptions("where", true);
-        $whereStr = $this->parseWhere($query, $where);
+        $joinStr = $this->parseJoin($query, $query->getOptions("join", true));
+        $whereStr = $this->parseWhere($query, $query->getOptions("where", true));
+        $havingStr = $this->parseHaving($query, $query->getOptions("having", true));
+        $groupStr = $this->parseGroup($query, $query->getOptions("group", true));
+        $alias = $this->parseAlias($query, $query->getOptions('alias', true));
+        $distinct = $query->getOptions('distinct', true);
         $field = $query->getOptions('field', true);
-        $sql = 'SELECT MIN('.($field ?? '*').') AS __min FROM '.$query->getOptions('table').$whereStr;
+
+        $sql = 'SELECT MIN('.($distinct ? ' DISTINCT' : '').' '.($field ?? '*').') as __min FROM '.$query->getOptions('table').$alias.$joinStr.$whereStr.$groupStr.$havingStr;
         return $sql;
     }
 
     public function max(Query &$query){
-        $where = $query->getOptions("where", true);
-        $whereStr = $this->parseWhere($query, $where);
+        $joinStr = $this->parseJoin($query, $query->getOptions("join", true));
+        $whereStr = $this->parseWhere($query, $query->getOptions("where", true));
+        $havingStr = $this->parseHaving($query, $query->getOptions("having", true));
+        $groupStr = $this->parseGroup($query, $query->getOptions("group", true));
+        $alias = $this->parseAlias($query, $query->getOptions('alias', true));
+        $distinct = $query->getOptions('distinct', true);
         $field = $query->getOptions('field', true);
-        $sql = 'SELECT MAX('.($field ?? '*').') AS __max FROM '.$query->getOptions('table').$whereStr;
+
+        $sql = 'SELECT MAX('.($distinct ? ' DISTINCT' : '').' '.($field ?? '*').') as __max FROM '.$query->getOptions('table').$alias.$joinStr.$whereStr.$groupStr.$havingStr;
         return $sql;
     }
 
     public function sum(Query &$query){
-        $where = $query->getOptions("where", true);
-        $whereStr = $this->parseWhere($query, $where);
+        $joinStr = $this->parseJoin($query, $query->getOptions("join", true));
+        $whereStr = $this->parseWhere($query, $query->getOptions("where", true));
+        $havingStr = $this->parseHaving($query, $query->getOptions("having", true));
+        $groupStr = $this->parseGroup($query, $query->getOptions("group", true));
+        $alias = $this->parseAlias($query, $query->getOptions('alias', true));
+        $distinct = $query->getOptions('distinct', true);
         $field = $query->getOptions('field', true);
-        $sql = 'SELECT SUM('.($field ?? '*').') AS __sum FROM '.$query->getOptions('table').$whereStr;
+
+        $sql = 'SELECT SUM('.($distinct ? ' DISTINCT' : '').' '.($field ?? '*').') as __sum FROM '.$query->getOptions('table').$alias.$joinStr.$whereStr.$groupStr.$havingStr;
         return $sql;
     }
 
