@@ -92,9 +92,6 @@ class AnnotationRoute extends Command
                             if($rowRoute['extra']){
                                 $versionRouteCode .= '->extra('.json_encode($rowRoute['extra']).')';
                             }
-                            if($rowRoute['validate']){
-                                $versionRouteCode .= '->validate(['.'\\'.$rowRoute['validate'].'::class])';
-                            }
                             if($rowRoute['middleware']){
                                 $middleware = '['.implode(', ', array_values($rowRoute['middleware'])).']';
                                 $versionRouteCode .= '->middleware('.$middleware.')';
@@ -135,7 +132,7 @@ class AnnotationRoute extends Command
                                 'uri' => $group.'.'.$rowRoute['uri'],
                                 'method' => $rowRoute['method'],
                             ];
-                            $apiDocId = App::database()->model("apidoc")->where($data)->value('id');
+                            $apiDocId = App::database()->model("apidoc")->where($data)->find();
 
                             $data['title'] = $rowRoute['title'];
                             $data['catname'] = $rowRoute['group'];
@@ -143,16 +140,30 @@ class AnnotationRoute extends Command
                             $data['header'] = json_encode($rowRoute['header'], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
                             $data['update_time'] = $updateTime;
 
-                            print_r($data);
-
                             if($apiDocId == false){
                                 // 插入
                                 $data['create_time'] = $updateTime;
+                                $data['param'] = json_encode($rowRoute['param'], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
                                 App::database()->model("apidoc")->insert($data);
                             }else{
                                 // 更新
                                 $data['delete_time'] = 0;
-                                App::database()->model("apidoc")->where(['id' => $apiDocId])->update($data);
+                                $param = $apiDocId['param'];
+                                $data['param'] = $rowRoute['param'];
+                                if($param){
+                                    $param = json_decode($param, true);
+                                    foreach($data['param'] as $k => $v){
+                                        foreach($param as $kk => $vv){
+                                            if($v['name'] == $vv['name']){
+                                                $data['param'][$k]['description'] = $vv['description'] ?? '';
+                                                $data['param'][$k]['default'] = $vv['default'] ?? '';
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                $data['param'] = json_encode($rowRoute['param'], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
+                                App::database()->model("apidoc")->where(['id' => $apiDocId['id']])->update($data);
                             }
                         }
                     }
@@ -210,7 +221,7 @@ class AnnotationRoute extends Command
             $route['title'] = $annotation->title();
             $route['group'] = $annotation->group();
             $route['header'] = $annotation->header();
-            $route['validate'] = $annotation->validate();
+            $route['param'] = App::make(\zhanshop\service\ApiDocService::class)->apiRequestParamCode($method->class, $method->name);
             // 对进行相同的进行分组
             return $route;
         }
@@ -311,15 +322,6 @@ class Annotation{
         return [];
     }
 
-    public function validate(){
-        $class = str_replace('\\controller\\', '\\validate\\', $this->method->class.ucfirst($this->method->name));
-        $classPath = App::rootPath().DIRECTORY_SEPARATOR.str_replace('\\',  DIRECTORY_SEPARATOR, $class).'.php';
-        if(file_exists($classPath)){
-            return $class;
-        }
-        return null;
-    }
-
     public function header(){
         $middlewarePath = App::appPath().DIRECTORY_SEPARATOR.'middleware'.DIRECTORY_SEPARATOR;
         $arr = explode("\n", $this->notes);
@@ -341,7 +343,6 @@ class Annotation{
                         'name' => $header[0],
                         'type' => 'string',
                         'default' => '',
-                        'example' => '',
                         'description' => $val
                     ];
                 }

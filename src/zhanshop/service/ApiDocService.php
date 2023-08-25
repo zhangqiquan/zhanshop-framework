@@ -120,15 +120,18 @@ class ApiDocService
                     $field = $fields[0];
                     $verify = $fields[1];
                     $type = 'string';
+                    $required = 'false';
                     if(strpos($verify, 'int') !== false) $type = 'int';
                     if(strpos($verify, 'array') !== false) $type = 'array';
                     if(strpos($verify, 'object') !== false) $type = 'object';
+                    if(strpos($verify, 'required') !== false) $required = 'true';
                     $params[$field] = [
                         'name' => $field,
                         'type' => $type,
                         'default' => '',
-                        'example' => '',
-                        'description' => '',
+                        'required' => $required,
+                        'title' => '',
+                        'description' => ''
                     ];
                 }
             }
@@ -140,7 +143,7 @@ class ApiDocService
                 $arr = explode('=>', $v);
                 if(count($arr) == 2){
                     if(isset($params[$arr[0]])){
-                        $params[$arr[0]]['description'] = $arr[1];
+                        $params[$arr[0]]['title'] = $arr[1];
                     }
                 }
             }
