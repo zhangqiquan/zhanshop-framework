@@ -176,28 +176,23 @@ class AnnotationRoute extends Command
     protected function generateClass(string $class)
     {
         $routes = [];
-        try {
-            $reflection= new \ReflectionClass($class);
-            foreach($reflection->getMethods() as $method){
-                $route = $this->generateMethod($method);
-                if($route){
-                    $routes[$route['uri']][] = $route;
-                }
+        $reflection= new \ReflectionClass($class);
+        foreach($reflection->getMethods() as $method){
+            $route = $this->generateMethod($method);
+            if($route){
+                $routes[$route['uri']][] = $route;
             }
-        }catch (\Throwable $exception){
-            Log::errorLog(SWOOLE_LOG_ERROR,  $exception->getMessage());
         }
 
         if($routes){
             $classPath = explode('\\', $class);
             $app = $classPath[3] ?? '';
             if($app == false){
-                Log::errorLog(SWOOLE_LOG_ERROR,  $class.'中无法确定app');
-                exit();
+                App::error()->setError($class.'中无法确定app');
             }
             $version = $classPath[4] ?? '';
             if($version == false){
-                Log::errorLog(SWOOLE_LOG_ERROR,  $class.'中无法确定版本号');
+                App::error()->setError($class.'中无法确定版本号');
                 exit();
             }
             $prefix = lcfirst($classPath[count($classPath) - 1]);
@@ -273,8 +268,7 @@ class Annotation{
                 $method = str_replace(' ', '', $arr[1] ?? 'GET');
                 $method = strtolower($method);
                 if(strpos($this->method->name, $method) !== 0){
-                    Log::errorLog(SWOOLE_LOG_ERROR,  $this->method->class.'->'.$this->method->name.' Route注解指定的是'.$method.'而方法却是'.$this->method->name.'前缀不一致');
-                    die;
+                    App::error()->setError($this->method->class.'->'.$this->method->name.' Route注解指定的是'.$method.'而方法却是'.$this->method->name.'前缀不一致');
                 }
 
                 $uri = str_replace(' ', '', $arr[0]);
@@ -301,20 +295,20 @@ class Annotation{
     // 中间件支持多个
     public function middleware(){
         $middlewarePath = App::appPath().DIRECTORY_SEPARATOR.'middleware'.DIRECTORY_SEPARATOR;
-        $arr = explode("\n", $this->notes);
+        $arr = $this->notes;
         $prefix = '@Middleware(';
         foreach ($arr as $k => $v){
-            if(strpos($v, $prefix) >= 0){
-                $route = str_replace(['*', $prefix, ')'], '', $v);
-                $arr = explode(', ', $route);
+            if(strpos($v, $prefix) === 0){
+                $middleware = substr($v, 0, strlen($v) - 1);
+                $middleware = str_replace(['@Middleware(', ')', ' '], '', $middleware);
+                $arr = explode(',', $middleware);
                 $middleware = [];
                 foreach($arr as $k => $v){
                     $class = str_replace(' ', '', $v);
                     // 检查中间件是否存在
                     $file = $middlewarePath.str_replace(['\\', '::class'], [DIRECTORY_SEPARATOR, '.php'], $class);
                     if(!file_exists($file)){
-                        Log::errorLog(SWOOLE_LOG_ERROR,  $this->method->class.'->'.$this->method->name.' Middleware注解指定 '.$class.' 中间件未定义');
-                        die;
+                        App::error()->setError($this->method->class.'->'.$this->method->name.' Middleware注解指定 '.$class.' 中间件未定义'.$file);
                     }
                     $middleware[] = '\\app\\middleware\\'.str_replace('/', '\\', $class);
                 }
@@ -326,7 +320,6 @@ class Annotation{
     }
 
     public function header(){
-        $middlewarePath = App::appPath().DIRECTORY_SEPARATOR.'middleware'.DIRECTORY_SEPARATOR;
         $arr = $this->notes;
         $prefix = '@Header(';
         foreach ($arr as $k => $v){
@@ -339,7 +332,7 @@ class Annotation{
                     $header = explode('=', $header);
                     $val = $header[1] ?? null;
                     if($val == false){
-                        Log::errorLog(SWOOLE_LOG_ERROR,  $this->method->class.'->'.$this->method->name.' Header注解指定 '.$header[0].'后面应该包含一个=字段说明');
+                        App::error()->setError($this->method->class.'->'.$this->method->name.' Header注解指定 '.$header[0].'后面应该包含一个=字段说明');
                         die;
                     }
                     $headers[$header[0]] = [
