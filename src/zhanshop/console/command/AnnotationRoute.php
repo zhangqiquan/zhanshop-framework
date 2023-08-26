@@ -231,16 +231,19 @@ class AnnotationRoute extends Command
 
 class Annotation{
     protected $method;
-    protected  string $notes;
+    protected array $notes;
     protected $route = [];
-    public function __construct($method, string $notes,)
+    public function __construct($method, string $note)
     {
         $this->method = $method;
-        $this->notes = str_replace(['\'', '"', '#'], '', $notes);
+        $note = str_replace(['\'', '"', '#', '  ', ' * '], '', $note);
+        $this->notes = explode("\n", $note);
+        unset($this->notes[count($this->notes) - 1], $this->notes[0]);
+        $this->notes = array_values($this->notes);
     }
 
     public function title(){
-        $arr = explode("\n", $this->notes);
+        $arr = $this->notes;
         if(isset($arr[1])){
             return str_replace('*', '', preg_replace('/\s+/',  '', $arr[1]));
         }
@@ -248,7 +251,7 @@ class Annotation{
     }
 
     public function group(){
-        $arr = explode("\n", $this->notes);
+        $arr = $this->notes;
         $prefix = '@ApiGroup';
         foreach ($arr as $k => $v){
             if(strpos($v, $prefix) !== false){
@@ -260,10 +263,10 @@ class Annotation{
     }
 
     public function route(){
-        $arr = explode("\n", $this->notes);
-        $prefix = '@Route(';
+        $arr = $this->notes;
+        $prefix = 'Route(';
         foreach ($arr as $k => $v){
-            if(strpos($v, $prefix) !== false){
+            if(strpos($v, $prefix) !== 0){
                 $route = str_replace(['*', $prefix, ')'], '', $v);
                 $arr = explode(', ', $route);
                 // 这里的方法只能有一个
@@ -301,7 +304,7 @@ class Annotation{
         $arr = explode("\n", $this->notes);
         $prefix = '@Middleware(';
         foreach ($arr as $k => $v){
-            if(strpos($v, $prefix) !== false){
+            if(strpos($v, $prefix) >= 0){
                 $route = str_replace(['*', $prefix, ')'], '', $v);
                 $arr = explode(', ', $route);
                 $middleware = [];
@@ -324,7 +327,7 @@ class Annotation{
 
     public function header(){
         $middlewarePath = App::appPath().DIRECTORY_SEPARATOR.'middleware'.DIRECTORY_SEPARATOR;
-        $arr = explode("\n", $this->notes);
+        $arr = $this->notes;
         $prefix = '@Header(';
         foreach ($arr as $k => $v){
             if(strpos($v, $prefix) !== false){
