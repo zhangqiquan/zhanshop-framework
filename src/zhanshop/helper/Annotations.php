@@ -1,6 +1,8 @@
 <?php
 
 namespace zhanshop\helper;
+use zhanshop\App;
+
 /**
  * 注解支持123
  * @api {method} path title
@@ -21,22 +23,31 @@ class Annotations
     }
 
     public function api(){
-        $matched = preg_match('/@api\s*(.*)/i', $this->docComment, $matches);
-        var_dump($matches);
+        // @api POST goods 添加商品
+        // @api  \s+匹配一个或者多个空格  (GET|POST|DELETE|PUT)匹配GET|POST|DELETE|PUT任意一项     \s+匹配一个或者多个空格     (\w+)匹配一个包含字母数字下划线的字符串     \s+匹配一个或者多个空格  (.*)匹配任意字符
+        $matched = preg_match('/@api\s+(GET|POST|DELETE|PUT)\s+(\w+)\s+(\S*)/i', $this->docComment, $matches);
+        return [
+            'method' => $matches[1] ?? '',
+            'uri' => $matches[2] ?? '',
+            'title' => str_replace(' ', '', $matches[3] ?? ''),
+        ];
     }
 
     public function apiGroup(){
-        $matched = preg_match('/@apiGroup\s*(.*)/i', $this->docComment, $matches);
-        var_dump($matches);
+        // @apiGroup 医生
+        // @apiGroup \s+ 匹配一个或者多个空格 (\S*) 匹配任意非空白字符
+        $matched = preg_match('/@apiGroup\s+(\S*)/i', $this->docComment, $matches);
+        return str_replace(' ', '', $matches[1] ?? '');
     }
 
     public function apiMiddleware(){
-        $matched = preg_match('/@apiMiddleware\s*(.*)/i', $this->docComment, $matches);
-        var_dump($matches);
+        $matched = preg_match('/@apiMiddleware\s+(\S*)/i', $this->docComment, $matches);
+        return $matches[1] ?? '';
     }
 
     public function apiHeader(){
-        $matched = preg_match('/@apiHeader\s*(.*)/i', $this->docComment, $matches);
+        //@apiHeader string token 用户token
+        $matched = preg_match_all('/@apiHeader\s+([a-zA-Z]+)\s+(\S+)\s+(\S*)/i', $this->docComment, $matches);
         var_dump($matches);
     }
 
@@ -56,10 +67,12 @@ class Annotations
     }
 
     public function all(){
-        $this->api();
-        $this->apiGroup();
-        $this->apiMiddleware();
-        $this->apiHeader();
+        $data = [];
+        $data['api'] = $this->api();
+        $data['apiGroup'] = $this->apiGroup();
+        $data['apiMiddleware'] = array_values(array_filter(explode(',', $this->apiMiddleware())));
+        $data['apiHeader'] = $this->apiHeader();
+        die;
         $this->apiParam();
         $this->apiSuccess();
         $this->apiError();
