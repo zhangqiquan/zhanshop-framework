@@ -1,7 +1,15 @@
 <?php
 
 namespace zhanshop\service;
-
+/**
+ * 注解支持
+ * @api {method} path title
+ * @apiGroup User
+ * @apiHeader {String} 字段名 描述
+ * @apiParam {Int} page=1 页码
+ * @apiMiddleware 1,2
+ * @apiDescription text
+ */
 class Annotations
 {
     public static function getTitle(string $note){
