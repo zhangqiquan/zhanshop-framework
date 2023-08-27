@@ -45,31 +45,12 @@ class Annotations
         return $matches[1] ?? '';
     }
 
-    protected function moreParam(array &$data, $matches, $index, int $level = 0){
-        //print_r(count($matches[2]));
-        //var_dump($index, count($matches[2]));
-        for($k = $index; $k < count($matches[2]) - 1; $k++){
-            //var_dump($k);
-            $v = $matches[2][$k];
-            $fieldsDefault = explode('=', $v);
-            $fields = $fieldsDefault[0];
-            $default = $fields[1] ?? null;
-
-            $fields = explode('.', $fields);
-            $field = $fields[$level];
-            if(!isset($data[$field])){
-                $data[$field] = [
-                    'name' => $field,
-                    'type' => $matches[1][$k],
-                    'default' => $default,
-                    'description' => $matches[3][$k],
-                    'children' => []
-                ];
-            }else if($data[$field]){
-                // 不一定要加
-                $level++;
-                $this->moreParam($data[$field]['children'], $matches, $k, $level);
-                break;
+    protected function moreParam(array &$param, $data, $id){
+        foreach($data as $k => $v){
+            if($v['pname'] == $id){
+                unset($v['pname']);
+                $param[$v['name']] = $v;
+                $this->moreParam($param[$v['name']]['children'], $data, $v['name']);
             }
         }
     }
@@ -92,11 +73,19 @@ class Annotations
                 'type' => $matches[1][$k],
                 'default' => $default,
                 'description' => $matches[3][$k],
+                'children' => [],
             ];
         }
-
+        $param = [];
         // 进行分组
-
+        foreach($data as $k => $v){
+            if($v['pname'] === null){
+                unset($v['pname']);
+                $param[$v['name']] = $v;
+                $this->moreParam($param[$v['name']]['children'], $data, $v['name']);
+            }
+        }
+        print_r($param);die;
     }
 
     public function apiParam(){
