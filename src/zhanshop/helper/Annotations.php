@@ -81,58 +81,21 @@ class Annotations
         foreach($matches[2] as $k => $v){
             $fieldsDefault = explode('=', $v);
             $fields = $fieldsDefault[0];
-            $default = $fields[1] ?? null;
+            $default = $fieldsDefault[1] ?? null;
 
             $fields = explode('.', $fields);
-            $field = $fields[0];
-            if(!isset($data[$field])){
-                $data[$field] = [
-                    'name' => $field,
-                    'type' => $matches[1][$k],
-                    'default' => $default,
-                    'description' => $matches[3][$k],
-                    'children' => []
-                ];
-            }else{
-                $this->moreParam($data[$field]['children'], $matches, $k, 1);
-                break;
-                //print_r($data[$field]['children']);
-            }
-//            if(count($fields) > 1){
-//                $data[$field]['children'] = [];
-//                $this->moreParam($data[$field]['children'], $matches, $k);
-//            }
+            $pid = $fields[count($fields) - 2] ?? null;
+            $field = $fields[count($fields) - 1];
+            $data[] = [
+                'name' => $field,
+                'pname' => $pid,
+                'type' => $matches[1][$k],
+                'default' => $default,
+                'description' => $matches[3][$k],
+            ];
         }
-        die;
-        print_r($data);die;
-//        $this->moreParam($data, $matches);
-//        print_r($data);
-//        die;
 
-//        foreach($matches[2] as $k => $v){
-//            $fields = explode('=', $v);
-//            $field = $fields[0];
-//            $default = $fields[1] ?? null;
-//            $arr = explode('.', $field);
-//            if(!isset($data[$arr[0]])){
-//                $data[$arr[0]] = [
-//                    'name' => $arr[0],
-//                    'type' => $matches[1][$k],
-//                    'default' => $matches[1][$k],
-//                    'description' => $matches[3][$k],
-//                ];
-//            }
-//            unset($arr[0]);
-//            foreach($arr as $vv){
-//                //var_dump($vv);
-//                $this->moreParam($data[$arr[0]], );
-//            }
-//            //echo $k.'=>'.$v.PHP_EOL;
-//            //var_dump($v);
-//            //$this->moreParam($data);
-//            //unset($arr[0]);
-//        }
-        //print_r($data);
+        // 进行分组
 
     }
 
