@@ -145,7 +145,6 @@ class Annotations
         $data['apiParam'] = $this->apiParam();
         $data['apiSuccess'] = $this->apiSuccess();
         $data['apiError'] = $this->apiError();
-        print_r($data);die;
         return $data;
     }
     public static function getTitle(string $note){
