@@ -70,7 +70,8 @@ class Annotations
     protected function moreParam(array &$param, $data, $id){
         foreach($data as $k => $v){
             if($v['pname'] == $id){
-                //unset($v['pname']);
+                unset($data[$k]);
+                unset($v['pname']);
                 $param[$v['name']] = $v;
                 $this->moreParam($param[$v['name']]['children'], $data, $v['name']);
             }
@@ -128,6 +129,7 @@ class Annotations
         $data['apiParam'] = $this->apiParam();
         $data['apiSuccess'] = $this->apiSuccess();
         $data['apiError'] = $this->apiError();
+        print_r($data);die;
         return $data;
     }
     public static function getTitle(string $note){
