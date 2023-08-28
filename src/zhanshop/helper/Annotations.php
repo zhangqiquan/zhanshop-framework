@@ -24,7 +24,7 @@ class Annotations
 
     public function api(){
         // @api POST goods 添加商品
-        // @api  \s+匹配一个或者多个空格  (GET|POST|DELETE|PUT)匹配GET|POST|DELETE|PUT任意一项     \s+匹配一个或者多个空格     (\w+)匹配一个包含字母数字下划线的字符串     \s+匹配一个或者多个空格  (.*)匹配任意字符
+        // @api  \s+匹配一个或者多个空格  (GET|POST|DELETE|PUT)匹配GET|POST|DELETE|PUT任意一项     \s+匹配一个或者多个空格     (\w+)匹配一个包含字母数字下划线的字符串     \s+匹配一个或者多个空格  (\S*) 匹配任意非空白字符
         $matched = preg_match('/@api\s+(GET|POST|DELETE|PUT)\s+(\w+)\s+(\S*)/i', $this->docComment, $matches);
         return [
             'method' => $matches[1] ?? '',
@@ -111,13 +111,29 @@ class Annotations
     }
 
     public function apiSuccess(){
-        $matched = preg_match_all('/@apiSuccess\s*(.*)/i', $this->docComment, $matches);
-        var_dump($matches);
+        // @apiSuccess int id=1 商品id
+        $matched = preg_match_all('/@apiSuccess\s+([a-zA-Z]+)\s+(\S+)\s+(\S*)/i', $this->docComment, $matches);
+        $data = $this->listParam($matches);
+        $success = [];
+        // 进行分组
+        foreach($data as $k => $v){
+            if($v['pname'] === null){
+                unset($v['pname']);
+                $success[$v['name']] = $v;
+                $this->moreParam($success[$v['name']]['children'], $data, $v['name']);
+            }
+        }
+        return $success;
     }
 
     public function apiError(){
-        $matched = preg_match_all('/@apiError\s*(.*)/i', $this->docComment, $matches);
-        var_dump($matches);
+        // @apiError 403 权限不足
+        $matched = preg_match_all('/@apiError\s+([0-9]+)\s+(\S*)/i', $this->docComment, $matches);
+        $data = [];
+        foreach ($matches[1] as $k => $v){
+            $data[$v] = $matches[2][$k] ?? "";
+        }
+        return $data;
     }
 
     public function all(){
