@@ -45,19 +45,7 @@ class Annotations
         return $matches[1] ?? '';
     }
 
-    protected function moreParam(array &$param, $data, $id){
-        foreach($data as $k => $v){
-            if($v['pname'] == $id){
-                unset($v['pname']);
-                $param[$v['name']] = $v;
-                $this->moreParam($param[$v['name']]['children'], $data, $v['name']);
-            }
-        }
-    }
-
-    public function apiHeader(){
-        //@apiHeader string token 用户token
-        $matched = preg_match_all('/@apiHeader\s+([a-zA-Z]+)\s+(\S+)\s+(\S*)/i', $this->docComment, $matches);
+    protected function listParam($matches){
         $data = [];
         foreach($matches[2] as $k => $v){
             $fieldsDefault = explode('=', $v);
@@ -76,6 +64,23 @@ class Annotations
                 'children' => [],
             ];
         }
+        return $data;
+    }
+
+    protected function moreParam(array &$param, $data, $id){
+        foreach($data as $k => $v){
+            if($v['pname'] == $id){
+                //unset($v['pname']);
+                $param[$v['name']] = $v;
+                $this->moreParam($param[$v['name']]['children'], $data, $v['name']);
+            }
+        }
+    }
+
+    public function apiHeader(){
+        //@apiHeader string token 用户token
+        $matched = preg_match_all('/@apiHeader\s+([a-zA-Z]+)\s+(\S+)\s+(\S*)/i', $this->docComment, $matches);
+        $data = $this->listParam($matches);
         $param = [];
         // 进行分组
         foreach($data as $k => $v){
@@ -85,12 +90,23 @@ class Annotations
                 $this->moreParam($param[$v['name']]['children'], $data, $v['name']);
             }
         }
-        print_r($param);die;
+        return $param;
     }
 
     public function apiParam(){
-        $matched = preg_match_all('/@apiParam\s*(.*)/i', $this->docComment, $matches);
-        var_dump($matches);
+        // @apiParam object basic 基本信息
+        $matched = preg_match_all('/@apiParam\s+([a-zA-Z]+)\s+(\S+)\s+(\S*)/i', $this->docComment, $matches);
+        $data = $this->listParam($matches);
+        $param = [];
+        // 进行分组
+        foreach($data as $k => $v){
+            if($v['pname'] === null){
+                unset($v['pname']);
+                $param[$v['name']] = $v;
+                $this->moreParam($param[$v['name']]['children'], $data, $v['name']);
+            }
+        }
+        return $param;
     }
 
     public function apiSuccess(){
@@ -109,10 +125,10 @@ class Annotations
         $data['apiGroup'] = $this->apiGroup();
         $data['apiMiddleware'] = array_values(array_filter(explode(',', $this->apiMiddleware())));
         $data['apiHeader'] = $this->apiHeader();
-        die;
-        $this->apiParam();
-        $this->apiSuccess();
-        $this->apiError();
+        $data['apiParam'] = $this->apiParam();
+        $data['apiSuccess'] = $this->apiSuccess();
+        $data['apiError'] = $this->apiError();
+        return $data;
     }
     public static function getTitle(string $note){
         $note = explode("\n", $note)[1];
