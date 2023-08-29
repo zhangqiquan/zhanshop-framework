@@ -27,6 +27,20 @@ class ApiDoc
         if(($_SERVER['APP_ENV'] ?? 'dev') == 'production') App::error()->setError('访问的接口不存在', Error::NOT_FOUND);
     }
 
+    public function get(Request &$request, Response &$response){
+        $app = $request->getRoure()['extra'][0];
+        $data = file_get_contents(App::runtimePath().DIRECTORY_SEPARATOR.'apidoc'.DIRECTORY_SEPARATOR.$app.'-menu.json');
+        $data = json_decode($data, true);
+        return [
+            'menu' => array_values($data),
+            'user' => [
+                "user_id" => 0,
+                "user_name" => "游客",
+                "avatar" => "http://test-cdn.zhanshop.cn/2023314/16787312296131333165.jpg"
+            ]
+        ];
+    }
+
     /**
      * 调用
      * @param Request $request
@@ -36,7 +50,7 @@ class ApiDoc
      */
     public function call(Request &$request, Response &$response){
         $this->init();
-        $method = $request->method();
+        $method = strtolower($request->method());
         $data = $this->$method($request, $response);
         return [
             'code' => 0,

@@ -176,23 +176,26 @@ class ApiRoute extends Command
                             'pid' => 0,
                             'icon' => 'mdi mdi-file-word',
                             'url' => '',
-                            'target' => 'table/'.$controllerName.'.'.$route['api']['uri'],
+                            'target' => '_self',
                         ];
                         $menus[$controllerName.'.'.$route['api']['uri']] = [
                             'id' => $controllerName.'.'.$route['api']['uri'],
                             'name' => $route['api']['title'],
                             'pid' => md5($route['apiGroup']),
                             'icon' => '',
-                            'url' => '',
-                            'target' => 'table/'.$controllerName.'.'.$route['api']['uri'],
+                            'url' => 'api/'.$controllerName.'.'.$route['api']['uri'],
+                            'target' => 'api',
                         ];
 
                     }
                 }
             }
-            $this->writeApiDocFile(App::runtimePath().DIRECTORY_SEPARATOR.'apidoc'.DIRECTORY_SEPARATOR.$appName.'-'.$version.'-detail.json', $paths);
             // 版本详情
-            print_r($menus);die;
+            $this->writeApiDocFile(App::runtimePath().DIRECTORY_SEPARATOR.'apidoc'.DIRECTORY_SEPARATOR.$appName.'-'.$version.'-detail.json', $paths);
+            // app菜单
+            $this->writeApiDocFile(App::runtimePath().DIRECTORY_SEPARATOR.'apidoc'.DIRECTORY_SEPARATOR.$appName.'-menu.json', array_values($menus));
+
+            //、、print_r($menus);die;
 
         }
         // 每个APP一个文件
