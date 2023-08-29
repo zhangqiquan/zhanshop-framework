@@ -83,12 +83,10 @@ class ApiDoc
      */
     public function detail(Request &$request, Response &$response){
         $app = $request->getRoure()['extra'][0];
-        $data = $request->validateRule([
-            'protocol' => 'required',
-            'version' => 'string',
-            'uri' => 'required'
-        ])->getData();
-        return App::make(ApiDocService::class)->detail($app, $data['protocol'], $data['uri'], $data['version'] ?? "");
+        $uri = $request->param('uri');
+        //file_get_contents()
+        var_dump($app, $uri);
+        //return App::make(ApiDocService::class)->detail($app, $data['protocol'], $data['uri'], $data['version'] ?? "");
     }
 
     public function samplecode(Request &$request, Response &$response){

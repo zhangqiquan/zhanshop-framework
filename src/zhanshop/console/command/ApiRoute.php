@@ -183,7 +183,7 @@ class ApiRoute extends Command
                             'name' => $route['api']['title'],
                             'pid' => md5($route['apiGroup']),
                             'icon' => '',
-                            'url' => 'api/'.$controllerName.'.'.$route['api']['uri'],
+                            'url' => 'api/'.$version.'/'.$controllerName.'.'.$route['api']['uri'],
                             'target' => 'api',
                         ];
 
