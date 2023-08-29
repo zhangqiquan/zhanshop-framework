@@ -185,6 +185,7 @@ class ApiRoute extends Command
                             'icon' => '',
                             'url' => 'api/'.$version.'/'.$controllerName.'.'.$route['api']['uri'],
                             'target' => 'api',
+                            'versions' => array_merge($menus[$controllerName.'.'.$route['api']['uri']]['versions'] ?? [] , [$version]),
                         ];
 
                     }
@@ -193,7 +194,7 @@ class ApiRoute extends Command
             // 版本详情
             $this->writeApiDocFile(App::runtimePath().DIRECTORY_SEPARATOR.'apidoc'.DIRECTORY_SEPARATOR.$appName.'-'.$version.'-detail.json', $paths);
             // app菜单
-            $this->writeApiDocFile(App::runtimePath().DIRECTORY_SEPARATOR.'apidoc'.DIRECTORY_SEPARATOR.$appName.'-menu.json', array_values($menus));
+            $this->writeApiDocFile(App::runtimePath().DIRECTORY_SEPARATOR.'apidoc'.DIRECTORY_SEPARATOR.$appName.'-menu.json', $menus);
 
             //、、print_r($menus);die;
 

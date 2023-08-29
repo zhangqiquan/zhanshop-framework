@@ -12,27 +12,40 @@ namespace zhanshop\service;
 
 use zhanshop\App;
 use zhanshop\Error;
+use zhanshop\helper\Annotations;
 use zhanshop\Request;
 use zhanshop\Response;
 
 class ApiDoc
 {
+    protected $app = "";
+    protected $menuList = [];
     /**
      * 初始化
      * @param string $appName
      * @return void
      * @throws \Exception
      */
-    public function init(){
+    public function init(string $app){
         if(($_SERVER['APP_ENV'] ?? 'dev') == 'production') App::error()->setError('访问的接口不存在', Error::NOT_FOUND);
+
+        $this->app = $app;
+        $menuFile = App::runtimePath().DIRECTORY_SEPARATOR.'apidoc'.DIRECTORY_SEPARATOR.$app.'-menu.json';
+        if(!file_exists($menuFile)){
+            App::error()->setError('apiDoc菜单还没有生成', Error::NOT_FOUND);
+        }
+        $this->menuList = json_decode(file_get_contents($menuFile), true);
     }
 
+    /**
+     * 获取菜单列表
+     * @param Request $request
+     * @param Response $response
+     * @return array
+     */
     public function get(Request &$request, Response &$response){
-        $app = $request->getRoure()['extra'][0];
-        $data = file_get_contents(App::runtimePath().DIRECTORY_SEPARATOR.'apidoc'.DIRECTORY_SEPARATOR.$app.'-menu.json');
-        $data = json_decode($data, true);
         return [
-            'menu' => array_values($data),
+            'menu' => array_values($this->menuList),
             'user' => [
                 "user_id" => 0,
                 "user_name" => "游客",
@@ -49,26 +62,13 @@ class ApiDoc
      * @throws \Exception
      */
     public function call(Request &$request, Response &$response){
-        $this->init();
+        $this->init($request->getRoure()['extra'][0]);
         $method = strtolower($request->method());
         $data = $this->$method($request, $response);
         return [
             'code' => 0,
             'msg' => 'ok',
             'data' => $data,
-        ];
-    }
-
-    /**
-     * 获取菜单列表
-     * @return array
-     */
-    public function index(Request &$request, Response &$response){
-        $app = $request->getRoure()['extra'][0];
-        return [
-            'menu' => App::make(ApiDocService::class)->menu($app),
-            'title' => App::config()->get('app.app_name', 'ZhanShop'),
-            'app' => $app,
         ];
     }
 
@@ -82,11 +82,21 @@ class ApiDoc
      * @return array
      */
     public function detail(Request &$request, Response &$response){
-        $app = $request->getRoure()['extra'][0];
+
         $uri = $request->param('uri');
-        //file_get_contents()
-        var_dump($app, $uri);
-        //return App::make(ApiDocService::class)->detail($app, $data['protocol'], $data['uri'], $data['version'] ?? "");
+        $version = explode('/', $uri)[0];
+        $uri = '/'.substr($uri, strlen($version) + 1, 999);
+        $versions = $this->menuList[$uri]['versions'] ?? [];
+        $methods = App::route()->getAll()[$this->app][$version][$uri] ?? App::error()->setError($request->param('uri').'路由未注册', Error::NOT_FOUND);
+        foreach($methods as $k => $v){
+            $handler = $v['handler'];
+            $class = new \ReflectionClass($handler[0]);
+            $method = $class->getMethod($handler[1]);
+            $apiDoc = (new Annotations($method->getDocComment()))->all();
+            print_r($apiDoc);
+        }
+        print_r($methods);
+        //App::route()->getRule()->getBind($this->app, $version, $uri, '');
     }
 
     public function samplecode(Request &$request, Response &$response){
