@@ -38,12 +38,11 @@ class ApiRoute extends Command
             $class = str_replace([DIRECTORY_SEPARATOR, '.php'], ['\\', ''], str_replace(App::rootPath(), '', $v));
             $this->generateClass($class);
         }
-        //print_r($this->versionRoutes);die;
-        $this->write();
-        $this->apiDoc();
+        $this->writeRoute();
+        $this->writeApiDoc();
     }
 
-    public function write(){
+    public function writeRoute(){
         foreach ($this->versionRoutes as $app => $versionRoutes){
             $routeDir = App::routePath().DIRECTORY_SEPARATOR.$app;
             Helper::mkdirs($routeDir);
@@ -56,49 +55,41 @@ class ApiRoute extends Command
                     // 拿到当前分组的所有中间件
                     $middlewares = [];
                     foreach($routes as $route){
-                        foreach($route as $rowRoute) {
-                            $middlewares = array_merge($middlewares, $rowRoute['middleware']);
-                        }
+                        $middlewares = array_merge($middlewares, $route['apiMiddleware'] ?? []);
                     }
                     $middlewares = array_unique($middlewares); // 拿到当前分组的所有中间件
 
                     // 排除那些不在分组内都存在的中间件
                     foreach($middlewares as $mk => $middleware){
                         foreach($routes as $route){
-                            foreach($route as $rowRoute) {
-                                if(!in_array($middleware, $rowRoute['middleware'])){
-                                    unset($middlewares[$mk]);
-                                }
+                            if(!in_array($middleware, $route['apiMiddleware'])){
+                                unset($middlewares[$mk]);
                             }
                         }
                     }
 
                     // 排除那些路由中的中间件在全局中的中间件
                     foreach($routes as $uri => $route){
-                        foreach($route as $rowKey => $rowRoute) {
-                            foreach ($rowRoute['middleware'] as $mk => $middleware){
-                                if(in_array($middleware, $middlewares)){
-                                    unset($routes[$uri][$rowKey]['middleware'][$mk]);
-                                }
+                        foreach ($route['apiMiddleware'] as $mk => $middleware){
+                            if(in_array($middleware, $middlewares)){
+                                unset($routes[$uri][$rowKey]['apiMiddleware'][$mk]);
                             }
                         }
                     }
 
                     foreach($routes as $route){
-                        foreach($route as $rowKey => $rowRoute) {
-                            $uri = explode('/', $rowRoute['uri'])[0];
-                            $class = $rowRoute['handler'][0];
-                            $action = $rowRoute['handler'][1];
-                            $versionRouteCode .= "      App::route()->rule(\"".$rowRoute['method']."\", \"".$uri."\", [\\".$class."::class, \"".$action."\"])";
-                            if($rowRoute['extra']){
-                                $versionRouteCode .= '->extra('.json_encode($rowRoute['extra']).')';
-                            }
-                            if($rowRoute['middleware']){
-                                $middleware = '['.implode(', ', array_values($rowRoute['middleware'])).']';
-                                $versionRouteCode .= '->middleware('.$middleware.')';
-                            }
-                            $versionRouteCode .= ';'.PHP_EOL;
+                        $uri = explode('/', $route['api']['uri'])[0];
+                        $class = $route['handler'][0];
+                        $action = $route['handler'][1];
+                        $versionRouteCode .= "      App::route()->rule(\"".$route['api']['method']."\", \"".$uri."\", [\\".$class."::class, \"".$action."\"])";
+                        if($route['extra']){
+                            $versionRouteCode .= '->extra('.json_encode($route['extra']).')';
                         }
+                        if($route['apiMiddleware']){
+                            $middleware = '['.implode(', ', array_values($route['apiMiddleware'])).']';
+                            $versionRouteCode .= '->middleware('.$middleware.')';
+                        }
+                        $versionRouteCode .= ';'.PHP_EOL;
                     }
 
                     $versionRouteCode .= '})';
@@ -113,67 +104,6 @@ class ApiRoute extends Command
         }
     }
 
-    // 生成apiDoc
-    public function apiDoc(){
-        $updateTime = time();
-//        $model = (new ApiDocModel())->getQuery();
-        //$allApiDoc = App::database()->
-//        $allDos = $model->table('apidoc')->column('id', 'id');
-        foreach ($this->versionRoutes as $app => $versionRoutes){
-            $routeDir = App::routePath().DIRECTORY_SEPARATOR.$app;
-            // 相同路由请求方式不一样的中间件必须一致
-            foreach ($versionRoutes as $version => $groupRoute){
-                foreach($groupRoute as $group => $routes){
-                    foreach($routes as $route){
-                        foreach($route as $rowRoute){
-                            $data = [
-                                'app' => $app,
-                                'protocol' => 'http',
-                                'version' => str_replace('_', '.', $version),
-                                'uri' => $group.'.'.$rowRoute['uri'],
-                                'method' => $rowRoute['method'],
-                            ];
-                            $apiDocId = App::database()->model("apidoc")->where($data)->find();
-
-                            $data['title'] = $rowRoute['title'];
-                            $data['catname'] = $rowRoute['group'];
-
-                            $data['header'] = json_encode($rowRoute['header'], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
-                            $data['update_time'] = $updateTime;
-
-                            if($apiDocId == false){
-                                // 插入
-                                $data['create_time'] = $updateTime;
-                                $data['param'] = json_encode($rowRoute['param'], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
-                                App::database()->model("apidoc")->insert($data);
-                            }else{
-                                // 更新
-                                $data['delete_time'] = 0;
-                                $param = $apiDocId['param'];
-                                $data['param'] = $rowRoute['param'];
-                                if($param){
-                                    $param = json_decode($param, true);
-                                    foreach($data['param'] as $k => $v){
-                                        foreach($param as $kk => $vv){
-                                            if($v['name'] == $vv['name']){
-                                                $data['param'][$k]['description'] = $vv['description'] ?? '';
-                                                $data['param'][$k]['default'] = $vv['default'] ?? '';
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                                $data['param'] = json_encode($rowRoute['param'], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
-                                App::database()->model("apidoc")->where(['id' => $apiDocId['id']])->update($data);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        App::database()->model("apidoc")->whereRaw("update_time != ".$updateTime)->update(['delete_time' => time()]); // 删除已经被处理的文档
-    }
-
     protected function generateClass(string $class)
     {
         $apiDocs = [];
@@ -181,7 +111,7 @@ class ApiRoute extends Command
         foreach($reflection->getMethods() as $method){
             $apiDoc = $this->generateMethod($method);
             if($apiDoc){
-                $apiDocs[] = $this->generateMethod($method);
+                $apiDocs[] = $apiDoc;
             }
         }
 
@@ -199,7 +129,6 @@ class ApiRoute extends Command
             $prefix = lcfirst($classPath[count($classPath) - 1]);
             $this->versionRoutes[$app][$version][$prefix] = $apiDocs;
         }
-        print_r($this->versionRoutes);die;
     }
 
     /**
@@ -211,140 +140,73 @@ class ApiRoute extends Command
         if($method->getDocComment()){
             $apiDoc = (new Annotations($method->getDocComment()))->all();
             if($apiDoc['api']['method'] && $apiDoc['api']['uri'] && $apiDoc['api']['title']){
-                print_r($apiDoc);
+                $apiDoc['handler'] = [$method->class, $method->name];
+                $extra = explode('/', str_replace(['{', '}'], '', $apiDoc['api']['uri']));
+                unset($extra[0]);
+                $apiDoc['extra'] = array_values($extra);
                 return $apiDoc;
             }
         }
         return [];
     }
-}
 
-class Annotation{
-    protected $method;
-    protected array $notes;
-    protected $route = [];
-    public function __construct($method, string $note)
-    {
-        $this->method = $method;
-        $note = str_replace(['\'', '"', '#', '  ', ' * '], '', $note);
-        $this->notes = explode("\n", $note);
-        unset($this->notes[count($this->notes) - 1], $this->notes[0]);
-        $this->notes = array_values($this->notes);
-    }
 
-    public function title(){
-        $arr = $this->notes;
-        if(isset($arr[1])){
-            return str_replace('*', '', preg_replace('/\s+/',  '', $arr[1]));
-        }
-        return $this->method->name;
-    }
+    // 生成apiDoc
+    public function writeApiDoc(){
+        foreach($this->versionRoutes as $appName => $appRoutes){
+            $paths = [];
+            $menus = [];
+            foreach($appRoutes as $version => $controllers){
+                foreach($controllers as $controllerName => $controllerRoutes){
+                    foreach($controllerRoutes as $route){
+                        $uri = '/'.$version.'/'.$controllerName.'.'.$route['api']['uri'];
+                        $paths[$uri] = [
+                            'title' => $route['api']['title'],
+                            'group' => $route['apiGroup'],
+                            'description' => $route['apiDescription'],
+                            'header' => $route['apiHeader'],
+                            'header' => $route['apiHeader'],
+                            'param' => $route['apiParam'],
+                            'success' => $route['apiSuccess'],
+                            'error' => $route['apiError']
+                        ];
+                        $menus[md5($route['apiGroup'])] = [
+                            'id' => md5($route['apiGroup']),
+                            'name' => $route['apiGroup'],
+                            'pid' => 0,
+                            'icon' => 'mdi mdi-file-word',
+                            'url' => '',
+                            'target' => 'table/'.$controllerName.'.'.$route['api']['uri'],
+                        ];
+                        $menus[$controllerName.'.'.$route['api']['uri']] = [
+                            'id' => $controllerName.'.'.$route['api']['uri'],
+                            'name' => $route['api']['title'],
+                            'pid' => md5($route['apiGroup']),
+                            'icon' => '',
+                            'url' => '',
+                            'target' => 'table/'.$controllerName.'.'.$route['api']['uri'],
+                        ];
 
-    public function group(){
-        $arr = $this->notes;
-        $prefix = '@ApiGroup';
-        foreach ($arr as $k => $v){
-            if(strpos($v, $prefix) !== false){
-                $route = str_replace(['*', $prefix], '', $v);
-                return str_replace(' ', '', $route);
-            }
-        }
-        return "未定义组";
-    }
-
-    public function route(){
-        $arr = $this->notes;
-        $prefix = 'Route(';
-        foreach ($arr as $k => $v){
-            if(strpos($v, $prefix) !== 0){
-                $route = str_replace(['*', $prefix, ')'], '', $v);
-                $arr = explode(', ', $route);
-                // 这里的方法只能有一个
-                $method = str_replace(' ', '', $arr[1] ?? 'GET');
-                $method = strtolower($method);
-                if(strpos($this->method->name, $method) !== 0){
-                    App::error()->setError($this->method->class.'->'.$this->method->name.' Route注解指定的是'.$method.'而方法却是'.$this->method->name.'前缀不一致');
-                }
-
-                $uri = str_replace(' ', '', $arr[0]);
-                $uris = explode('/', $uri);
-                $extras = [];
-                if(count($uris) > 1){
-                    unset($uris[0]);
-                    foreach($uris as $extra){
-                        $extras[] = str_replace(['{', '}'], '', $extra);
                     }
                 }
-                return [
-                    'uri' => $uri,
-                    'method' => strtoupper($method),
-                    'handler' => [$this->method->class, $this->method->name],
-                    'extra' => $extras
-                ];
             }
+            $this->writeApiDocFile(App::runtimePath().DIRECTORY_SEPARATOR.'apidoc'.DIRECTORY_SEPARATOR.$appName.'-'.$version.'-detail.json', $paths);
+            // 版本详情
+            print_r($menus);die;
+
         }
-
-        return [];
-
-    }
-    // 中间件支持多个
-    public function middleware(){
-        $middlewarePath = App::appPath().DIRECTORY_SEPARATOR.'middleware'.DIRECTORY_SEPARATOR;
-        $arr = $this->notes;
-        $prefix = '@Middleware(';
-        foreach ($arr as $k => $v){
-            if(strpos($v, $prefix) === 0){
-                $middleware = substr($v, 0, strlen($v) - 1);
-                $middleware = str_replace(['@Middleware(', ')', ' '], '', $middleware);
-                $arr = explode(',', $middleware);
-                $middleware = [];
-                foreach($arr as $k => $v){
-                    $class = str_replace(' ', '', $v);
-                    // 检查中间件是否存在
-                    $file = $middlewarePath.str_replace(['\\', '::class'], [DIRECTORY_SEPARATOR, '.php'], $class);
-                    if(!file_exists($file)){
-                        App::error()->setError($this->method->class.'->'.$this->method->name.' Middleware注解指定 '.$class.' 中间件未定义'.$file);
-                    }
-                    $middleware[] = '\\app\\middleware\\'.str_replace('/', '\\', $class);
-                }
-                return $middleware;
-            }
-        }
-
-        return [];
+        // 每个APP一个文件
     }
 
-    public function header(){
-        $arr = $this->notes;
-        $prefix = '@Header(';
-        foreach ($arr as $k => $v){
-            if(strpos($v, $prefix) !== false){
-                $route = str_replace(['*', $prefix, ')'], '', $v);
-                $arr = explode(', ', $route);
-                $headers = [];
-                foreach($arr as $k => $v){
-                    $header = str_replace(' ', '', $v); //
-                    $header = explode('=', $header);
-                    $val = $header[1] ?? null;
-                    if($val == false){
-                        App::error()->setError($this->method->class.'->'.$this->method->name.' Header注解指定 '.$header[0].'后面应该包含一个=字段说明');
-                        die;
-                    }
-                    $headers[$header[0]] = [
-                        'name' => $header[0],
-                        'type' => 'string',
-                        'default' => '',
-                        'description' => $val
-                    ];
-                }
-                return array_values($headers);
-            }
-        }
+    // 如果把多版本和多请求方法放在一起
+    // 切换版本 某一个方法只有老版本
+    // 走最新版本
+    // 但是走分享的时候又需要单独处理
 
-        return [];
+    protected function writeApiDocFile(string $path, array $data){
+        Helper::mkdirs(dirname($path));
+        file_put_contents($path, json_encode($data, JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE));
     }
-
-    // 响应说明放在编辑里面
 }
 
 
