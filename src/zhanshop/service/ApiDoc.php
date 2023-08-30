@@ -116,7 +116,7 @@ class ApiDoc
                         'param' => array_values($apiDoc['apiParam']),
                         'success' => array_values($apiDoc['apiSuccess']),
                         'error' => $apiDoc['apiError'],
-                        'response' => '', // 响应示例
+                        'response' => [], // 响应示例
                         'versions' => $versions
                     ];
                 }
