@@ -81,6 +81,7 @@ class ApiDoc
     }
 
     protected function getApiMethods($uri){
+        var_dump($uri);
         $methods = array_keys($this->menuList[$uri]['methods'] ?? []);
         sort($methods);
         $methods = array_values($methods);
@@ -108,8 +109,6 @@ class ApiDoc
      */
     public function detail(Request &$request, Response &$response){
         $uri = $request->param('uri');
-        $version = explode('/', $uri)[0];
-        $uri = substr($uri, strlen($version) + 1, 999);
         //$versions = $this->versionList[$uri][] ?? App::error()->setError('没有'.$uri.'的数据', Error::NOT_FOUND);
 
         // 已知的请求方法 排序方式为GET POST PUT DELETE
@@ -145,30 +144,30 @@ class ApiDoc
         }
 
 
-        // 方法是跟着整个走的 版本是跟着方法走的
-        foreach($methods as $v){
-            foreach($routes as $route){
-                if($route['method'] == $v){
-                    $handler = $route['handler'];
-                    $class = new \ReflectionClass($handler[0]);
-                    $method = $class->getMethod($handler[1]);
-                    $apiDoc = (new Annotations($method->getDocComment()))->all();
-                    $apiDocs[] = [
-                        'uri' => $version.'/'.explode('.', $uri)[0].'.'.$apiDoc['api']['uri'],
-                        'title' => $apiDoc['api']['title'],
-                        'description' => $apiDoc['apiDescription'],
-                        'method' => $route['method'],
-                        'header' => array_values($apiDoc['apiHeader']),
-                        'param' => array_values($apiDoc['apiParam']),
-                        'success' => array_values($apiDoc['apiSuccess']),
-                        'error' => $apiDoc['apiError'],
-                        'response' => [], // 响应示例
-                        'version' => $version,
-                        'versions' => array_unique($this->versionList[$uri][$route['method']])
-                    ];
-                }
-            }
-        }
+//        // 方法是跟着整个走的 版本是跟着方法走的
+//        foreach($methods as $v){
+//            foreach($routes as $route){
+//                if($route['method'] == $v){
+//                    $handler = $route['handler'];
+//                    $class = new \ReflectionClass($handler[0]);
+//                    $method = $class->getMethod($handler[1]);
+//                    $apiDoc = (new Annotations($method->getDocComment()))->all();
+//                    $apiDocs[] = [
+//                        'uri' => $version.'/'.explode('.', $uri)[0].'.'.$apiDoc['api']['uri'],
+//                        'title' => $apiDoc['api']['title'],
+//                        'description' => $apiDoc['apiDescription'],
+//                        'method' => $route['method'],
+//                        'header' => array_values($apiDoc['apiHeader']),
+//                        'param' => array_values($apiDoc['apiParam']),
+//                        'success' => array_values($apiDoc['apiSuccess']),
+//                        'error' => $apiDoc['apiError'],
+//                        'response' => [], // 响应示例
+//                        'version' => $version,
+//                        'versions' => array_unique($this->versionList[$uri][$route['method']])
+//                    ];
+//                }
+//            }
+//        }
         return $apiDocs;
     }
 
