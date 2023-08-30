@@ -20,6 +20,7 @@ class ApiDoc
 {
     protected $app = "";
     protected $menuList = [];
+    protected $versionList = [];
     /**
      * 初始化
      * @param string $appName
@@ -32,9 +33,16 @@ class ApiDoc
         $this->app = $app;
         $menuFile = App::runtimePath().DIRECTORY_SEPARATOR.'apidoc'.DIRECTORY_SEPARATOR.$app.'-menu.json';
         if(!file_exists($menuFile)){
-            App::error()->setError('apiDoc菜单还没有生成', Error::NOT_FOUND);
+            App::error()->setError('apiDoc菜单文件还没有生成', Error::NOT_FOUND);
         }
         $this->menuList = json_decode(file_get_contents($menuFile), true);
+
+        $versionFile = App::runtimePath().DIRECTORY_SEPARATOR.'apidoc'.DIRECTORY_SEPARATOR.$app.'-version.json';
+        if(!file_exists($versionFile)){
+            App::error()->setError('apiDoc版本文件还没有生成', Error::NOT_FOUND);
+        }
+
+        $this->versionList = json_decode(file_get_contents($versionFile), true);
     }
 
     /**
@@ -72,6 +80,23 @@ class ApiDoc
         ];
     }
 
+    protected function getApiMethods($uri){
+        $methods = array_keys($this->menuList[$uri]['methods'] ?? []);
+        sort($methods);
+        $methods = array_values($methods);
+        $method0 = $methods[0] ?? App::error()->setError('没有相关数据', Error::NOT_FOUND);
+        if($method0 == 'DELETE'){
+            unset($methods[0]);
+            $methods[99999] = 'DELETE';
+            $methods = array_values($methods);
+        }
+
+        $data = [];
+        foreach($methods as $v){
+            $data[] = $this->menuList[$uri]['methods'][$v];
+        }
+        return $data;
+    }
     /**
      * 获取api详情
      * @param $app
@@ -85,21 +110,42 @@ class ApiDoc
         $uri = $request->param('uri');
         $version = explode('/', $uri)[0];
         $uri = substr($uri, strlen($version) + 1, 999);
-        $versions = $this->menuList[$uri]['versions'] ?? [];
+        //$versions = $this->versionList[$uri][] ?? App::error()->setError('没有'.$uri.'的数据', Error::NOT_FOUND);
 
         // 已知的请求方法 排序方式为GET POST PUT DELETE
-        $methods = array_unique($this->menuList[$uri]['methods'] ?? []);
-        sort($methods);
-        if($methods[0] == 'DELETE'){
-            unset($methods[0]);
-            $methods[99999] = 'DELETE';
-            $methods = array_values($methods);
-        }
+        $methods = $this->getApiMethods($uri);
 
-        $uri = '/'.$uri;
-        $routes = App::route()->getAll()[$this->app][$version][$uri] ?? App::error()->setError($request->param('uri').'路由未注册', Error::NOT_FOUND);
         $apiDocs = [];
 
+        foreach($methods as $v){
+            $uris = explode('/', $v['uri']);
+            $version = $uris[0];
+            $fullUri = '/'.$uris[1];
+
+            $route = App::route()->getAll()[$this->app][$version][$fullUri][$v['method']] ?? App::error()->setError($request->param('uri').'路由未注册', Error::NOT_FOUND);
+
+            $handler = $route['handler'];
+            $class = new \ReflectionClass($handler[0]);
+            $method = $class->getMethod($handler[1]);
+            $apiDoc = (new Annotations($method->getDocComment()))->all();
+            $apiDocs[] = [
+                'uri' => $version.'/'.explode('.', $uri)[0].'.'.$apiDoc['api']['uri'],
+                'title' => $apiDoc['api']['title'],
+                'description' => $apiDoc['apiDescription'],
+                'method' => $route['method'],
+                'header' => array_values($apiDoc['apiHeader']),
+                'param' => array_values($apiDoc['apiParam']),
+                'success' => array_values($apiDoc['apiSuccess']),
+                'error' => $apiDoc['apiError'],
+                'response' => [], // 响应示例
+                'version' => $version,
+                'versions' => array_unique($this->versionList[$uri][$route['method']])
+            ];
+
+        }
+
+
+        // 方法是跟着整个走的 版本是跟着方法走的
         foreach($methods as $v){
             foreach($routes as $route){
                 if($route['method'] == $v){
@@ -108,7 +154,7 @@ class ApiDoc
                     $method = $class->getMethod($handler[1]);
                     $apiDoc = (new Annotations($method->getDocComment()))->all();
                     $apiDocs[] = [
-                        'uri' => $version.explode('.', $uri)[0].'.'.$apiDoc['api']['uri'],
+                        'uri' => $version.'/'.explode('.', $uri)[0].'.'.$apiDoc['api']['uri'],
                         'title' => $apiDoc['api']['title'],
                         'description' => $apiDoc['apiDescription'],
                         'method' => $route['method'],
@@ -117,7 +163,8 @@ class ApiDoc
                         'success' => array_values($apiDoc['apiSuccess']),
                         'error' => $apiDoc['apiError'],
                         'response' => [], // 响应示例
-                        'versions' => $versions
+                        'version' => $version,
+                        'versions' => array_unique($this->versionList[$uri][$route['method']])
                     ];
                 }
             }

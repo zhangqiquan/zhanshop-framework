@@ -155,6 +155,7 @@ class ApiRoute extends Command
     public function writeApiDoc(){
         foreach($this->versionRoutes as $appName => $appRoutes){
             $menus = [];
+            $versions = [];
             foreach($appRoutes as $version => $controllers){
                 foreach($controllers as $controllerName => $controllerRoutes){
                     foreach($controllerRoutes as $route){
@@ -168,17 +169,34 @@ class ApiRoute extends Command
                             'target' => '_self',
                         ];
                         $menuId = $controllerName.'.'.$uri;
+                        $versions[$menuId][$route['api']['method']][] = $version;
+
+                        $menusMethods = $menus[$menuId]['methods'] ?? [];
+                        //$menusVersions = $menus[$menuId]['versions'] ?? [];
+
                         $menus[$menuId] = [
                             'id' => $menuId,
                             'name' => $route['api']['title'],
                             'pid' => md5($route['apiGroup']),
                             'icon' => '',
-                            'url' => 'api/'.$version.'/'.$controllerName.'.'.$uri,
+                            'url' => 'api/'.$controllerName.'.'.$uri,
                             'target' => 'api',
-                            'versions' => array_merge($menus[$menuId]['versions'] ?? [] , [$version]),
-                            'methods' => array_merge($menus[$menuId]['methods'] ?? [] , [$route['api']['method']]),
+                            //'versions' => array_merge($menus[$menuId]['versions'] ?? [] , [$version]),
+                            //'methods' => array_merge($menus[$menuId]['methods'] ?? [] , [$methodUri]),
                         ];
 
+
+//                        if(!in_array($version, $menusVersions)){
+//                            $menusVersions[] = $version;
+//                        }
+//                        $menus[$menuId]['versions'] = $menusVersions;
+
+
+                        $menusMethods[$route['api']['method']] = [
+                            'method' => $route['api']['method'],
+                            'uri' => $version.'/'.$controllerName.'.'.$uri
+                        ];
+                        $menus[$menuId]['methods'] = $menusMethods;
                     }
                 }
             }
@@ -186,7 +204,7 @@ class ApiRoute extends Command
             //$this->writeApiDocFile(App::runtimePath().DIRECTORY_SEPARATOR.'apidoc'.DIRECTORY_SEPARATOR.$appName.'-'.$version.'-detail.json', $paths);
             // app菜单
             $this->writeApiDocFile(App::runtimePath().DIRECTORY_SEPARATOR.'apidoc'.DIRECTORY_SEPARATOR.$appName.'-menu.json', $menus);
-
+            $this->writeApiDocFile(App::runtimePath().DIRECTORY_SEPARATOR.'apidoc'.DIRECTORY_SEPARATOR.$appName.'-version.json', $versions);
             //、、print_r($menus);die;
 
         }
