@@ -97,6 +97,7 @@ class Annotations
                 $this->moreParam($param[$v['name']]['children'], $data, $v['name']);
             }
         }
+        $this->paramValues($param);
         return $param;
     }
 
@@ -113,6 +114,7 @@ class Annotations
                 $this->moreParam($param[$v['name']]['children'], $data, $v['name']);
             }
         }
+        $this->paramValues($param);
         return $param;
     }
 
@@ -129,6 +131,7 @@ class Annotations
                 $this->moreParam($success[$v['name']]['children'], $data, $v['name']);
             }
         }
+        $this->paramValues($success);
         return $success;
     }
 
@@ -169,6 +172,16 @@ class Annotations
         //()当做一个整体 对空号内匹配到的数据单独放一个下标
         $matched = preg_match('/@'.$name.'(\s*.*)/i', $note, $matches);
         var_dump($matches);
+    }
+
+
+    protected function paramValues(array &$array){
+        $array = array_values($array);
+        foreach($array as $k => $v){
+            if($v['children'] != false){
+                $this->paramValues($array[$k]['children']);
+            }
+        }
     }
 
 
