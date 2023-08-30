@@ -172,24 +172,17 @@ class ApiRoute extends Command
                         $versions[$menuId][$route['api']['method']][] = $version;
 
                         $menusMethods = $menus[$menuId]['methods'] ?? [];
-                        //$menusVersions = $menus[$menuId]['versions'] ?? [];
+
+                        $menuTitle = $menus[$menuId]['name'] ?? $route['api']['title'];
 
                         $menus[$menuId] = [
                             'id' => $menuId,
-                            'name' => $route['api']['title'],
+                            'name' => $menuTitle,
                             'pid' => md5($route['apiGroup']),
                             'icon' => '',
-                            'url' => 'api/'.$controllerName.'.'.$uri,
+                            'url' => 'apis/'.$controllerName.'.'.$uri,
                             'target' => 'api',
-                            //'versions' => array_merge($menus[$menuId]['versions'] ?? [] , [$version]),
-                            //'methods' => array_merge($menus[$menuId]['methods'] ?? [] , [$methodUri]),
                         ];
-
-
-//                        if(!in_array($version, $menusVersions)){
-//                            $menusVersions[] = $version;
-//                        }
-//                        $menus[$menuId]['versions'] = $menusVersions;
 
 
                         $menusMethods[$route['api']['method']] = [

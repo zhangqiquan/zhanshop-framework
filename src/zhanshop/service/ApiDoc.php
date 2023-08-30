@@ -81,7 +81,6 @@ class ApiDoc
     }
 
     protected function getApiMethods($uri){
-        var_dump($uri);
         $methods = array_keys($this->menuList[$uri]['methods'] ?? []);
         sort($methods);
         $methods = array_values($methods);
@@ -98,19 +97,16 @@ class ApiDoc
         }
         return $data;
     }
-    /**
-     * 获取api详情
-     * @param $app
-     * @param $protocol
-     * @param $uri
-     * @param $method
-     * @param $version
-     * @return array
-     */
-    public function detail(Request &$request, Response &$response){
-        $uri = $request->param('uri');
-        //$versions = $this->versionList[$uri][] ?? App::error()->setError('没有'.$uri.'的数据', Error::NOT_FOUND);
 
+    /**
+     * 获取api组 同uri不同版本不同方法的api归一组
+     * @param Request $request
+     * @param Response $response
+     * @return array
+     * @throws \ReflectionException
+     */
+    public function apis(Request &$request, Response &$response){
+        $uri = $request->param('uri');
         // 已知的请求方法 排序方式为GET POST PUT DELETE
         $methods = $this->getApiMethods($uri);
 
@@ -128,7 +124,7 @@ class ApiDoc
             $method = $class->getMethod($handler[1]);
             $apiDoc = (new Annotations($method->getDocComment()))->all();
             $apiDocs[] = [
-                'uri' => $version.'/'.explode('.', $uri)[0].'.'.$apiDoc['api']['uri'],
+                'uri' => '/'.$version.'/'.explode('.', $uri)[0].'.'.$apiDoc['api']['uri'],
                 'title' => $apiDoc['api']['title'],
                 'description' => $apiDoc['apiDescription'],
                 'method' => $route['method'],
@@ -140,36 +136,42 @@ class ApiDoc
                 'version' => $version,
                 'versions' => array_unique($this->versionList[$uri][$route['method']])
             ];
-
         }
-
-
-//        // 方法是跟着整个走的 版本是跟着方法走的
-//        foreach($methods as $v){
-//            foreach($routes as $route){
-//                if($route['method'] == $v){
-//                    $handler = $route['handler'];
-//                    $class = new \ReflectionClass($handler[0]);
-//                    $method = $class->getMethod($handler[1]);
-//                    $apiDoc = (new Annotations($method->getDocComment()))->all();
-//                    $apiDocs[] = [
-//                        'uri' => $version.'/'.explode('.', $uri)[0].'.'.$apiDoc['api']['uri'],
-//                        'title' => $apiDoc['api']['title'],
-//                        'description' => $apiDoc['apiDescription'],
-//                        'method' => $route['method'],
-//                        'header' => array_values($apiDoc['apiHeader']),
-//                        'param' => array_values($apiDoc['apiParam']),
-//                        'success' => array_values($apiDoc['apiSuccess']),
-//                        'error' => $apiDoc['apiError'],
-//                        'response' => [], // 响应示例
-//                        'version' => $version,
-//                        'versions' => array_unique($this->versionList[$uri][$route['method']])
-//                    ];
-//                }
-//            }
-//        }
         return $apiDocs;
     }
+
+    /**
+     * 获取单个api
+     * @param Request $request
+     * @param Response $response
+     * @return array
+     */
+    public function api(Request &$request, Response &$response){
+        $uri = $request->param('uri');
+        $method = $request->param('method');
+        $uris = explode('/', $uri);
+        $version = $uris[0];
+        $fullUri = '/'.$uris[1];
+        $route = App::route()->getAll()[$this->app][$version][$fullUri][$method] ?? App::error()->setError($request->param('uri').'路由未注册', Error::NOT_FOUND);
+
+        $handler = $route['handler'];
+        $class = new \ReflectionClass($handler[0]);
+        $method = $class->getMethod($handler[1]);
+        $apiDoc = (new Annotations($method->getDocComment()))->all();
+        return [
+            'uri' => '/'.$version.'/'.explode('.', $uris[1])[0].'.'.$apiDoc['api']['uri'],
+            'title' => $apiDoc['api']['title'],
+            'description' => $apiDoc['apiDescription'],
+            'method' => $route['method'],
+            'header' => $apiDoc['apiHeader'],
+            'param' => $apiDoc['apiParam'],
+            'success' => $apiDoc['apiSuccess'],
+            'error' => $apiDoc['apiError'],
+            'response' => [], // 响应示例
+        ];
+    }
+
+
 
     public function samplecode(Request &$request, Response &$response){
         $app = $request->getRoure()['extra'][0];
