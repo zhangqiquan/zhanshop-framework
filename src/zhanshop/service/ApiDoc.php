@@ -86,26 +86,41 @@ class ApiDoc
         $version = explode('/', $uri)[0];
         $uri = substr($uri, strlen($version) + 1, 999);
         $versions = $this->menuList[$uri]['versions'] ?? [];
+
+        // 已知的请求方法 排序方式为GET POST PUT DELETE
+        $methods = array_unique($this->menuList[$uri]['methods'] ?? []);
+        sort($methods);
+        if($methods[0] == 'DELETE'){
+            unset($methods[0]);
+            $methods[99999] = 'DELETE';
+            $methods = array_values($methods);
+        }
+
         $uri = '/'.$uri;
-        $methods = App::route()->getAll()[$this->app][$version][$uri] ?? App::error()->setError($request->param('uri').'路由未注册', Error::NOT_FOUND);
+        $routes = App::route()->getAll()[$this->app][$version][$uri] ?? App::error()->setError($request->param('uri').'路由未注册', Error::NOT_FOUND);
         $apiDocs = [];
-        foreach($methods as $k => $v){
-            $handler = $v['handler'];
-            $class = new \ReflectionClass($handler[0]);
-            $method = $class->getMethod($handler[1]);
-            $apiDoc = (new Annotations($method->getDocComment()))->all();
-            $apiDocs[] = [
-                'uri' => $version.explode('.', $uri)[0].'.'.$apiDoc['api']['uri'],
-                'title' => $apiDoc['api']['title'],
-                'description' => $apiDoc['apiDescription'],
-                'method' => $v['method'],
-                'header' => $apiDoc['apiHeader'],
-                'param' => $apiDoc['apiParam'],
-                'success' => $apiDoc['apiSuccess'],
-                'error' => $apiDoc['apiError'],
-                'response' => '', // 响应示例
-                'versions' => $versions
-            ];
+
+        foreach($methods as $v){
+            foreach($routes as $route){
+                if($route['method'] == $v){
+                    $handler = $route['handler'];
+                    $class = new \ReflectionClass($handler[0]);
+                    $method = $class->getMethod($handler[1]);
+                    $apiDoc = (new Annotations($method->getDocComment()))->all();
+                    $apiDocs[] = [
+                        'uri' => $version.explode('.', $uri)[0].'.'.$apiDoc['api']['uri'],
+                        'title' => $apiDoc['api']['title'],
+                        'description' => $apiDoc['apiDescription'],
+                        'method' => $route['method'],
+                        'header' => array_values($apiDoc['apiHeader']),
+                        'param' => array_values($apiDoc['apiParam']),
+                        'success' => array_values($apiDoc['apiSuccess']),
+                        'error' => $apiDoc['apiError'],
+                        'response' => '', // 响应示例
+                        'versions' => $versions
+                    ];
+                }
+            }
         }
         return $apiDocs;
     }

@@ -66,6 +66,7 @@ class Annotations
                 'type' => $matches[1][$k],
                 'default' => $default,
                 'description' => $matches[3][$k],
+                'is_parent' => true,
                 'children' => [],
             ];
         }

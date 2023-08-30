@@ -176,6 +176,7 @@ class ApiRoute extends Command
                             'url' => 'api/'.$version.'/'.$controllerName.'.'.$uri,
                             'target' => 'api',
                             'versions' => array_merge($menus[$menuId]['versions'] ?? [] , [$version]),
+                            'methods' => array_merge($menus[$menuId]['methods'] ?? [] , [$route['api']['method']]),
                         ];
 
                     }
