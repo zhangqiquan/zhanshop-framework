@@ -154,22 +154,11 @@ class ApiRoute extends Command
     // 生成apiDoc
     public function writeApiDoc(){
         foreach($this->versionRoutes as $appName => $appRoutes){
-            $paths = [];
             $menus = [];
             foreach($appRoutes as $version => $controllers){
                 foreach($controllers as $controllerName => $controllerRoutes){
                     foreach($controllerRoutes as $route){
-                        $uri = '/'.$version.'/'.$controllerName.'.'.$route['api']['uri'];
-                        $paths[$uri] = [
-                            'title' => $route['api']['title'],
-                            'group' => $route['apiGroup'],
-                            'description' => $route['apiDescription'],
-                            'header' => $route['apiHeader'],
-                            'header' => $route['apiHeader'],
-                            'param' => $route['apiParam'],
-                            'success' => $route['apiSuccess'],
-                            'error' => $route['apiError']
-                        ];
+                        $uri = explode('/', $route['api']['uri'])[0];
                         $menus[md5($route['apiGroup'])] = [
                             'id' => md5($route['apiGroup']),
                             'name' => $route['apiGroup'],
@@ -178,21 +167,22 @@ class ApiRoute extends Command
                             'url' => '',
                             'target' => '_self',
                         ];
-                        $menus[$controllerName.'.'.$route['api']['uri']] = [
-                            'id' => $controllerName.'.'.$route['api']['uri'],
+                        $menuId = $controllerName.'.'.$uri;
+                        $menus[$menuId] = [
+                            'id' => $menuId,
                             'name' => $route['api']['title'],
                             'pid' => md5($route['apiGroup']),
                             'icon' => '',
-                            'url' => 'api/'.$version.'/'.$controllerName.'.'.$route['api']['uri'],
+                            'url' => 'api/'.$version.'/'.$controllerName.'.'.$uri,
                             'target' => 'api',
-                            'versions' => array_merge($menus[$controllerName.'.'.$route['api']['uri']]['versions'] ?? [] , [$version]),
+                            'versions' => array_merge($menus[$menuId]['versions'] ?? [] , [$version]),
                         ];
 
                     }
                 }
             }
             // 版本详情
-            $this->writeApiDocFile(App::runtimePath().DIRECTORY_SEPARATOR.'apidoc'.DIRECTORY_SEPARATOR.$appName.'-'.$version.'-detail.json', $paths);
+            //$this->writeApiDocFile(App::runtimePath().DIRECTORY_SEPARATOR.'apidoc'.DIRECTORY_SEPARATOR.$appName.'-'.$version.'-detail.json', $paths);
             // app菜单
             $this->writeApiDocFile(App::runtimePath().DIRECTORY_SEPARATOR.'apidoc'.DIRECTORY_SEPARATOR.$appName.'-menu.json', $menus);
 

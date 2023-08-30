@@ -82,21 +82,32 @@ class ApiDoc
      * @return array
      */
     public function detail(Request &$request, Response &$response){
-
         $uri = $request->param('uri');
         $version = explode('/', $uri)[0];
-        $uri = '/'.substr($uri, strlen($version) + 1, 999);
+        $uri = substr($uri, strlen($version) + 1, 999);
         $versions = $this->menuList[$uri]['versions'] ?? [];
+        $uri = '/'.$uri;
         $methods = App::route()->getAll()[$this->app][$version][$uri] ?? App::error()->setError($request->param('uri').'路由未注册', Error::NOT_FOUND);
+        $apiDocs = [];
         foreach($methods as $k => $v){
             $handler = $v['handler'];
             $class = new \ReflectionClass($handler[0]);
             $method = $class->getMethod($handler[1]);
             $apiDoc = (new Annotations($method->getDocComment()))->all();
-            print_r($apiDoc);
+            $apiDocs[] = [
+                'uri' => $version.explode('.', $uri)[0].'.'.$apiDoc['api']['uri'],
+                'title' => $apiDoc['api']['title'],
+                'description' => $apiDoc['apiDescription'],
+                'method' => $v['method'],
+                'header' => $apiDoc['apiHeader'],
+                'param' => $apiDoc['apiParam'],
+                'success' => $apiDoc['apiSuccess'],
+                'error' => $apiDoc['apiError'],
+                'response' => '', // 响应示例
+                'versions' => $versions
+            ];
         }
-        print_r($methods);
-        //App::route()->getRule()->getBind($this->app, $version, $uri, '');
+        return $apiDocs;
     }
 
     public function samplecode(Request &$request, Response &$response){
