@@ -74,6 +74,7 @@ class WebHandle
         // 执行前置中间件
         foreach ($request->getRoure()['middleware'] as $k => $v){
             if(!property_exists($v, 'isAfter')){
+                echo "前缀中间件".$v.PHP_EOL;
                 App::make($v)->handle($request, $servResponse);
                 unset($request->getRoure()['middleware'][$k]);
             }
@@ -89,6 +90,7 @@ class WebHandle
     public function afterMiddleware(Request &$request, Response &$servResponse){
         foreach ($request->getRoure()['middleware'] as $k => $v){
             if(property_exists($v, 'isAfter')){
+                echo "后缀中间件".$v.PHP_EOL;
                 App::make($v)->handle($request, $servResponse);
             }
         }
@@ -103,6 +105,7 @@ class WebHandle
     public function globalAfterMiddleware(string &$appName, Request &$request, Response &$servResponse){
         $middleware = App::config()->get('middleware.'.$appName, []);
         foreach ($middleware as $v){
+            echo "后缀中间件".$v.PHP_EOL;
             App::make($v)->handle($request, $servResponse);
         }
     }

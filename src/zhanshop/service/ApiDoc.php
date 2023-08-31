@@ -133,7 +133,7 @@ class ApiDoc
                 'param' => array_values($apiDoc['apiParam']),
                 'success' => array_values($apiDoc['apiSuccess']),
                 'error' => $apiDoc['apiError'],
-                'response' => [], // 响应示例
+                'response' => $this->getExample('/'.$version.$fullUri, $v['method']), // 响应示例
                 'version' => $version,
                 'versions' => array_unique($this->versionList[$uri][$route['method']])
             ];
@@ -168,7 +168,7 @@ class ApiDoc
             'param' => $apiDoc['apiParam'],
             'success' => $apiDoc['apiSuccess'],
             'error' => $apiDoc['apiError'],
-            'response' => [], // 响应示例
+            'response' => $this->getExample('/'.$version.$fullUri, $handler[1]), // 响应示例
         ];
     }
 
@@ -193,7 +193,7 @@ class ApiDoc
         $data = $request->validateRule([
             'uri' => 'required',
             'method' => 'required',
-            'body' => 'required',
+            'success' => 'required',
         ])->getData();
 
         $uris = explode('/', $data['uri']);
@@ -204,15 +204,25 @@ class ApiDoc
         App::route()->getAll()[$this->app][$uris[1]]['/'.$uris[2]][$data['method']] ?? App::error()->setError($request->param('uri').'路由未注册', Error::NOT_FOUND);
 
         $filePath = App::runtimePath().DIRECTORY_SEPARATOR.'apidoc'.DIRECTORY_SEPARATOR.$this->app.DIRECTORY_SEPARATOR.'debug'.$data['uri'].'.'.$data['method'];
-        if(is_array($data['body'])){
-            $data['body'] = json_encode($data['body'], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
+        if(is_array($data['success'])){
+            $data['success'] = json_encode($data['success'], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
         }
         Helper::mkdirs(dirname($filePath));
-        file_put_contents($filePath, $data['body']);
+        file_put_contents($filePath, $data['success']);
         return [];
     }
 
     public function failure(Request &$request, Response &$response){
         return [];
+    }
+
+    protected function getExample(string $uri, string $method){
+        $file = App::runtimePath().DIRECTORY_SEPARATOR.'apidoc'.DIRECTORY_SEPARATOR.$this->app.DIRECTORY_SEPARATOR.'debug'.$uri.'.'.$method;
+        $data = [];
+        if(file_exists($file)){
+            $data = json_decode(file_get_contents($file), true);
+            if($data == false) $data = [];
+        }
+        return $data;
     }
 }

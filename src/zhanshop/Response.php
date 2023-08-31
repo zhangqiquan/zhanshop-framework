@@ -38,6 +38,8 @@ class Response
 
     protected $status = 200;
 
+    protected $msg = "OK";
+
     protected $data = [];
 
     /**
@@ -101,6 +103,10 @@ class Response
         return $this->status;
     }
 
+    public function getMsg(){
+        return $this->msg;
+    }
+
     /**
      * 设置响应data
      * @param mixed $data
@@ -134,6 +140,7 @@ class Response
      * @return void
      */
     public function setErrorData(\Throwable $e){
+        $this->errMsg = $e->getMessage();
         try {
             $data = [
                 'file' => $e->getFile(),
