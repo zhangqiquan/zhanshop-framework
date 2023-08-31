@@ -12,6 +12,7 @@ namespace zhanshop\service;
 
 use zhanshop\App;
 use zhanshop\Error;
+use zhanshop\Helper;
 use zhanshop\helper\Annotations;
 use zhanshop\Request;
 use zhanshop\Response;
@@ -188,23 +189,6 @@ class ApiDoc
         return $code;
     }
 
-    /**
-     * 获取调试数据
-     * @param Request $request
-     * @param Response $response
-     * @return mixed
-     */
-    public function debug(Request &$request, Response &$response){
-        $data = $request->validateRule([
-            'protocol' => 'required',
-            'version' => 'string',
-            'uri' => 'required',
-            'method' => 'required'
-        ])->getData();
-        $apiDoc = App::make(ApiDocService::class)->detail($app, $data['protocol'], $data['uri'], $data['version'] ?? "", $data['method'])['detail'][0];
-        return $apiDoc;
-    }
-
     public function success(Request &$request, Response &$response){
         $data = $request->validateRule([
             'uri' => 'required',
@@ -212,10 +196,18 @@ class ApiDoc
             'body' => 'required',
         ])->getData();
 
-        $filePath = App::runtimePath().DIRECTORY_SEPARATOR.'apidoc'.DIRECTORY_SEPARATOR.$appName.DIRECTORY_SEPARATOR.$this->app.$data['uri'].'#'.$data['method'].'.log';
+        $uris = explode('/', $data['uri']);
+        if(count($uris) > 2){
+            $data['uri'] = '/'.$uris[1].'/'.$uris[2];
+        }
+
+        App::route()->getAll()[$this->app][$uris[1]]['/'.$uris[2]][$data['method']] ?? App::error()->setError($request->param('uri').'路由未注册', Error::NOT_FOUND);
+
+        $filePath = App::runtimePath().DIRECTORY_SEPARATOR.'apidoc'.DIRECTORY_SEPARATOR.$this->app.DIRECTORY_SEPARATOR.'debug'.$data['uri'].'.'.$data['method'];
         if(is_array($data['body'])){
             $data['body'] = json_encode($data['body'], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
         }
+        Helper::mkdirs(dirname($filePath));
         file_put_contents($filePath, $data['body']);
         return [];
     }

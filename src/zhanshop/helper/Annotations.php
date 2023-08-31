@@ -47,7 +47,14 @@ class Annotations
 
     public function apiMiddleware(){
         $matched = preg_match('/@apiMiddleware\s+(\S*)/i', $this->docComment, $matches);
-        return $matches[1] ?? '';
+        $middlewares = [];
+        if(isset($matches[1])){
+            $matches[1] = array_values(array_filter(explode(',',$matches[1])));
+            foreach($matches[1] as $v){
+                $middlewares[] = '\\app\\middleware\\'.str_replace('/', '\\', $v);
+            }
+        }
+        return $middlewares;
     }
 
     protected function listParam($matches){
@@ -151,7 +158,7 @@ class Annotations
         $data['api'] = $this->api();
         $data['apiGroup'] = $this->apiGroup();
         $data['apiDescription'] = $this->apiDescription();
-        $data['apiMiddleware'] = array_values(array_filter(explode(',', $this->apiMiddleware())));
+        $data['apiMiddleware'] = $this->apiMiddleware();
         $data['apiHeader'] = $this->apiHeader();
         $data['apiParam'] = $this->apiParam();
         $data['apiSuccess'] = $this->apiSuccess();
