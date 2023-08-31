@@ -64,6 +64,7 @@ class Annotations
                 'name' => $field,
                 'pname' => $pid,
                 'type' => $matches[1][$k],
+                'required' => $default === null ? 'true' : 'false',
                 'default' => $default,
                 'description' => $matches[3][$k],
                 //'is_parent' => true,

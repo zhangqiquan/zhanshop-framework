@@ -147,7 +147,7 @@ class ApiDoc
      * @return array
      */
     public function api(Request &$request, Response &$response){
-        $uri = $request->param('uri');
+        $uri = ltrim($request->param('uri'), '/');
         $method = $request->param('method');
         $uris = explode('/', $uri);
         $version = $uris[0];
@@ -195,7 +195,6 @@ class ApiDoc
      * @return mixed
      */
     public function debug(Request &$request, Response &$response){
-        $app = $request->getRoure()['extra'][0];
         $data = $request->validateRule([
             'protocol' => 'required',
             'version' => 'string',
@@ -207,36 +206,21 @@ class ApiDoc
     }
 
     public function success(Request &$request, Response &$response){
-        $app = $request->getRoure()['extra'][0];
         $data = $request->validateRule([
-            'protocol' => 'required',
-            'version' => 'string',
             'uri' => 'required',
             'method' => 'required',
             'body' => 'required',
         ])->getData();
-        $apiDoc = App::make(ApiDocService::class)->detail($app, $data['protocol'], $data['uri'], $data['version'] ?? "", $data['method'])['detail'][0];
+
+        $filePath = App::runtimePath().DIRECTORY_SEPARATOR.'apidoc'.DIRECTORY_SEPARATOR.$appName.DIRECTORY_SEPARATOR.$this->app.$data['uri'].'#'.$data['method'].'.log';
         if(is_array($data['body'])){
             $data['body'] = json_encode($data['body'], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
         }
-        App::make(ApiDocService::class)->success($apiDoc['id'], $data['body']);
+        file_put_contents($filePath, $data['body']);
+        return [];
     }
 
     public function failure(Request &$request, Response &$response){
-        $app = $request->getRoure()['extra'][0];
-        $data = $request->validateRule([
-            'protocol' => 'required',
-            'version' => 'string',
-            'uri' => 'required',
-            'method' => 'required',
-            'body' => 'required',
-        ])->getData();
-        $apiDoc = App::make(ApiDocService::class)->detail($app, $data['protocol'], $data['uri'], $data['version'] ?? "", $data['method'])['detail'][0];
-        if(is_array($data['body'])){
-            $data['body']['data'] = null;
-            $data['body'] = json_encode($data['body'], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
-        }
-        print_r($data);
-        App::make(ApiDocService::class)->failure($apiDoc['id'], $data['body']);
+        return [];
     }
 }

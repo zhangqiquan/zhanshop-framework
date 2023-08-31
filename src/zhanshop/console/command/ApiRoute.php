@@ -72,7 +72,7 @@ class ApiRoute extends Command
                     foreach($routes as $uri => $route){
                         foreach ($route['apiMiddleware'] as $mk => $middleware){
                             if(in_array($middleware, $middlewares)){
-                                unset($routes[$uri][$rowKey]['apiMiddleware'][$mk]);
+                                unset($routes[$uri]['apiMiddleware'][$mk]);
                             }
                         }
                     }
