@@ -137,4 +137,8 @@ class Route
     public function getAll(){
         return $this->rule->getAll();
     }
+
+    public function sortMiddleware(){
+        return $this->rule->sortMiddleware();
+    }
 }

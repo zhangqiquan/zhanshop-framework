@@ -60,7 +60,12 @@ class Rule
     public function setApp(string $name, string $version, array $middleware = []){
         $this->currentAppName = $name;
         $this->currentAppVersion = $version;
-        $this->globalMiddleware = $middleware;
+
+        foreach($middleware as $v){
+            $this->globalMiddleware[] = function (Request &$request, \Closure &$next) use (&$v){
+                App::make($v)->handle($request, $next);
+            };
+        }
     }
 
     public function setGroup(mixed &$group){
@@ -155,5 +160,29 @@ class Rule
      */
     public function getAll(){
         return $this->bind;
+    }
+
+    public function sortMiddleware(){
+        foreach ($this->bind as $app => $versions){
+            foreach($versions as $version => $methods){
+                //var_dump($version);
+                foreach($methods as $uri => $routes){
+                    //var_dump($uri);
+                    //print_r($routes);
+                    foreach($routes as $method => $route){
+                        //var_dump($method);
+                        $route['middleware'] = array_reverse($route['middleware']);
+                        $this->bind[$app][$version][$uri][$method]['middleware'] = $route['middleware'];
+//                        foreach($route['middleware'] as $v){
+//                            echo substr(print_r($v, true),0, 200).PHP_EOL;
+//                        }
+//                        die;
+                        //print_r($route['middleware']);
+                    }
+                }
+            }
+            //print_r($v);
+        }
+        //die;
     }
 }

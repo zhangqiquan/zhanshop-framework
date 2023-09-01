@@ -62,52 +62,35 @@ class WebHandle
             App::route()->rule('GET', '/api.doc', [ApiDoc::class, 'call'])->extra([$v]);
             App::route()->rule('POST', '/api.doc', [ApiDoc::class, 'call'])->extra([$v]);
         }
+        App::route()->sortMiddleware(); // 对中间件进行倒序
     }
 
-    /**
-     * 执行前置中间件
-     * @param Request $request
-     * @param Response $servResponse
-     * @return void
-     */
-    public function beforeMiddleware(Request &$request, Response &$servResponse){
-        // 执行前置中间件
-        foreach ($request->getRoure()['middleware'] as $k => $v){
-            if(!property_exists($v, 'isAfter')){
-                echo "前缀中间件".$v.PHP_EOL;
-                App::make($v)->handle($request, $servResponse);
-                unset($request->getRoure()['middleware'][$k]);
-            }
-        }
+    public function middleware(Request &$request, \Closure $next){
+        return array_reduce(
+            $request->getRoure()['middleware'],
+            $this->carry(),
+            $next
+        );
     }
 
-    /**
-     * 执行后置换中间件
-     * @param Request $request
-     * @param Response $servResponse
-     * @return void
-     */
-    public function afterMiddleware(Request &$request, Response &$servResponse){
-        foreach ($request->getRoure()['middleware'] as $k => $v){
-            if(property_exists($v, 'isAfter')){
-                echo "后缀中间件".$v.PHP_EOL;
-                App::make($v)->handle($request, $servResponse);
-            }
-        }
-    }
-
-    /**
-     * 只执行全局中间件
-     * @param Request $request
-     * @param Response $servResponse
-     * @return void
-     */
-    public function globalAfterMiddleware(string &$appName, Request &$request, Response &$servResponse){
-        $middleware = App::config()->get('middleware.'.$appName, []);
-        foreach ($middleware as $v){
-            echo "后缀中间件".$v.PHP_EOL;
-            App::make($v)->handle($request, $servResponse);
-        }
+    protected function carry()
+    {
+        /**
+         * @$stack 上一次中间件对象
+         * @$pipe 当前中间件对象
+         */
+        return function ($stack, $pipe) {
+            /**
+             * @$passable request请求对象
+             */
+            return function (Request &$request) use ($stack, $pipe) {
+                try {
+                    return $pipe($request, $stack);
+                } catch (Throwable $e) {
+                    App::error()->setError($e->getMessage(), $e->getCode());
+                }
+            };
+        };
     }
 
     /**
@@ -121,19 +104,27 @@ class WebHandle
             $dispatch = App::make(Dispatch::class);
 
             $dispatch->check($appName, $request);
-            // 执行前置中间件
-            $this->beforeMiddleware($request, $servResponse);
 
-            $data = $dispatch->run($appName, $request, $servResponse);
-            $servResponse->setData($data);
-            // 执行后置中间件
-            $this->afterMiddleware($request, $servResponse);
+            $handler = $request->getRoure()['handler'];
+            $controller = $handler[0];
+            $action = $handler[1];
+                //print_r($handler);die;
+            // 开始执行中间件
+
+            // 执行前置中间件
+            $dispatch = $this->middleware($request, function (&$request) use (&$controller, &$action, &$servResponse){
+                $data = App::make($controller)->$action($request, $servResponse);
+                $servResponse->setData($data);
+            });
+
+            $dispatch($request);
         }catch (\Throwable $e){
             $servResponse->setStatus((int)$e->getCode());
             $data = $this->getErrorData($appName, $e);
             $servResponse->setData($data); // 先执行后置中间件
+
             // 执行全局的中间件全部变成了后置
-            $this->globalAfterMiddleware($appName, $request, $servResponse);
+            //$this->globalAfterMiddleware($appName, $request, $servResponse);
         }
         // 设置控制器的基类
         $servResponse->setController('\\app\\api\\'.$appName.'\\Controller');
