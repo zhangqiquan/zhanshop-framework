@@ -10,6 +10,7 @@ declare (strict_types=1);
 
 namespace zhanshop;
 
+use app\exception\HttpException;
 use zhanshop\cache\CacheManager;
 use zhanshop\database\DbManager;
 use zhanshop\route\Dispatch;
@@ -122,9 +123,7 @@ class WebHandle
             $servResponse->setStatus((int)$e->getCode());
             $data = $this->getErrorData($appName, $e);
             $servResponse->setData($data); // 先执行后置中间件
-
-            // 执行全局的中间件全部变成了后置
-            //$this->globalAfterMiddleware($appName, $request, $servResponse);
+            App::make(HttpException::class)->handle($request, $servResponse, $e);
         }
         // 设置控制器的基类
         $servResponse->setController('\\app\\api\\'.$appName.'\\Controller');
