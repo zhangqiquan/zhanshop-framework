@@ -3,6 +3,9 @@ declare (strict_types = 1);
 
 namespace zhanshop\route;
 
+use zhanshop\App;
+use zhanshop\Request;
+
 /**
  * 路由分组类
  */
@@ -80,7 +83,7 @@ class Rule
         $this->bind[$this->currentAppName][$this->currentAppVersion][$this->currentUri][$method] = [
             'method' => $method,
             'handler' => $handler,
-            'service' => [str_replace('\\controller\\', '\\service\\', $handler[0]).'Service', $handler[1]],
+            //'service' => [str_replace('\\controller\\', '\\service\\', $handler[0]).'Service', $handler[1]],
             'middleware' => array_merge($this->currentGroup->getMiddleware(), $this->globalMiddleware),
             'cache' => $this->currentGroup->getCache(),
             'extra' => [],
@@ -116,7 +119,12 @@ class Rule
      * @return void
      */
     public function middleware(array $class) :Rule{
-        $this->bind[$this->currentAppName][$this->currentAppVersion][$this->currentUri][$this->currentMethod]['middleware'] = array_merge($class, $this->bind[$this->currentAppName][$this->currentAppVersion][$this->currentUri][$this->currentMethod]['middleware']);
+
+        foreach($class as $name){
+            $this->bind[$this->currentAppName][$this->currentAppVersion][$this->currentUri][$this->currentMethod]['middleware'][] = function (Request &$request, \Closure &$next) use (&$name){
+                App::make($name)->handle($request, $next);
+            };
+        };
         return $this;
     }
 

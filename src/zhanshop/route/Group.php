@@ -11,6 +11,7 @@ declare (strict_types=1);
 namespace zhanshop\route;
 
 use zhanshop\App;
+use zhanshop\Request;
 
 class Group extends Rule
 {
@@ -51,7 +52,11 @@ class Group extends Rule
      * @return void
      */
     public function middleware(array $class) :Rule{
-        $this->middleware = array_merge($this->middleware, $class);
+        foreach($class as $name){
+            $this->middleware[] = function (Request &$request, \Closure &$next) use (&$name){
+                App::make($name)->handle($request, $next);
+            };
+        };
         return $this;
     }
 
