@@ -49,8 +49,6 @@ class Console{
         'server' => Server::class,
         'phar' => Phar::class,
         'api:route' => ApiRoute::class,
-        'api:create' => ApiCreate::class,
-        'api:manager' => ApiDoc::class,
         'software:scan:ports' => ScanPorts::class,
         'software:dns:check' => Dnscheck::class,
     ];

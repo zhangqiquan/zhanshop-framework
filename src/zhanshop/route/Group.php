@@ -15,6 +15,11 @@ use zhanshop\Request;
 
 class Group extends Rule
 {
+    public function __construct()
+    {
+        //var_dump("构造".getmypid());
+    }
+
     protected string $prefix = '';
 
     protected array $middleware = [];

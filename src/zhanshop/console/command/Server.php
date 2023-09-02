@@ -52,7 +52,7 @@ class Server extends Command
             'send_timeout' => 3, // 1.5秒
             'log_level' => SWOOLE_LOG_NOTICE, // 仅记录错误日志以上的日志
             'log_rotation' => SWOOLE_LOG_ROTATION_DAILY, // 每日日志
-            'task_worker_num' => 1,
+            'task_worker_num' => 0,
             'task_enable_coroutine' => true,
             'max_request' => 0,
             'max_wait_time' => 2,

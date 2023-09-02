@@ -20,12 +20,9 @@ class Route
      * @var Rule
      */
     protected Rule $rule;
-    protected Group $group;
 
     public function __construct(){
         $this->rule = new Rule();
-        $this->group = new Group();
-        $this->rule->setGroup($this->group);
     }
 
     /**
@@ -54,7 +51,7 @@ class Route
      * @param callable $fun
      * @return void
      */
-    public function group(string $name, callable $fun): Group{
+    public function group(string $name, callable $fun){
         $group = new Group();
         $group->addGroup($name, $fun);
         return $group;
