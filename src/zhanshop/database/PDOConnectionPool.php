@@ -193,10 +193,15 @@ class PDOConnectionPool
      * @return \PDO
      */
     public function getPDO(){
-        $pdo = $this->pool->get($this->timeoutPool);
-        if($pdo == false){
-            throw new \Exception('database连接池耗尽【服务暂时不可用】', 503);
+        try{
+            $pdo = $this->pool->get($this->timeoutPool);
+            if($pdo == false){
+                throw new \Exception('database连接池耗尽【服务暂时不可用】', 503);
+            }
+        }catch (\Throwable $err){
+            throw new \Exception($err->getMessage());
         }
+
         return $pdo;
     }
 

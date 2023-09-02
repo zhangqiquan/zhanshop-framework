@@ -57,7 +57,6 @@ class Group extends Rule
      * @return void
      */
     public function middleware(array $class) :Rule{
-        // 这里有问题
         foreach($class as $name){
             $this->middleware[] = function (Request &$request, \Closure &$next) use (&$name){
                 App::make($name)->handle($request, $next);
@@ -109,17 +108,17 @@ class Group extends Rule
         return $this->cache;
     }
 
-    public function __destruct()
+    public function finish()
     {
         App::route()->getRule()->setGroup($this);
         if($this->route){
             $route = $this->route;
             $route(); // 调用
         }
-        // 置空
-        $this->cache = 0;
-        $this->middleware = [];
-        $this->prefix = '';
+//        // 置空
+//        $this->cache = 0;
+//        $this->middleware = [];
+//        $this->prefix = '';
     }
 
 }

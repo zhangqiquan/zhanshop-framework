@@ -69,6 +69,10 @@ class Rule
     }
 
     public function setGroup(mixed &$group){
+        if($this->currentGroup){
+            unset($this->currentGroup);
+            $this->currentGroup = null;
+        }
         $this->currentGroup = $group;
     }
 
