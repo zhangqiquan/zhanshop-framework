@@ -20,6 +20,7 @@ class Route
      * @var Rule
      */
     protected Rule $rule;
+    protected Group $group;
 
     public function __construct(){
         $this->rule = new Rule();
@@ -52,9 +53,10 @@ class Route
      * @return void
      */
     public function group(string $name, callable $fun){
-        $group = new Group();
-        $group->addGroup($name, $fun);
-        return $group;
+        $this->group = new Group();
+        $this->group->addGroup($name, $fun);
+        // 释放掉之前的组
+        return $this->group;
     }
 
     /**
