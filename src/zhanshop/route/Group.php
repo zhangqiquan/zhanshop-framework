@@ -57,12 +57,12 @@ class Group extends Rule
      * @return void
      */
     public function middleware(array $class) :Rule{
-        echo "zhongjianjian";
-//        foreach($class as $name){
-//            $this->middleware[] = function (Request &$request, \Closure &$next) use (&$name){
-//                App::make($name)->handle($request, $next);
-//            };
-//        };
+        // 这里有问题
+        foreach($class as $name){
+            $this->middleware[] = function (Request &$request, \Closure &$next) use (&$name){
+                App::make($name)->handle($request, $next);
+            };
+        };
         return $this;
     }
 
@@ -111,7 +111,6 @@ class Group extends Rule
 
     public function __destruct()
     {
-        echo "xiaohui";
         App::route()->getRule()->setGroup($this);
         if($this->route){
             $route = $this->route;
