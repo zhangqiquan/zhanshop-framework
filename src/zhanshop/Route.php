@@ -15,6 +15,12 @@ use zhanshop\route\Rule;
 
 class Route
 {
+
+    /**
+     * 路由绑定
+     * @var array
+     */
+    protected $bind = [];
     /**
      * 路由规则
      * @var Rule
