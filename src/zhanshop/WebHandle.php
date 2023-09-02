@@ -109,10 +109,7 @@ class WebHandle
             $handler = $request->getRoure()['handler'];
             $controller = $handler[0];
             $action = $handler[1];
-                //print_r($handler);die;
-            // 开始执行中间件
 
-            // 执行前置中间件
             $dispatch = $this->middleware($request, function (&$request) use (&$controller, &$action, &$servResponse){
                 $data = App::make($controller)->$action($request, $servResponse);
                 $servResponse->setData($data);
@@ -120,38 +117,10 @@ class WebHandle
 
             $dispatch($request);
         }catch (\Throwable $e){
-            $servResponse->setStatus((int)$e->getCode());
-            $data = $this->getErrorData($appName, $e);
+            $servResponse->setHttpCode((int)$e->getCode());
+            //$servResponse->se
+            $data = App::make(HttpException::class)->handle($request, $servResponse, $e);
             $servResponse->setData($data); // 先执行后置中间件
-            App::make(HttpException::class)->handle($request, $servResponse, $e);
         }
-        // 设置控制器的基类
-        $servResponse->setController('\\app\\api\\'.$appName.'\\Controller');
-    }
-
-    /**
-     * 获取错误信息
-     * @param \Throwable $e
-     * @return string
-     */
-    public function getErrorData(string &$appName, \Throwable &$e){
-        try {
-            $controller = App::make('\\app\\api\\'.$appName.'\\Controller');
-            $code = $e->getCode();
-            $data = [];
-            // 404错误不抛出错误详情
-            if($code != 404){
-                $data = [
-                    'file' => $e->getFile(),
-                    'line' => $e->getLine(),
-                    'trace' => $e->getTrace(),
-                ];
-            }
-            $data = $controller->result($data, $e->getMessage(), $code);
-        }catch (\Throwable $e){
-            //Log::errorLog(SWOOLE_LOG_ERROR, $e->getMessage().PHP_EOL.'#@ '.$e->getFile().':'.$e->getLine().PHP_EOL.$e->getTraceAsString());
-            $data = $e->getMessage();
-        }
-        return $data;
     }
 }

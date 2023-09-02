@@ -182,9 +182,6 @@ class ServEvent
             $response->end(json_encode($this->server->stats()));
             return;
         }
-        // 35K
-//        $response->end("111");
-//        return ;
 
         $servRequest = new Request($protocol, $request);
         $servResponse = new Response($response, $request->fd);

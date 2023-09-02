@@ -89,7 +89,7 @@ class Rule
             'method' => $method,
             'handler' => $handler,
             //'service' => [str_replace('\\controller\\', '\\service\\', $handler[0]).'Service', $handler[1]],
-            'middleware' => array_merge($this->currentGroup->getMiddleware(), $this->globalMiddleware),
+            'middleware' => [],//array_merge($this->currentGroup->getMiddleware(), $this->globalMiddleware),
             'cache' => $this->currentGroup->getCache(),
             'extra' => [],
             'validate' => [],
@@ -109,27 +109,17 @@ class Rule
     }
 
     /**
-     * 绑定一个入参验证
-     * @param string $class
-     * @return void
-     */
-    public function validate(array $validate) :Rule{
-        $this->bind[$this->currentAppName][$this->currentAppVersion][$this->currentUri][$this->currentMethod]['validate'] = $validate;
-        return $this;
-    }
-
-    /**
      * 设置中间件
      * @param array $class
      * @return void
      */
     public function middleware(array $class) :Rule{
 
-        foreach($class as $name){
-            $this->bind[$this->currentAppName][$this->currentAppVersion][$this->currentUri][$this->currentMethod]['middleware'][] = function (Request &$request, \Closure &$next) use (&$name){
-                App::make($name)->handle($request, $next);
-            };
-        };
+//        foreach($class as $name){
+//            $this->bind[$this->currentAppName][$this->currentAppVersion][$this->currentUri][$this->currentMethod]['middleware'][] = function (Request &$request, \Closure &$next) use (&$name){
+//                App::make($name)->handle($request, $next);
+//            };
+//        };
         return $this;
     }
 
@@ -163,26 +153,26 @@ class Rule
     }
 
     public function sortMiddleware(){
-        foreach ($this->bind as $app => $versions){
-            foreach($versions as $version => $methods){
-                //var_dump($version);
-                foreach($methods as $uri => $routes){
-                    //var_dump($uri);
-                    //print_r($routes);
-                    foreach($routes as $method => $route){
-                        //var_dump($method);
-                        $route['middleware'] = array_reverse($route['middleware']);
-                        $this->bind[$app][$version][$uri][$method]['middleware'] = $route['middleware'];
-//                        foreach($route['middleware'] as $v){
-//                            echo substr(print_r($v, true),0, 200).PHP_EOL;
-//                        }
-//                        die;
-                        //print_r($route['middleware']);
-                    }
-                }
-            }
-            //print_r($v);
-        }
-        //die;
+//        foreach ($this->bind as $app => $versions){
+//            foreach($versions as $version => $methods){
+//                //var_dump($version);
+//                foreach($methods as $uri => $routes){
+//                    //var_dump($uri);
+//                    //print_r($routes);
+//                    foreach($routes as $method => $route){
+//                        //var_dump($method);
+//                        $route['middleware'] = array_reverse($route['middleware']);
+//                        $this->bind[$app][$version][$uri][$method]['middleware'] = $route['middleware'];
+////                        foreach($route['middleware'] as $v){
+////                            echo substr(print_r($v, true),0, 200).PHP_EOL;
+////                        }
+////                        die;
+//                        //print_r($route['middleware']);
+//                    }
+//                }
+//            }
+//            //print_r($v);
+//        }
+//        //die;
     }
 }

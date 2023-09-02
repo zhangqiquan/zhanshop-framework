@@ -37,6 +37,7 @@ class Dispatch
         $version = $params[1] ? $params[1] : 'v1';
         $uri     = isset($params[2]) ? '/'.$params[2] : '/index.index';
         $this->method = $request->server('request_method', 'GET');
+        var_dump($name, $version, $uri, $this->method);
         $route = App::route()->getRule()->getBind($name, $version, $uri, $this->method);
         if(!$route) App::error()->setError('您所访问的API不存在', Error::NOT_FOUND);
 
