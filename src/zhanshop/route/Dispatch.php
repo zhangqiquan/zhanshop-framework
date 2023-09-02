@@ -22,10 +22,28 @@ use zhanshop\Response;
  */
 class Dispatch
 {
-    protected $name;
+    protected $app;
     protected $version;
-    protected $uri;
-    protected $method;
+
+    // 已注册的路由
+    protected $routes = [];
+
+    public function regRoute(Rule &$rule){
+        $this->routes[$this->app][$this->version][$rule->uri][$rule->method] = [
+            'cache' => $rule->cache,
+            'extra' => [],
+            'handler' => $rule->handler,
+            'middleware' => $rule->middleware
+        ];
+    }
+
+    public function setApp(string $app){
+        $this->app = $app;
+    }
+
+    public function setVersion(string $version){
+        $this->version = $version;
+    }
 
     /**
      * 路由检查
@@ -61,5 +79,9 @@ class Dispatch
         $controller = $roure['handler'][0];
         // 在台式机上测试性能strtolower
         return App::make($controller)->$action($request, $servResponse);
+    }
+
+    public function routes(){
+        return $this->routes;
     }
 }

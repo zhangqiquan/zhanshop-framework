@@ -44,6 +44,7 @@ class WebHandle
      * @return void
      */
     protected function loadRoute(){
+        $dispatch = App::make(Dispatch::class);
         $middlewares = App::config()->get('middleware', []);
         foreach($this->servEvent->servNames ?? [] as $v){
             $routePath = App::routePath().DIRECTORY_SEPARATOR.$v;
@@ -53,8 +54,10 @@ class WebHandle
             foreach ($files as $kk => $vv){
                 $versionInfo = pathinfo($vv);
                 if($versionInfo['extension'] == 'php'){
-                    App::route()->getRule()->setApp($v, $versionInfo['filename'], $middleware);
+                    //App::route()->getRule()->setApp($v, $versionInfo['filename'], $middleware);
                     $routeFile = App::routePath() .DIRECTORY_SEPARATOR.$v.'/'. $vv;
+                    $dispatch->setApp($v);
+                    $dispatch->setVersion($versionInfo['filename']);
                     require_once $routeFile; // 事先载入路由
                 }
             }
@@ -63,7 +66,8 @@ class WebHandle
 //            App::route()->rule('GET', '/api.doc', [ApiDoc::class, 'call'])->extra([$v]);
 //            App::route()->rule('POST', '/api.doc', [ApiDoc::class, 'call'])->extra([$v]);
         }
-        App::route()->sortMiddleware(); // 对中间件进行倒序
+        print_r(App::make(Dispatch::class)->routes());
+        //App::route()->sortMiddleware(); // 对中间件进行倒序
     }
 
     public function middleware(Request &$request, \Closure $next){

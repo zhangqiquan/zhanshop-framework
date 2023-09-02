@@ -13,41 +13,29 @@ namespace zhanshop\route;
 use zhanshop\App;
 use zhanshop\Request;
 
-class Group extends Rule
+class Group
 {
-    public function __construct()
-    {
-        //var_dump("构造".getmypid());
-    }
-
-    protected string $prefix = '';
-
+    protected string $prefix;
+    protected mixed $callback;
+    protected float $cache = 0;
     protected array $middleware = [];
 
-    protected int $cache = 0;
+    protected array $bind = [];
 
-    protected mixed $route = null;
-
-    protected mixed $crossDomain = [];
-
-    /**
-     * 获取分组路由前缀
-     * @return string
-     */
-    public function getPrefix(){
-        return $this->prefix;
+    public function __construct(string $prefix, callable &$callback)
+    {
+        echo "Group构造";
+        $this->prefix = $prefix;
+        $this->callback = $callback;
     }
-    /**
-     * 设置路由
-     * @param array $methods
-     * @param string $uri
-     * @param array $handler
-     * @return void
-     */
-    public function addGroup(string $name, callable &$route) :Group{
-        $this->prefix = $name;
-        $this->route = &$route; // 路由执行回调
-        return $this; // 测试分组路由
+
+    public function execute(){
+        $callback = $this->callback;
+        $callback();
+    }
+
+    public function bindRoute(array $rules){
+        $this->bind = $rules;
     }
 
 
@@ -66,59 +54,26 @@ class Group extends Rule
     }
 
     /**
-     * 获取中间件信息
-     * @return array
-     */
-    public function getMiddleware(){
-        return $this->middleware;
-    }
-
-    /**
      * 设置header请求头缓存
      * @param int $time
      * @return void
      */
-    public function cache(int $time) :Rule{
-        $this->cache = $time;
+    public function cache(int $time){
+        foreach($this->bind as $v){
+            $v->cache = $time;
+        }
         return $this;
     }
 
-    /**
-     * 设置跨域选项
-     * @param array $option
-     * @return void
-     */
-    public function crossDomain(array $option){
-        $this->crossDomain = array_merge($this->crossDomain, $option);
-    }
-
-    /**
-     * 获取跨域参数
-     * @return array|mixed
-     */
-    public function getCrossDomain(){
-        return $this->crossDomain;
-    }
-
-    /**
-     * 获取缓存参数
-     * @return int
-     */
-    public function getCache(){
-        return $this->cache;
-    }
-
-    public function finish()
+    public function __destruct()
     {
-        App::route()->getRule()->setGroup($this);
-        if($this->route){
-            $route = $this->route;
-            $route(); // 调用
+        // 西沟的时候
+        $dispatch = App::make(Dispatch::class);
+        foreach($this->bind as $v){
+            $v->uri = $this->prefix.'.'.$v->uri;
+            $dispatch->regRoute($v);
         }
-//        // 置空
-//        $this->cache = 0;
-//        $this->middleware = [];
-//        $this->prefix = '';
+        echo "Group西沟";
     }
 
 }
