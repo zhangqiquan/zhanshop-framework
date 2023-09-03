@@ -129,14 +129,14 @@ class ApiDoc
                 'uri' => '/'.$version.'/'.explode('.', $uri)[0].'.'.$apiDoc['api']['uri'],
                 'title' => $apiDoc['api']['title'],
                 'description' => $apiDoc['apiDescription'],
-                'method' => $route['method'],
+                'method' => $v['method'],
                 'header' => array_values($apiDoc['apiHeader']),
                 'param' => array_values($apiDoc['apiParam']),
                 'success' => array_values($apiDoc['apiSuccess']),
                 'error' => $apiDoc['apiError'],
                 'response' => $this->getExample('/'.$version.$fullUri, $v['method']), // 响应示例
                 'version' => $version,
-                'versions' => array_unique($this->versionList[$uri][$route['method']])
+                'versions' => array_unique($this->versionList[$uri][$v['method']])
             ];
         }
         return $apiDocs;
@@ -154,17 +154,16 @@ class ApiDoc
         $uris = explode('/', $uri);
         $version = $uris[0];
         $fullUri = '/'.$uris[1];
-        $route = App::route()->getAll()[$this->app][$version][$fullUri][$method] ?? App::error()->setError($request->param('uri').'路由未注册', Error::NOT_FOUND);
+        $route = App::make(Dispatch::class)->routes()[$this->app][$version][$fullUri][$method] ?? App::error()->setError($request->param('uri').'路由未注册', Error::NOT_FOUND);
 
         $handler = $route['handler'];
         $class = new \ReflectionClass($handler[0]);
-        $method = $class->getMethod($handler[1]);
-        $apiDoc = (new Annotations($method->getDocComment()))->all();
+        $apiDoc = (new Annotations($class->getMethod($handler[1])->getDocComment()))->all();
         return [
             'uri' => '/'.$version.'/'.explode('.', $uris[1])[0].'.'.$apiDoc['api']['uri'],
             'title' => $apiDoc['api']['title'],
             'description' => $apiDoc['apiDescription'],
-            'method' => $route['method'],
+            'method' => $method,
             'header' => $apiDoc['apiHeader'],
             'param' => $apiDoc['apiParam'],
             'success' => $apiDoc['apiSuccess'],
