@@ -29,7 +29,7 @@ class Dispatch
     protected $routes = [];
 
     public function regRoute(Rule &$rule){
-        $rule->middleware = array_merge($rule->middleware, App::config()->get('middleware.'.$this->app, []));
+        $rule->middleware = array_reverse(array_merge($rule->middleware, App::config()->get('middleware.'.$this->app, [])));
         $middlewares = [];
         foreach($rule->middleware as $middleware){
             $middlewares[] = function (Request &$request, \Closure &$next) use (&$middleware){

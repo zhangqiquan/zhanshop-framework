@@ -67,6 +67,7 @@ class WebHandle
     }
 
     public function middleware(Request &$request, \Closure $next){
+        //print_r($request->getRoure()['middleware']);die;
         return array_reduce(
             $request->getRoure()['middleware'],
             $this->carry(),
@@ -109,6 +110,7 @@ class WebHandle
             $handler = $request->getRoure()['handler'];
             $controller = $handler[0];
             $action = $handler[1];
+
 
             $dispatch = $this->middleware($request, function (&$request) use (&$controller, &$action, &$servResponse){
                 $data = App::make($controller)->$action($request, $servResponse);
