@@ -58,10 +58,10 @@ class WebHandle
                     require_once $routeFile; // 事先载入路由
                 }
             }
-//            $dispatch->setApp($v);
-//            $dispatch->setVersion('v1');
-//            App::route()->rule('GET', '/api.doc', [ApiDoc::class, 'call'])->extra([$v]);
-//            App::route()->rule('POST', '/api.doc', [ApiDoc::class, 'call'])->extra([$v]);
+            $dispatch->setApp($v);
+            $dispatch->setVersion('v1');
+            App::route()->rule('GET', '/api.doc', [ApiDoc::class, 'call'])->extra([$v]);
+            App::route()->rule('POST', '/api.doc', [ApiDoc::class, 'call'])->extra([$v]);
         }
     }
 

@@ -22,7 +22,6 @@ class Group
 
     public function __construct(string $prefix, callable &$callback)
     {
-        echo "Group构造";
         $this->prefix = $prefix;
         $this->callback = $callback;
     }
@@ -76,7 +75,6 @@ class Group
             $v->uri = $this->prefix.'.'.$v->uri;
             $dispatch->regRoute($v);
         }
-        echo "Group西沟";
     }
 
 }

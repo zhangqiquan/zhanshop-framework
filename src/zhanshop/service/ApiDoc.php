@@ -16,6 +16,7 @@ use zhanshop\Helper;
 use zhanshop\helper\Annotations;
 use zhanshop\Request;
 use zhanshop\Response;
+use zhanshop\route\Dispatch;
 
 class ApiDoc
 {
@@ -118,8 +119,8 @@ class ApiDoc
             $version = $uris[0];
             $fullUri = '/'.$uris[1];
 
-            $route = App::route()->getAll()[$this->app][$version][$fullUri][$v['method']] ?? App::error()->setError($request->param('uri').'路由未注册', Error::NOT_FOUND);
-
+            $route = App::make(Dispatch::class)->routes()[$this->app][$version][$fullUri][$v['method']] ?? App::error()->setError($request->param('uri').'路由未注册', Error::NOT_FOUND);
+            //print_r($route);
             $handler = $route['handler'];
             $class = new \ReflectionClass($handler[0]);
             $method = $class->getMethod($handler[1]);

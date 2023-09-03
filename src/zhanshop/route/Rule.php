@@ -21,6 +21,8 @@ class Rule
     public $middleware = [];
     public $cache = -1;
 
+    public $single = false;
+
     public function __construct(string $method, string $uri, array $handler)
     {
         $this->method = $method;
@@ -41,5 +43,12 @@ class Rule
     public function cache(int $second){
         $this->cache = $second;
         return $this;
+    }
+
+    public function __destruct()
+    {
+        if($this->single){
+            App::make(Dispatch::class)->regRoute($this);
+        }
     }
 }

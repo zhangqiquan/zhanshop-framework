@@ -23,7 +23,8 @@ class Route
         if($this->group){
             $this->rules[] = $rule;
         }else{
-            App::make(Dispatch::class)->regRoute($rule);
+            $rule->single = true;
+            //App::make(Dispatch::class)->regRoute($rule);
         }
         return $rule;
     }

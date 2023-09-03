@@ -52,7 +52,7 @@ class Response
         if($code > 1000){
             $this->httpCode = 417;
         }else{
-            $this->httpCode = $code ? $code : 500;
+            $this->httpCode = $code < 200 ? 500 : $code;
         }
     }
     /**
