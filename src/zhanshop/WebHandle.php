@@ -63,11 +63,9 @@ class WebHandle
 //            App::route()->rule('GET', '/api.doc', [ApiDoc::class, 'call'])->extra([$v]);
 //            App::route()->rule('POST', '/api.doc', [ApiDoc::class, 'call'])->extra([$v]);
         }
-        //print_r($dispatch->routes());die;
     }
 
     public function middleware(Request &$request, \Closure $next){
-        //print_r($request->getRoure()['middleware']);die;
         return array_reduce(
             $request->getRoure()['middleware'],
             $this->carry(),

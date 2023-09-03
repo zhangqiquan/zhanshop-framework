@@ -40,7 +40,7 @@ class Dispatch
 
         $this->routes[$this->app][$this->version][$rule->uri][$rule->method] = [
             'cache' => $rule->cache,
-            'extra' => [],
+            'extra' => $rule->extra,
             'handler' => $rule->handler,
             'middleware' => $rule->middleware
         ];
