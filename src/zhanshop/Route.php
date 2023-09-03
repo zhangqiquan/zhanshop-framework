@@ -41,6 +41,7 @@ class Route
         $group->execute();
         $this->group = null;
         $group->bindRoute($this->rules);
+        $this->rules = [];
         return $group;
     }
 }

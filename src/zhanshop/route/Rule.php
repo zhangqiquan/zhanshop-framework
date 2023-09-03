@@ -17,14 +17,29 @@ class Rule
     public $uri;
     public $method;
     public $handler;
-    public $extra;
-    public $middleware;
-    public $cache;
+    public $extra = [];
+    public $middleware = [];
+    public $cache = -1;
 
     public function __construct(string $method, string $uri, array $handler)
     {
         $this->method = $method;
         $this->uri = $uri;
         $this->handler = $handler;
+    }
+
+    public function middleware(array $class){
+        $this->middleware = $class;
+        return $this;
+    }
+
+    public function extra(array $extra){
+        $this->extra = $extra;
+        return $this;
+    }
+
+    public function cache(int $second){
+        $this->cache = $second;
+        return $this;
     }
 }

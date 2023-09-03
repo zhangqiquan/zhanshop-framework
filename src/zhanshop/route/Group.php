@@ -17,8 +17,6 @@ class Group
 {
     protected string $prefix;
     protected mixed $callback;
-    protected float $cache = 0;
-    protected array $middleware = [];
 
     protected array $bind = [];
 
@@ -44,12 +42,15 @@ class Group
      * @param array $class
      * @return void
      */
-    public function middleware(array $class) :Rule{
-        foreach($class as $name){
-            $this->middleware[] = function (Request &$request, \Closure &$next) use (&$name){
-                App::make($name)->handle($request, $next);
-            };
-        };
+    public function middleware(array $class){
+//        foreach($class as $name){
+//            $this->middleware[] = function (Request &$request, \Closure &$next) use (&$name){
+//                App::make($name)->handle($request, $next);
+//            };
+//        };
+        foreach($this->bind as $v){
+            $v->middleware = array_merge($v->middleware, $class);
+        }
         return $this;
     }
 
@@ -61,6 +62,13 @@ class Group
     public function cache(int $time){
         foreach($this->bind as $v){
             $v->cache = $time;
+        }
+        return $this;
+    }
+
+    public function extra(array $extra){
+        foreach($this->bind as $v){
+            $v->extra = array_merge($v->extra, $extra);
         }
         return $this;
     }
