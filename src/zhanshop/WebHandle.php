@@ -45,23 +45,19 @@ class WebHandle
      */
     protected function loadRoute(){
         $dispatch = App::make(Dispatch::class);
-        $middlewares = App::config()->get('middleware', []);
         foreach($this->servEvent->servNames ?? [] as $v){
             $routePath = App::routePath().DIRECTORY_SEPARATOR.$v;
             if(!file_exists($routePath)) continue;
             $files = scandir($routePath);
-            $middleware = $middlewares[$v] ?? [];
             foreach ($files as $kk => $vv){
                 $versionInfo = pathinfo($vv);
                 if($versionInfo['extension'] == 'php'){
-                    //App::route()->getRule()->setApp($v, $versionInfo['filename'], $middleware);
                     $routeFile = App::routePath() .DIRECTORY_SEPARATOR.$v.'/'. $vv;
                     $dispatch->setApp($v);
                     $dispatch->setVersion($versionInfo['filename']);
                     require_once $routeFile; // 事先载入路由
                 }
             }
-
             $dispatch->setApp($v);
             $dispatch->setVersion('v1');
             App::route()->rule('GET', '/api.doc', [ApiDoc::class, 'call'])->extra([$v]);
