@@ -29,13 +29,15 @@ class Dispatch
     protected $routes = [];
 
     public function regRoute(Rule &$rule){
+        $rule->middleware = array_merge($rule->middleware, App::config()->get('middleware.'.$this->app, []));
         $middlewares = [];
-        foreach(App::config()->get('middleware.'.$this->app, []) as $middleware){
+        foreach($rule->middleware as $middleware){
             $middlewares[] = function (Request &$request, \Closure &$next) use (&$middleware){
                 App::make($middleware)->handle($request, $next);
             };
         }
-        $rule->middleware = array_merge($rule->middleware, $middlewares);
+        $rule->middleware = $middlewares;
+
         $this->routes[$this->app][$this->version][$rule->uri][$rule->method] = [
             'cache' => $rule->cache,
             'extra' => [],
