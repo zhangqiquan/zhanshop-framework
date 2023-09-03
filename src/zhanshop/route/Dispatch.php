@@ -29,7 +29,13 @@ class Dispatch
     protected $routes = [];
 
     public function regRoute(Rule &$rule){
-        $rule->middleware = array_merge($rule->middleware, App::config()->get('middleware.'.$this->app, []));
+        $middlewares = [];
+        foreach(App::config()->get('middleware.'.$this->app, []) as $middleware){
+            $middlewares[] = function (Request &$request, \Closure &$next) use (&$middleware){
+                App::make($middleware)->handle($request, $next);
+            };
+        }
+        $rule->middleware = array_merge($rule->middleware, $middlewares);
         $this->routes[$this->app][$this->version][$rule->uri][$rule->method] = [
             'cache' => $rule->cache,
             'extra' => [],
@@ -55,9 +61,8 @@ class Dispatch
         $params = explode("/", $request->server('request_uri'));
         $version = $params[1] ? $params[1] : 'v1';
         $uri     = isset($params[2]) ? '/'.$params[2] : '/index.index';
-        $this->method = $request->server('request_method', 'GET');
-        $route = App::route()->getRule()->getBind($name, $version, $uri, $this->method);
-        if(!$route) App::error()->setError('您所访问的API不存在', Error::NOT_FOUND);
+        $method = $request->server('request_method', 'GET');
+        $route = $this->routes[$name][$version][$uri][$method] ?? App::error()->setError('您所访问的API不存在', Error::NOT_FOUND);
 
         foreach ($route['extra'] as $k => $v){
             $request->setData($v, $params[$k + 3] ?? null);

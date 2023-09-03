@@ -29,7 +29,13 @@ class Rule
     }
 
     public function middleware(array $class){
-        $this->middleware = $class;
+        $middlewares = [];
+        foreach($class as $middleware){
+            $middlewares[] = function (Request &$request, \Closure &$next) use (&$middleware){
+                App::make($middleware)->handle($request, $next);
+            };
+        }
+        $this->middleware = $middlewares;
         return $this;
     }
 

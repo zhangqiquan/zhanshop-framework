@@ -43,13 +43,15 @@ class Group
      * @return void
      */
     public function middleware(array $class){
-//        foreach($class as $name){
-//            $this->middleware[] = function (Request &$request, \Closure &$next) use (&$name){
-//                App::make($name)->handle($request, $next);
-//            };
-//        };
+        $middlewares = [];
+        foreach($class as $middleware){
+            $middlewares[] = function (Request &$request, \Closure &$next) use (&$middleware){
+                App::make($middleware)->handle($request, $next);
+            };
+        }
+
         foreach($this->bind as $v){
-            $v->middleware = array_merge($v->middleware, $class);
+            $v->middleware = array_merge($v->middleware, $middlewares);
         }
         return $this;
     }
