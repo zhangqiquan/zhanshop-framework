@@ -29,6 +29,7 @@ class Dispatch
     protected $routes = [];
 
     public function regRoute(Rule &$rule){
+        $rule->middleware = array_merge($rule->middleware, App::config()->get('middleware.'.$this->app, []));
         $this->routes[$this->app][$this->version][$rule->uri][$rule->method] = [
             'cache' => $rule->cache,
             'extra' => [],

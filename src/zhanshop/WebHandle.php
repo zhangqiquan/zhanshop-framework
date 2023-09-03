@@ -62,12 +62,11 @@ class WebHandle
                 }
             }
 
-//            App::route()->getRule()->setApp($v, 'v1', []);
-//            App::route()->rule('GET', '/api.doc', [ApiDoc::class, 'call'])->extra([$v]);
-//            App::route()->rule('POST', '/api.doc', [ApiDoc::class, 'call'])->extra([$v]);
+            $dispatch->setApp($v);
+            $dispatch->setVersion('v1');
+            App::route()->rule('GET', '/api.doc', [ApiDoc::class, 'call'])->extra([$v]);
+            App::route()->rule('POST', '/api.doc', [ApiDoc::class, 'call'])->extra([$v]);
         }
-        print_r(App::make(Dispatch::class)->routes());
-        //App::route()->sortMiddleware(); // 对中间件进行倒序
     }
 
     public function middleware(Request &$request, \Closure $next){
