@@ -148,7 +148,11 @@ class Annotations
         $matched = preg_match_all('/@apiError\s+([0-9]+)\s+(\S*)/i', $this->docComment, $matches);
         $data = [];
         foreach ($matches[1] as $k => $v){
-            $data[$v] = $matches[2][$k] ?? "";
+            $data[] = [
+                'code' => $v,
+                'description' => $matches[2][$k] ?? "",
+            ];
+            //$data[$v] = $matches[2][$k] ?? "";
         }
         return $data;
     }

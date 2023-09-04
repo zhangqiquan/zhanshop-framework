@@ -12,6 +12,8 @@ namespace zhanshop\service;
 
 use zhanshop\App;
 use zhanshop\Error;
+use zhanshop\example\Jquery;
+use zhanshop\example\Vue3;
 use zhanshop\Helper;
 use zhanshop\helper\Annotations;
 use zhanshop\Request;
@@ -143,18 +145,35 @@ class ApiDoc
     }
 
     /**
+     * 拆解URI
+     * @param $uri
+     * @param $method
+     * @return array
+     */
+    protected function parseUri($uri){
+        if($uri == false) App::error()->setError('uri不能为空');
+        $uri = ltrim($uri, '/');
+        $uris = explode('/', $uri);
+        $version = $uris[0];
+        $fullUri = '/'.$uris[1];
+        return [
+            $version,
+            $fullUri
+        ];
+    }
+
+    /**
      * 获取单个api
      * @param Request $request
      * @param Response $response
      * @return array
      */
     public function api(Request &$request, Response &$response){
-        $uri = ltrim($request->param('uri'), '/');
+        $uri = $request->param('uri');
         $method = $request->param('method');
-        $uris = explode('/', $uri);
-        $version = $uris[0];
-        $fullUri = '/'.$uris[1];
-        $route = App::make(Dispatch::class)->routes()[$this->app][$version][$fullUri][$method] ?? App::error()->setError($request->param('uri').'路由未注册', Error::NOT_FOUND);
+        [$version, $fullUri] = $this->parseUri($uri);
+
+        $route = App::make(Dispatch::class)->routes()[$this->app][$version][$fullUri][$method] ?? App::error()->setError($uri.'路由未注册', Error::NOT_FOUND);
 
         $handler = $route['handler'];
         $class = new \ReflectionClass($handler[0]);
@@ -174,15 +193,47 @@ class ApiDoc
 
 
 
-    public function samplecode(Request &$request, Response &$response){
-        $app = $request->getRoure()['extra'][0];
+    public function exampleCode(Request &$request, Response &$response){
         $data = $request->validateRule([
-            'protocol' => 'required',
-            'version' => 'string',
+            'host' => '',
+            'header' => '',
             'uri' => 'required',
             'method' => 'required',
             'language' => 'required',
         ])->getData();
+        [$version, $fullUri] = $this->parseUri($data['uri']);
+        $route = App::make(Dispatch::class)->routes()[$this->app][$version][$fullUri][$data['method']] ?? App::error()->setError($uri.'路由未注册', Error::NOT_FOUND);
+        $handler = $route['handler'];
+        $class = new \ReflectionClass($handler[0]);
+        $apiDoc = (new Annotations($class->getMethod($handler[1])->getDocComment()))->all();
+        switch ($data['language']){
+            case "vue3":
+                return (new Vue3($apiDoc))->getCode(($data['host'] ?? $request->header('origin')).$data['uri'], $data['method'], $data['header'] ?? []);
+                break;
+            case "jquery":
+                return (new Jquery($apiDoc))->getCode(($data['host'] ?? $request->header('origin')).$data['uri'], $data['method'], $data['header'] ?? []);
+                break;
+                break;
+            case "php":
+                return (new Php($apiDoc))->getCode();
+                break;
+            case "curl":
+                return (new Php($apiDoc))->getCode();
+                break;
+            case "java":
+                return (new Php($apiDoc))->getCode();
+                break;
+            case "python":
+                return (new Php($apiDoc))->getCode();
+                break;
+            case "go":
+                return (new Php($apiDoc))->getCode();
+                break;
+            case "c":
+                return (new Php($apiDoc))->getCode();
+                break;
+        }
+        return null;
         $language = $data['language'];
         $apiDoc = App::make(ApiDocService::class)->detail($app, $data['protocol'], $data['uri'], $data['version'] ?? "", $data['method'])['detail'][0];
         $code = ApiSampleCode::$language($request->header('origin').'/'.$apiDoc['version'].'/'.$apiDoc['uri'], $apiDoc['method'], $apiDoc['header'] ?? [], $apiDoc['param'] ?? []);
@@ -193,7 +244,7 @@ class ApiDoc
         $data = $request->validateRule([
             'uri' => 'required',
             'method' => 'required',
-            'success' => 'required',
+            'body' => 'required',
         ])->getData();
 
         $uris = explode('/', $data['uri']);
@@ -201,14 +252,14 @@ class ApiDoc
             $data['uri'] = '/'.$uris[1].'/'.$uris[2];
         }
 
-        App::route()->getAll()[$this->app][$uris[1]]['/'.$uris[2]][$data['method']] ?? App::error()->setError($request->param('uri').'路由未注册', Error::NOT_FOUND);
+        App::make(Dispatch::class)->routes()[$this->app][$uris[1]]['/'.$uris[2]][$data['method']] ?? App::error()->setError($request->param('uri').'路由未注册', Error::NOT_FOUND);
 
         $filePath = App::runtimePath().DIRECTORY_SEPARATOR.'apidoc'.DIRECTORY_SEPARATOR.$this->app.DIRECTORY_SEPARATOR.'debug'.$data['uri'].'.'.$data['method'];
-        if(is_array($data['success'])){
-            $data['success'] = json_encode($data['success'], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
+        if(is_array($data['body'])){
+            $data['body'] = json_encode($data['body'], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
         }
         Helper::mkdirs(dirname($filePath));
-        file_put_contents($filePath, $data['success']);
+        file_put_contents($filePath, $data['body']);
         return [];
     }
 
@@ -218,6 +269,7 @@ class ApiDoc
 
     protected function getExample(string $uri, string $method){
         $file = App::runtimePath().DIRECTORY_SEPARATOR.'apidoc'.DIRECTORY_SEPARATOR.$this->app.DIRECTORY_SEPARATOR.'debug'.$uri.'.'.$method;
+        //var_dump($file);
         $data = [];
         if(file_exists($file)){
             $data = json_decode(file_get_contents($file), true);
