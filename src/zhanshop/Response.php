@@ -49,10 +49,10 @@ class Response
      * @return void
      */
     public function setHttpCode(int $code){
-        if($code > 1000){
+        if($code >= 10000){
             $this->httpCode = 417;
         }else{
-            $this->httpCode = $code < 200 ? 500 : $code;
+            $this->httpCode = ($code < 200 || $code > 505) ? 500 : $code;
         }
     }
     /**
