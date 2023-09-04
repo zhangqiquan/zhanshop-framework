@@ -179,7 +179,7 @@ class ApiDoc
         $class = new \ReflectionClass($handler[0]);
         $apiDoc = (new Annotations($class->getMethod($handler[1])->getDocComment()))->all();
         return [
-            'uri' => '/'.$version.'/'.explode('.', $uris[1])[0].'.'.$apiDoc['api']['uri'],
+            'uri' => $uri,
             'title' => $apiDoc['api']['title'],
             'description' => $apiDoc['apiDescription'],
             'method' => $method,
