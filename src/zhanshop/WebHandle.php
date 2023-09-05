@@ -113,6 +113,7 @@ class WebHandle
             $dispatch = $this->middleware($request, function (&$request) use (&$controller, &$action, &$servResponse){
                 $data = App::make($controller)->$action($request, $servResponse);
                 $servResponse->setData($data);
+                return $servResponse;
             });
 
             $dispatch($request);
