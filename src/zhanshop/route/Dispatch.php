@@ -32,8 +32,8 @@ class Dispatch
         $rule->middleware = array_reverse(array_merge($rule->middleware, App::config()->get('middleware.'.$this->app, [])));
         $middlewares = [];
         foreach($rule->middleware as $middleware){
-            $middlewares[] = function (Request &$request, \Closure &$next) use (&$middleware){
-                App::make($middleware)->handle($request, $next);
+            $middlewares[] = function (Request &$request, \Closure &$next) use ($middleware){
+                return App::make($middleware)->handle($request, $next);
             };
         }
         $rule->middleware = $middlewares;
