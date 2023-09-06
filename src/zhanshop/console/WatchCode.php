@@ -10,34 +10,36 @@ declare (strict_types=1);
 
 namespace zhanshop\console;
 
+use zhanshop\App;
+
 class WatchCode
 {
-    protected static $watchPath;
+    protected $watchPath;
     /**
      * 排除目录
      * @var string[]
      */
-    public static $excludeDir = ['vendor', 'runtime', 'public', 'test'];
+    public $excludeDir = ['vendor', 'runtime', 'public', 'test'];
 
-    protected static $hashes = [];
+    protected $hashes = [];
 
     /**
      * 监视的文件后缀
      * @var string
      */
-    public static $watchExt = 'php';
+    public $watchExt = 'php';
 
     /**
      * 初始化【像这种可能比较耗时的任务丢到Task, 还有日志的循环和写入也丢进去】
      * @param string $watchPath
      * @return int
      */
-    public static function init(string $watchPath = '.'){
-        if(self::$watchPath == false) self::$watchPath = $watchPath;
-        self::$watchPath = $watchPath;
-        $files = self::getFiles(self::$watchPath);
-        self::$hashes = array_combine($files, array_map([WatchCode::class, 'fileHash'], $files));
-        $count = count(self::$hashes);
+    public function init(string $watchPath = '.'){
+        if($this->watchPath == false) $this->watchPath = $watchPath;
+        $this->watchPath = $watchPath;
+        $files = $this->getFiles($this->watchPath);
+        $this->hashes = array_combine($files, array_map([$this, 'fileHash'], $files));
+        $count = count($this->hashes);
         return $count;
 
     }
@@ -46,22 +48,22 @@ class WatchCode
      * 是否变化
      * @return bool
      */
-    public static function isChange() :bool{
-        $files = self::getFiles(self::$watchPath);
-        $newHashes = array_combine($files, array_map([WatchCode::class, 'fileHash'], $files));
+    public function isChange() :bool{
+        $files = $this->getFiles($this->watchPath);
+        $newHashes = array_combine($files, array_map([$this, 'fileHash'], $files));
         foreach($newHashes as $k => $v){
-            if(isset(self::$hashes[$k]) == false){
+            if(isset($this->hashes[$k]) == false){
                 //echo '文件新增:'.$k.PHP_EOL;
                 // 有新增文件
                 return true;
-            }elseif (isset(self::$hashes[$k]) && self::$hashes[$k] != $v){
+            }elseif (isset($this->hashes[$k]) && $this->hashes[$k] != $v){
                 //echo '文件发生变化:'.$k.PHP_EOL;
                 // 文件发生变化
                 return true;
             }
         }
 
-        foreach(self::$hashes as $k => $v){
+        foreach($this->hashes as $k => $v){
             // 如果老的文件不在新的中被删除了
             if(isset($newHashes[$k]) == false){
                 return true;
@@ -76,7 +78,7 @@ class WatchCode
      * @param string $path
      * @return array
      */
-    protected static function getFiles(string $path){
+    protected function getFiles(string $path){
         $directory = new \RecursiveDirectoryIterator($path);
         $filter = new WatchCodeFilter($directory);
         $iterator = new \RecursiveIteratorIterator($filter);
@@ -91,7 +93,7 @@ class WatchCode
      * @param string $pathname
      * @return string
      */
-    protected static function fileHash(string $pathname): string
+    protected function fileHash(string $pathname): string
     {
         $contents = filemtime($pathname); // 拿文件最后修改时间
         if (false === $contents) {
@@ -111,11 +113,11 @@ class WatchCodeFilter extends \RecursiveFilterIterator
             if (preg_match('/^\./', $this->current()->getFilename())) {
                 return false;
             }
-            return !in_array($this->current()->getFilename(), WatchCode::$excludeDir);
+            return !in_array($this->current()->getFilename(), App::make(WatchCode::class)->excludeDir);
         }
         $list = array_map(function (string $item): string {
             return "\.$item";
-        }, explode(',', WatchCode::$watchExt.','.($_SERVER['APP_ENV'] ?? 'dev')));
+        }, explode(',', App::make(WatchCode::class)->watchExt.','.($_SERVER['APP_ENV'] ?? 'dev')));
         $list = implode('|', $list);
         $int = preg_match("/($list)$/", $this->current()->getFilename());
         return boolval($int);

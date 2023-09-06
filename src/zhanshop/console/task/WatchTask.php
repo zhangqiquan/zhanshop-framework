@@ -18,13 +18,13 @@ class WatchTask
     protected $init = false;
     public function init(){
         if($this->init == false){
-            WatchCode::init(App::rootPath());
+            App::make(WatchCode::class)->init(App::rootPath());
             $this->init = true;
         }
     }
     public function execute($serv){
         $this->init();
-        if(WatchCode::isChange()){
+        if(App::make(WatchCode::class)->isChange()){
             $this->init = false;
             $this->init();
             // 加载完新的文件变化记录

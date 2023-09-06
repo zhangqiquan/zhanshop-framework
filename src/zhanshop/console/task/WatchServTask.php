@@ -15,10 +15,10 @@ use zhanshop\Log;
 
 class WatchServTask
 {
-    protected static $init = false;
-    protected static $version = '';
+    protected $init = false;
+    protected $version = '';
 
-    protected static function version(){
+    protected function version(){
         $version = '';
         try {
             $config = include App::rootPath().DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'app.php';
@@ -29,11 +29,11 @@ class WatchServTask
         return $version;
     }
     // 记录版本
-    public static function init(){
-        if(self::$init == false){
-            self::$version = self::version();
-            WatchCode::init(App::rootPath());
-            self::$init = true;
+    public function init(){
+        if($this->init == false){
+            $this->version = $this->version();
+            App::make(WatchCode::class)->init();
+            $this->init = true;
         }
     }
 
@@ -41,13 +41,13 @@ class WatchServTask
      * @param \Swoole\Http\Server $serv
      * @return void
      */
-    public static function check(){
+    public function check(){
         clearstatcache();
-        self::init();
-        if(WatchCode::isChange()){
-            $isReload = (self::$version == self::version());
-            self::$init = false;
-            self::init();
+        $this->init();
+        if(App::make(WatchCode::class)->isChange()){
+            $isReload = ($this->version == $this->version());
+            $this->init = false;
+            $this->init();
             if($isReload){
                 Log::errorLog(SWOOLE_LOG_TRACE, '重新载入和更新工作进程'.PHP_EOL);
                 App::task()->getServer()->reload();
