@@ -246,13 +246,13 @@ class Curl
             curl_setopt($ch, CURLOPT_HTTPHEADER, $this->config['header']);//设置请求头
         }
         $httpInfo = [];
-        curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $data) use (&$url, &$callback, &$httpInfo){
+        curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $data) use (&$url, &$callback, &$httpInfo, $again){
             if($httpInfo == false){
                 $httpInfo = curl_getinfo($ch);
                 if($httpInfo['http_code'] != 200){
                     if($again){
                         $httpInfo = [];
-                        return $this->chunkedDownload($url,  $method, $data, $contentType, $report, false); // 再次尝试
+                        return $this->chunkedDownload($url, $callback,  $method, $data, $contentType, $report, false); // 再次尝试
                     }
                     App::error()->setError($url.'请求'.$httpInfo['http_code'].'错误'.',请求:'. "".',响应:'.$data, 500);
                 }
