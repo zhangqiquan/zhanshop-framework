@@ -121,7 +121,7 @@ class ApiRoute extends Command
             if($app == false){
                 App::error()->setError($class.'中无法确定app');
             }
-            $version = $classPath[4] ?? '';
+            $version = str_replace('_', '.', $classPath[4] ?? '');
             if($version == false){
                 App::error()->setError($class.'中无法确定版本号');
                 exit();
