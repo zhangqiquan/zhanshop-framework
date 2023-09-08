@@ -118,7 +118,7 @@ class ApiDoc
 
         foreach($methods as $v){
             $uris = explode('/', $v['uri']);
-            $version = $uris[0];
+            $version = str_replace('_', '.', $uris[0]);
             $fullUri = '/'.$uris[1];
 
             $route = App::make(Dispatch::class)->routes()[$this->app][$version][$fullUri][$v['method']] ?? App::error()->setError($request->param('uri').'路由未注册', Error::NOT_FOUND);
@@ -154,7 +154,7 @@ class ApiDoc
         if($uri == false) App::error()->setError('uri不能为空');
         $uri = ltrim($uri, '/');
         $uris = explode('/', $uri);
-        $version = $uris[0];
+        $version = str_replace('_', '.', $uris[0]);
         $fullUri = '/'.$uris[1];
         return [
             $version,
