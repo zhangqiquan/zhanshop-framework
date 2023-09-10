@@ -32,7 +32,7 @@ class Log
         $this->type = $type;
         if(strpos($type, '\\') === false) $type = '\\zhanshop\\log\\driver\\'.ucfirst($type);
 
-        $capacity = 1000;//App::config()->get('log.capacity', 20000);
+        $capacity = App::config()->get('log.capacity', 2000);
         $this->channel = new Channel($capacity);
         $this->dirver = new $type;
         self::$daemonize = $daemonize;
@@ -53,7 +53,7 @@ class Log
 
     public function execute(){
         // 加到2秒检查一次通道内是否有数据
-        Timer::tick(5000, function () {
+        Timer::tick(2000, function () {
             try {
                 if (!$this->channel->isEmpty()){
                     $this->dirver->write($this);
