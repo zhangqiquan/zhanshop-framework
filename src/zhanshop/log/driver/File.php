@@ -28,7 +28,6 @@ class File
     public function write(Log &$obj): bool
     {
         $message = "";
-
         while ($row = $obj->pop()){
             $message .= $row.PHP_EOL;
         }

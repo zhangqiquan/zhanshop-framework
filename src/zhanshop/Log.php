@@ -32,7 +32,7 @@ class Log
         $this->type = $type;
         if(strpos($type, '\\') === false) $type = '\\zhanshop\\log\\driver\\'.ucfirst($type);
 
-        $capacity = App::config()->get('log.capacity', 20000);
+        $capacity = 1000;//App::config()->get('log.capacity', 20000);
         $this->channel = new Channel($capacity);
         $this->dirver = new $type;
         self::$daemonize = $daemonize;
@@ -41,18 +41,23 @@ class Log
     public function push(string $msg, $level = 'INFO'){
         $msg = '['.date('Y-m-d H:i:s').']###['.$level.']###'.$msg;
         $this->channel->push($msg);
+        if($this->channel->isFull()){
+            $this->dirver->write($this);
+        }
     }
 
     public function pop(){
-        $time = 0.01;
+        $time = 0.001;
         return $this->channel->pop($time);
     }
 
     public function execute(){
-        // 0.1秒执行一次
-        Timer::tick(100, function () {
+        // 加到2秒检查一次通道内是否有数据
+        Timer::tick(5000, function () {
             try {
-                $this->dirver->write($this);
+                if (!$this->channel->isEmpty()){
+                    $this->dirver->write($this);
+                }
             }catch (\Throwable $e){
                 Error::exceptionHandler($e);
             }
