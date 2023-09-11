@@ -246,7 +246,7 @@ class Curl
             curl_setopt($ch, CURLOPT_HTTPHEADER, $this->config['header']);//设置请求头
         }
         $httpInfo = [];
-        curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $data) use (&$url, &$callback, &$httpInfo, $again){
+        curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $chunkedData) use (&$url, &$callback, $method, &$httpInfo, $data, $contentType, $report, $again){
             if($httpInfo == false){
                 $httpInfo = curl_getinfo($ch);
                 if($httpInfo['http_code'] != 200){
@@ -254,11 +254,11 @@ class Curl
                         $httpInfo = [];
                         return $this->chunkedDownload($url, $callback,  $method, $data, $contentType, $report, false); // 再次尝试
                     }
-                    App::error()->setError($url.'请求'.$httpInfo['http_code'].'错误'.',请求:'. "".',响应:'.$data, 500);
+                    App::error()->setError($url.'请求'.$httpInfo['http_code'].'错误'.',请求:'. "".',响应:'.$data);
                 }
             }
-            $callback($ch, $data);
-            return strlen($data);
+            $callback($ch, $chunkedData);
+            return strlen($chunkedData);
         });
 
         curl_exec($ch);
