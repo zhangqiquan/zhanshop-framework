@@ -24,7 +24,6 @@ class Route
             $this->rules[] = $rule;
         }else{
             $rule->single = true;
-            //App::make(Dispatch::class)->regRoute($rule);
         }
         return $rule;
     }
@@ -44,5 +43,45 @@ class Route
         $group->bindRoute($this->rules);
         $this->rules = [];
         return $group;
+    }
+
+    /**
+     * 注册grpc服务
+     * @param string $uri
+     * @param string $class
+     * @return void
+     */
+    public function grpc(string $uri, string $class){
+        $reflectionClass = new \ReflectionClass($class);
+        $methods = $reflectionClass->getMethods();
+        foreach($methods as $v){
+            $method = $v->getName();
+            $parameters = $reflectionClass->getMethod($method)->getParameters();
+            if(isset($parameters[0]) && $parameters[1]){
+                $request = $parameters[0]->getType()->getName();
+                $response = $parameters[1]->getType()->getName();
+                App::make(Dispatch::class)->regGrpc($uri.'/'.$method, [$class, $method], [$request, $response]);
+            }
+        }
+    }
+
+    /**
+     * 注册jsonRpc服务
+     * @param string $uri
+     * @param string $class
+     * @return void
+     */
+    public function jsonRpc(string $uri, string $class){
+        $reflectionClass = new \ReflectionClass($class);
+        $methods = $reflectionClass->getMethods();
+        foreach($methods as $v){
+            $method = $v->getName();
+            $parameters = $reflectionClass->getMethod($method)->getParameters();
+            if(isset($parameters[0]) && $parameters[1]){
+                $request = $parameters[0]->getType()->getName();
+                $response = $parameters[1]->getType()->getName();
+                App::make(Dispatch::class)->regJsonRpc($uri.'/'.$method, [$class, $method], [$request, $response]);
+            }
+        }
     }
 }

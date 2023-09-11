@@ -92,4 +92,56 @@ class Dispatch
     public function routes(){
         return $this->routes;
     }
+
+    protected $grpcs = [];
+
+    /**
+     * 挂载grpc路由
+     * @param string $uri
+     * @param array $handler
+     * @param array $param
+     * @return void
+     */
+    public function regGrpc(string $uri, array $handler, array $param){
+        $this->grpcs[$uri] = [
+            'handler' => $handler,
+            'param' => $param
+        ];
+    }
+
+    /**
+     * 获取grpc路由
+     * @param string $uri
+     * @return mixed
+     * @throws \Exception
+     */
+    public function getGrpc(string $uri){
+        return $this->grpcs[$uri] ?? App::error()->setError('您所访问的grpc服务不存在', Error::NOT_FOUND);
+    }
+
+    protected $jsonRpcs = [];
+
+    /**
+     * 挂载jsonRpc路由
+     * @param string $uri
+     * @param array $handler
+     * @param array $param
+     * @return void
+     */
+    public function regJsonRpc(string $uri, array $handler, array $param){
+        $this->jsonRpcs[$uri] = [
+            'handler' => $handler,
+            'param' => $param
+        ];
+    }
+
+    /**
+     * 获取jsonRpc路由
+     * @param string $uri
+     * @return mixed
+     * @throws \Exception
+     */
+    public function getJsonRpc(string $uri){
+        return $this->jsonRpcs[$uri] ?? App::error()->setError('您所访问的JsonRpc服务不存在', Error::NOT_FOUND);
+    }
 }
