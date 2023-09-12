@@ -90,7 +90,7 @@ class ServEvent
      * @return void
      */
     public function onStart(\Swoole\Server $server) :void{
-        $msg = "启动进程数".($this->config['settings']['worker_num'] ?? swoole_cpu_num()).', 线程数'.($this->config['settings']['reactor_num'] ?? swoole_cpu_num())*($this->config['settings']['worker_num'] ?? swoole_cpu_num()).', 进程'.getmypid().', swoole'.swoole_version().', 环境'.($_SERVER['APP_ENV'] ?? 'dev');
+        $msg = "启动进程数".($server->setting['worker_num']).', 线程数'.($server->setting['worker_num'] * $server->setting['reactor_num']).', 进程'.getmypid().', swoole'.swoole_version().', 环境'.($_SERVER['APP_ENV'] ?? 'dev');
         Log::errorLog(SWOOLE_LOG_NOTICE, $msg);
         App::make(Robot::class)->send($msg);
     }

@@ -68,8 +68,6 @@ class Server extends Command
         ],
         // 定时任务是在子进程启动之后就开始执行【定时任务不受reload影响，需要restart后生效】
         'crontab' => [
-            //WatchServCronTab::class,
-            WatchLogCronTab::class,
         ]
     ];
 
@@ -333,15 +331,18 @@ class Server extends Command
             $this->listenProtocol($v);
         }
         // 用户进程的生存周期与 Master 和 Manager 是相同的，不会受到 reload 影响 修改定时任务啥的需要重启
-        $process = new \Swoole\Process(function ($process) use ($server) {
-            $process->set(['enable_coroutine' => true]);
-            App::task($server);
-            foreach($this->config['crontab'] as $v){
-                App::make(Timer::class)->register(new $v($server)); // 根据配置执行定时任务
-            }
-            //echo PHP_EOL.'['.date('Y-m-d H:i:s').']' .' ###[info]### 定时任务启动, 进程'.getmypid().PHP_EOL.PHP_EOL;
-        }, false, 2, true);
-        $server->addProcess($process);
+        if($this->config['crontab']){
+            // 当存在定时任务的时候才会启动定时任务进程
+            $process = new \Swoole\Process(function ($process) use ($server) {
+                $process->set(['enable_coroutine' => true]);
+                App::task($server);
+                foreach($this->config['crontab'] as $v){
+                    App::make(Timer::class)->register(new $v($server)); // 根据配置执行定时任务
+                }
+                //echo PHP_EOL.'['.date('Y-m-d H:i:s').']' .' ###[info]### 定时任务启动, 进程'.getmypid().PHP_EOL.PHP_EOL;
+            }, false, 2, true);
+            $server->addProcess($process);
+        }
 
         $server->start();
     }
