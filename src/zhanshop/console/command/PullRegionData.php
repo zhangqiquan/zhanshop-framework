@@ -58,8 +58,8 @@ class PullRegionData extends Command
                 }catch (\Throwable $e){
                     file_put_contents($this->regionDir.'/error-province.log', $k); // 记录错误位置
                     echo '【发生错误】 '.date('Y-m-d H:i:s').' '.$e->getMessage().PHP_EOL;
-                    sleep(300);
                     echo "\n=============5分钟后将进行重试=============\n";
+                    sleep(300);
                     $this->execute($input, $output);
                 }
             }
