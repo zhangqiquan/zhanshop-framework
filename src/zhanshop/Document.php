@@ -13,12 +13,56 @@ class Document
         $this->outHTML = [$outHTML];
     }
 
-    public function getElementById(){
-
+    /**
+     * 获取id
+     * @param string $idName
+     * @return $this
+     */
+    public function getElementById(string $idName){
+        $allMatches = [];
+        foreach($this->outHTML as $html){
+            $pattern = '/<([a-zA-Z]+) [^<>]*id="'.$className.'".*>/iUs'; // 加上U之后它只匹配了每个的第一个值
+            if(preg_match($pattern, $html, $matches)){
+                $label = $matches[1];
+                if(in_array($label, self::selfCloseLabel)){
+                    $pattern = '/<'.$label.' [^<>]*id=["|\']'.$className.'[^<>]*>(.*)'.'>/iUs';
+                    preg_match_all($pattern, $html, $matches);
+                    $allMatches = array_merge($allMatches, $matches[0]);
+                }else{
+                    $pattern = '/<'.$label.' [^<>]*id=["|\']'.$className.'[^<>]*>(.*)<\/'.$label.'>/iUs'; // 没有s会导致匹配失败
+                    preg_match_all($pattern, $html, $matches);
+                    $allMatches = array_merge($allMatches, $matches[0]);
+                }
+            }
+        }
+        $this->outHTML = $allMatches;
+        return $this;
     }
 
-    public function getElementsByName(){
-
+    /**
+     * 获取name
+     * @param string $name
+     * @return $this
+     */
+    public function getElementsByName(string $name){
+        $allMatches = [];
+        foreach($this->outHTML as $html){
+            $pattern = '/<([a-zA-Z]+) [^<>]*name="'.$className.'".*>/iUs'; // 加上U之后它只匹配了每个的第一个值
+            if(preg_match($pattern, $html, $matches)){
+                $label = $matches[1];
+                if(in_array($label, self::selfCloseLabel)){
+                    $pattern = '/<'.$label.' [^<>]*name=["|\']'.$className.'[^<>]*>(.*)'.'>/iUs';
+                    preg_match_all($pattern, $html, $matches);
+                    $allMatches = array_merge($allMatches, $matches[0]);
+                }else{
+                    $pattern = '/<'.$label.' [^<>]*name=["|\']'.$className.'[^<>]*>(.*)<\/'.$label.'>/iUs'; // 没有s会导致匹配失败
+                    preg_match_all($pattern, $html, $matches);
+                    $allMatches = array_merge($allMatches, $matches[0]);
+                }
+            }
+        }
+        $this->outHTML = $allMatches;
+        return $this;
     }
 
     /**
