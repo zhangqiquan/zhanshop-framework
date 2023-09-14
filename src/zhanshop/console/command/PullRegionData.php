@@ -47,8 +47,9 @@ class PullRegionData extends Command
         $allA = $document->getElementsByClassName("provincetr")->getElementsByTagName('a');
         $texts = $allA->innerText();
         $hrefs = $allA->getAttribute('href');
-
         $prefix = dirname($this->url);
+        if($texts == false) App::error()->setError("获取省份信息失败！！！\n\n拉取结果：".$body);
+        echo "\n=============【注意拉取过程中可能会由于网络或服务限制发生错误需要多次重试执行】=============\n";
         foreach ($texts as $k => $v){
             if($k >= $errorProvince){
                 try {
@@ -57,10 +58,13 @@ class PullRegionData extends Command
                 }catch (\Throwable $e){
                     file_put_contents($this->regionDir.'/error-province.log', $k); // 记录错误位置
                     echo '【发生错误】 '.date('Y-m-d H:i:s').' '.$e->getMessage().PHP_EOL;
-                    die;
+                    sleep(300);
+                    echo "\n=============5分钟后将进行重试=============\n";
+                    $this->execute($input, $output);
                 }
             }
         }
+        echo "\n=============结束=============\n";
     }
 
     /**
@@ -79,6 +83,7 @@ class PullRegionData extends Command
         $document = new Document($html);
         $allA = $document->getElementsByClassName('citytr')->getElementsByTagName('a');
         $allAData = $allA->toArray();
+        if($allAData == false) App::error()->setError("获取城市信息失败！！！\n\n拉取结果：".$html);
         foreach($allAData as $k => $v){
             if($k % 2 != 0){
                 $cityCode = strip_tags($allAData[$k - 1]);
@@ -109,6 +114,7 @@ class PullRegionData extends Command
         $document = new Document($html);
         $allA = $document->getElementsByClassName('countytr')->getElementsByTagName('a');
         $allAData = $allA->toArray();
+        if($allAData == false) App::error()->setError("获取区县信息失败！！！\n\n拉取结果：".$html);
         foreach($allAData as $k => $v){
             if($k % 2 != 0){
                 $countyCode = strip_tags($allAData[$k - 1]);
@@ -135,6 +141,7 @@ class PullRegionData extends Command
         $document = new Document($html);
         $allA = $document->getElementsByClassName('towntr')->getElementsByTagName('a');
         $allAData = $allA->toArray();
+        if($allAData == false) App::error()->setError("获取街镇信息失败！！！\n\n拉取结果：".$html);
         foreach($allAData as $k => $v){
             if($k % 2 != 0){
                 $townCode = strip_tags($allAData[$k - 1]);
@@ -161,6 +168,7 @@ class PullRegionData extends Command
         $document = new Document($html);
         $allTd = $document->getElementsByClassName('villagetr')->getElementsByTagName('td');
         $allTdData = $allTd->toArray();
+        if($allTdData == false) App::error()->setError("获取居村委信息失败！！！\n\n拉取结果：".$html);
         foreach($allTdData as $k => $v){
             if(($k + 1) % 3 == 0){
                 $villageCode = strip_tags($allTdData[$k - 2]);
