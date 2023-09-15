@@ -121,7 +121,7 @@ class PullRegionData extends Command
             if(strpos($html, 'class="towntr"') || strpos($html, "class='towntr'")){
                 return $this->getTown($regionData, $url);
             }
-            App::error()->setError("获取区县信息失败！！！\n\n拉取结果：".$html);
+            App::error()->setError($url."获取区县信息失败！！！\n\n拉取结果：".$html);
         }
         foreach($allAData as $k => $v){
             if($k % 2 != 0){
