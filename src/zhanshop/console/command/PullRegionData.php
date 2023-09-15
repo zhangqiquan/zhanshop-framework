@@ -59,7 +59,7 @@ class PullRegionData extends Command
                     file_put_contents($this->regionDir.'/error-province.log', $k); // 记录错误位置
                     echo '【发生错误】 '.date('Y-m-d H:i:s').' '.$e->getMessage().PHP_EOL;
                     echo "\n=============5分钟后将进行重试=============\n";
-                    sleep(300);
+                    sleep(601);
                     $this->execute($input, $output);
                 }
             }
@@ -114,7 +114,13 @@ class PullRegionData extends Command
         $document = new Document($html);
         $allA = $document->getElementsByClassName('countytr')->getElementsByTagName('a');
         $allAData = $allA->toArray();
-        if($allAData == false) App::error()->setError("获取区县信息失败！！！\n\n拉取结果：".$html);
+        if($allAData == false){
+            // 验证里面是否包镇标识
+            if(strpos($html, 'class="towntr"') || strpos($html, "class='towntr'")){
+                return $this->getTown($regionData, $url);
+            }
+            App::error()->setError("获取区县信息失败！！！\n\n拉取结果：".$html);
+        }
         foreach($allAData as $k => $v){
             if($k % 2 != 0){
                 $countyCode = strip_tags($allAData[$k - 1]);
