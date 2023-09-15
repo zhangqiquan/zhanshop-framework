@@ -55,6 +55,7 @@ class PullRegionData extends Command
                 try {
                     echo PHP_EOL.$v.PHP_EOL;
                     $this->getCitys($v, $prefix.'/'.$hrefs[$k]);
+                    file_put_contents($this->regionDir.'/error-province.log', $k); // 记录位置
                 }catch (\Throwable $e){
                     file_put_contents($this->regionDir.'/error-province.log', $k); // 记录错误位置
                     echo '【发生错误】 '.date('Y-m-d H:i:s').' '.$e->getMessage().PHP_EOL;
@@ -64,6 +65,7 @@ class PullRegionData extends Command
                 }
             }
         }
+        file_put_contents($this->regionDir.'/error-province.log', 999999999); // 记录位置
         echo "\n=============结束=============\n";
     }
 
