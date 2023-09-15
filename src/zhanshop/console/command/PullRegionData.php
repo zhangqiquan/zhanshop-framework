@@ -90,13 +90,16 @@ class PullRegionData extends Command
             if($k % 2 != 0){
                 $cityCode = strip_tags($allAData[$k - 1]);
                 $cityName = strip_tags($v);
-                $childUrl = $prefix.'/'.(new Document($v))->getAttribute('href');
+                $href = (new Document($v))->getAttribute('href'); // 雄安新区是个另类
                 $regionData[$cityCode] = [
                     'code' => $cityCode,
                     'name' => $cityName,
                 ];
                 echo $cityName.PHP_EOL;
-                $this->getCounty($regionData[$cityCode], $childUrl);
+                if($href){
+                    $childUrl = $prefix.'/'.$href;
+                    $this->getCounty($regionData[$cityCode], $childUrl);
+                }
             }
         }
         file_put_contents($this->regionDir.'/'.$provincialName.'.json', json_encode($regionData, JSON_UNESCAPED_UNICODE));

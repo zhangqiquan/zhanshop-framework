@@ -1,7 +1,24 @@
 <?php
 
 namespace zhanshop;
-
+/**
+元字符	说明
+[a-z]	匹配任何包含小写字母a-z的字符串
+[A-Z]	匹配任何包含大写字母A-Z的字符串
+[0-9]	匹配任何包含0-9的字符串
+[abc]	匹配任何包含小写字母a,b,c的字符串
+[^abc]	匹配任何不包含小写字母a,b,c的字符串
+[a-zA-Z0-9_]	匹配任何包含a-zA-Z0-9和下划线的字符串
+\w	匹配任何包含a-zA-Z0-9和下划线的字符串
+\W	匹配任何不包含a-zA-Z0-9和下划线的字符串
+\d	匹配任何包含数字字符
+\D	匹配任何非数字字符
+\s	匹配任何空白字符
+\S	匹配任何非空白字符
+\b	匹配是否到达了单词边界
+\B	匹配没有到达了单词边界
+\	匹配正则中的特殊字符
+ */
 class Document
 {
     const selfCloseLabel = ['br', 'hr', 'area', 'base', 'img', 'input', 'link', 'meta', 'param', 'col', 'colgroup', 'command', 'frame', 'embed', 'keygen', 'source'];
@@ -137,6 +154,20 @@ class Document
         }
         if(count($allMatches) == 1) return $allMatches[0];
         return $allMatches;
+    }
+
+    /**
+     * 替换属性
+     * @param string $name
+     * @param string $val
+     * @return void
+     */
+    public function setAttribute(string $name, string $val){
+        $allMatches = [];
+        $pattern = '/'.$name.'=[\'|"](.*)[\'|"]/iUs'; // 记得给或加上中括号
+        foreach($this->outHTML as $k => $html){
+            $this->outHTML[$k] = preg_replace($pattern,$name.'="'.$val.'"', $html);
+        }
     }
 
     /**
