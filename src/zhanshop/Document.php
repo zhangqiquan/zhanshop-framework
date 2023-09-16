@@ -92,15 +92,15 @@ class Document
     public function getElementsByName(string $name){
         $allMatches = [];
         foreach($this->outHTML as $html){
-            $pattern = '/<([a-zA-Z]+) [^<>]*name="'.$className.'".*>/iUs'; // 加上U之后它只匹配了每个的第一个值
+            $pattern = '/<([a-zA-Z]+) [^<>]*name="'.$name.'".*>/iUs'; // 加上U之后它只匹配了每个的第一个值
             if(preg_match($pattern, $html, $matches)){
                 $label = $matches[1];
                 if(in_array($label, self::selfCloseLabel)){
-                    $pattern = '/<'.$label.' [^<>]*name=["|\']'.$className.'[^<>]*>(.*)'.'>/iUs';
+                    $pattern = '/<'.$label.' [^<>]*name=["|\']'.$name.'[^<>]*>(.*)'.'>/iUs';
                     preg_match_all($pattern, $html, $matches);
                     $allMatches = array_merge($allMatches, $matches[0]);
                 }else{
-                    $pattern = '/<'.$label.' [^<>]*name=["|\']'.$className.'[^<>]*>(.*)<\/'.$label.'>/iUs'; // 没有s会导致匹配失败
+                    $pattern = '/<'.$label.' [^<>]*name=["|\']'.$name.'[^<>]*>(.*)<\/'.$label.'>/iUs'; // 没有s会导致匹配失败
                     preg_match_all($pattern, $html, $matches);
                     $allMatches = array_merge($allMatches, $matches[0]);
                 }
