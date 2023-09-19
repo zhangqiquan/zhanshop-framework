@@ -160,4 +160,17 @@ class App extends Container
     public static function routePath(){
         return self::$routePath;
     }
+
+    /**
+     * 获取cpu个数
+     * @return int
+     */
+    public static function cpuNum(){
+        $cpuNum = 1;
+        // 检查扩展是否存在
+        if(extension_loaded('swoole')){
+            $cpuNum = swoole_cpu_num();
+        }
+        return $cpuNum;
+    }
 }
