@@ -57,7 +57,7 @@ class Error extends \Error
      * @return void
      */
     public static function exceptionHandler(\Throwable $exception){
-        Log::errorLog(SWOOLE_LOG_ERROR, $exception->getMessage().PHP_EOL.
+        Log::errorLog(5, $exception->getMessage().PHP_EOL.
             $exception->getFile().':'.$exception->getLine().PHP_EOL.
             $exception->getTraceAsString()
         );
@@ -71,7 +71,7 @@ class Error extends \Error
         // 无法提前捕获的错误
         $error = error_get_last();
         if(isset($error['message'])){
-            Log::errorLog(SWOOLE_LOG_ERROR, $error['message']);
+            Log::errorLog(5, $error['message']);
         }
 
     }
