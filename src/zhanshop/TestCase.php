@@ -38,9 +38,13 @@ class TestCase extends \PHPUnit\Framework\TestCase
     protected function runTest() : mixed
     {
         $data = null;
-        \Swoole\Coroutine\run(function() use (&$data){
+        if(extension_loaded('swoole')){
+            \Swoole\Coroutine\run(function() use (&$data){
+                $data = $this->{$this->name()}();
+            });
+        }else{
             $data = $this->{$this->name()}();
-        });
+        }
         return $data;
     }
 

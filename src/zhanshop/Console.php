@@ -66,7 +66,9 @@ class Console{
      * Http constructor.
      */
     public function __construct(){
-        Coroutine::set(['hook_flags'=> SWOOLE_HOOK_ALL]);
+        if(extension_loaded('swoole')){
+            Coroutine::set(['hook_flags'=> SWOOLE_HOOK_ALL]);
+        }
         $this->init(); // 初始化操作
     }
 
