@@ -291,7 +291,7 @@ class Mysql
         $val = [];
         foreach ($bind as $k => $v){
             $key[] = ':'.$k;
-            $val[] = is_string($v) ?  '"'.$v.'"': $v;
+            $val[] = is_string($v) ?  '"'.addslashes($v).'"': $v;
         }
         $sql = str_replace($key, $val, $sql);
         return $sql;

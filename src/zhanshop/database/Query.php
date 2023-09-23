@@ -54,9 +54,10 @@ class Query
         return '('.$this->builder->buildSql($this).')';
     }
 
-    public function fetchSql(string $field = "*"){
-        $this->options['field'] = $field;
-        return $this->builder->buildSql($this);
+    public function fetchSql(){
+        $this->options['field'] = '*';
+        $this->options['fetch_sql'] = true;
+        return $this;
     }
 
     /**
@@ -142,11 +143,21 @@ class Query
     }
 
     public function whereIn(string $key, array $array){
+        foreach($array as $k => $v){
+            if(is_string($v)){
+                $array[$k] = addslashes($v);
+            }
+        }
         $this->options['where']['In'][$key] = $array;
         return $this;
     }
 
     public function whereNotIn(string $key, array $array){
+        foreach($array as $k => $v){
+            if(is_string($v)){
+                $array[$k] = addslashes($v);
+            }
+        }
         $this->options['where']['NotIn'][$key] = $array;
         return $this;
     }
@@ -298,11 +309,29 @@ class Query
 
 
     public function query(string $sql, array $bind = [], mixed $pdo = null){
+        // // 如果是fetchSql
+        if(isset($this->options['fetch_sql'])){
+            var_dump();
+        }
+        unset($this->options['fetch_sql']);
         $pdoPoll = DbManager::get($this->connection);
         return $pdoPoll->query($sql, $bind, $pdo);
     }
 
     public function execute(string $sql, array $bind = [], bool $lastID = false, mixed $pdo = null){
+        if(isset($this->options['fetch_sql'])){
+            $keys = [];
+            $vals = [];
+            foreach($bind as $k => $v){
+                $keys[] = ':'.$k;
+                $vals[] = is_string($v) ? '"'.addslashes($v).'"' : $v;
+            }
+            $sql = str_replace($keys, $vals, $sql);
+            unset($this->options['fetch_sql']);
+            return $sql;
+        }
+        // 如果是fetchSql
+
         $pdoPoll = DbManager::get($this->connection);
         return (float) $pdoPoll->execute($sql, $bind, $lastID, $pdo);
     }
