@@ -311,9 +311,16 @@ class Query
     public function query(string $sql, array $bind = [], mixed $pdo = null){
         // // 如果是fetchSql
         if(isset($this->options['fetch_sql'])){
-            var_dump();
+            $keys = [];
+            $vals = [];
+            foreach($bind as $k => $v){
+                $keys[] = ':'.$k;
+                $vals[] = is_string($v) ? '"'.addslashes($v).'"' : $v;
+            }
+            $sql = str_replace($keys, $vals, $sql);
+            unset($this->options['fetch_sql']);
+            return $sql;
         }
-        unset($this->options['fetch_sql']);
         $pdoPoll = DbManager::get($this->connection);
         return $pdoPoll->query($sql, $bind, $pdo);
     }
