@@ -40,8 +40,13 @@ class Elasticsearch
         $this->client = $client->build();
     }
 
-    public function index(string $name){
+    protected function __client(){
+
+    }
+
+    public function indexName(string $name){
         $this->options['index'] = $name;
+        sleep(10);
         return $this;
     }
 
@@ -50,7 +55,7 @@ class Elasticsearch
      * @param array $data
      * @return void
      */
-    public function create(array $data){
+    public function createIndex(array $data){
         $client->indices()->create($this->options['index'], $data);
         $this->options = [];
     }
@@ -66,7 +71,7 @@ class Elasticsearch
     public function insert(array $data){
         $this->options['id'] = Helper::orderId();
         $this->options['body'] = $data;
-        $this->client->index($this->options);
+        $this->index(['body' => $saveAll]);
         $this->options = [];
     }
 
@@ -82,14 +87,19 @@ class Elasticsearch
             ];
             $saveAll[] = $v;
         }
-        $this->client->bulk(['body' => $saveAll]);
+        $this->bulk(['body' => $saveAll]);
         $this->options = [];
     }
 
 
     public function __call(string $name, array $arguments)
     {
-        return $this->client->$name(...$arguments);
+        try {
+            return $this->$name(...$arguments);
+        }catch (\Throwable $e){
+            print_r($e);
+        }
+
     }
 
 }
