@@ -93,8 +93,8 @@ declare (strict_types=1);\n\n";
      * @param $suffix
      * @return string
      */
-    public static function orderId($suffix = false){
-        $ip = str_replace('.','',$_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');//9位
+    public static function orderId($suffix = false, $ip = '127.0.0.1'){
+        $ip = str_replace('.','',$ip);//9位
         if(is_numeric($ip) == false){
             $ip = '127001';
         }
