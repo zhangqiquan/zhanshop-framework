@@ -235,4 +235,15 @@ declare (strict_types=1);\n\n";
         $date = self::getWeek1($date);
         return date('Y-m-d', strtotime('+6 day', strtotime($date)));
     }
+
+    /**
+     * 清除所有标点符号
+     * @param string $str
+     * @return array|string|string[]|null
+     */
+    public static function clearSymbol(string $str){
+        $pattern = '/[[:punct:]]+/u';
+        $replacement = '';
+        return preg_replace($pattern, "", $str);
+    }
 }
