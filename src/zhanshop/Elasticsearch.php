@@ -48,6 +48,30 @@ class Elasticsearch
     }
 
     /**
+     * 使用sql查询
+     * @param string $sql
+     * @return array
+     * @throws \Elastic\Elasticsearch\Exception\ClientResponseException
+     * @throws \Elastic\Elasticsearch\Exception\ServerResponseException
+     */
+    public function query(string $sql){
+        $body = [
+            'body' => [
+                'query' => $sql, // 只能使用区间搜索分页
+            ],
+        ];
+        $data = [];
+        $resp = $this->client->sql()->query($body)->asArray();
+
+        foreach($resp['rows'] as $k => $v){
+            foreach($v as $kk => $vv){
+                $data[$k][$resp['columns'][$kk]['name']] = $vv;
+            }
+        }
+        return $data;
+    }
+
+    /**
      * 设置es操作索引
      * @param string $name
      * @return $this
@@ -57,53 +81,12 @@ class Elasticsearch
         return $this;
     }
 
-    /**
-     * 条件
-     * @param array $data
-     * @return void
-     */
-    public function where(string $field, string $condition, string $value){
-        $this->options['where'][] = [$field, $condition, $value];
-        return $this;
-    }
-
-    public function count(string $field = '*'){
-
-    }
-
-    public function avg(string $field){
-
-    }
-
-    public function max(string $field){
-
-    }
-
-    public function min(string $field){
-
-    }
-
-    public function sum(string $field){
-
-    }
-
-    public function find(){
-
-    }
-
-    public function select(){
-
-    }
-
-    public function order(string $order){
-        $this->options['order'][] = $order;
-    }
 
     /**
      * 获取请求参数
      * @return array
      */
-    protected function requestParam(){
+    /*protected function requestParam(){
         $params = [
             'index' => $this->options['table'],
             'body'  => []
@@ -122,29 +105,14 @@ class Elasticsearch
                     $params['body']['query']['bool']['should'][] = [
                         'wildcard' => [$v[0] => '*'.$v[2].'*']
                     ];
+                }else if($v[1] == '='){
+                    $params['body']['query']['match'][$v[0]] = $v[2];
                 }
             }
         }
         return $params;
-    }
+    }*/
 
-    public function finder(int $page = 1, int $limit = 20){
-        $offset = ($page - 1) * $limit;
-        $page--;
-        // 字符串字段不支持排序
-        $params = $this->requestParam();
-        $params['from'] = $page;
-        $params['size'] = $limit;
-        $response = $this->client->search($params);
-        return [
-            'list' => $response['hits']['hits'],
-            'total' => $response['hits']['total']['value'],
-        ];
-    }
-
-    public function column(string $field, string $key){
-
-    }
 
     /**
      * 插入单条
@@ -184,14 +152,41 @@ class Elasticsearch
         $this->options = [];
     }
 
+    /**
+     * 更新
+     * @param array $data
+     * @param int $id
+     * @return array
+     * @throws \Elastic\Elasticsearch\Exception\ClientResponseException
+     * @throws \Elastic\Elasticsearch\Exception\MissingParameterException
+     * @throws \Elastic\Elasticsearch\Exception\ServerResponseException
+     */
+    public function update(array $data, int $id){
+        $params = [
+            'index' => $this->options['table'],
+            'id' => $id,
+            'body' => [
+                'doc' => $data,
+            ],
+        ];
 
-    public function __call(string $name, array $arguments)
-    {
-        try {
-            return $this->client->$name(...$arguments);
-        }catch (\Throwable $e){
-            App::error()->setError($e->getMessage());
-        }
+        return $this->client->update($params)->asArray();
     }
 
+    /**
+     * 删除
+     * @param int $id
+     * @return array
+     * @throws \Elastic\Elasticsearch\Exception\ClientResponseException
+     * @throws \Elastic\Elasticsearch\Exception\MissingParameterException
+     * @throws \Elastic\Elasticsearch\Exception\ServerResponseException
+     */
+    public function delete(int $id){
+        $params = [
+            'index' => $this->options['table'],
+            'id' => $id
+        ];
+
+        return $this->client->delete($params)->asArray();
+    }
 }
