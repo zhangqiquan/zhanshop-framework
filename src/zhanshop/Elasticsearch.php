@@ -15,7 +15,6 @@ class Elasticsearch
     public function __construct()
     {
         $connection = App::config()->get('elasticsearch.connection');
-
         $client = ClientBuilder::create();
         $hosts = [];
         foreach($connection['host'] as $v){
@@ -40,24 +39,111 @@ class Elasticsearch
         $this->client = $client->build();
     }
 
-    protected function __client(){
-
+    /**
+     * 原始连接
+     * @return Client|mixed
+     */
+    public function client(){
+        return $this->client;
     }
 
-    public function indexName(string $name){
-        $this->options['index'] = $name;
-        sleep(10);
+    /**
+     * 设置es操作索引
+     * @param string $name
+     * @return $this
+     */
+    public function table(string $name){
+        $this->options['table'] = $name;
         return $this;
     }
 
     /**
-     * 创建索引
+     * 条件
      * @param array $data
      * @return void
      */
-    public function createIndex(array $data){
-        $client->indices()->create($this->options['index'], $data);
-        $this->options = [];
+    public function where(string $field, string $condition, string $value){
+        $this->options['where'][] = [$field, $condition, $value];
+        return $this;
+    }
+
+    public function count(string $field = '*'){
+
+    }
+
+    public function avg(string $field){
+
+    }
+
+    public function max(string $field){
+
+    }
+
+    public function min(string $field){
+
+    }
+
+    public function sum(string $field){
+
+    }
+
+    public function find(){
+
+    }
+
+    public function select(){
+
+    }
+
+    public function order(string $order){
+        $this->options['order'][] = $order;
+    }
+
+    /**
+     * 获取请求参数
+     * @return array
+     */
+    protected function requestParam(){
+        $params = [
+            'index' => $this->options['table'],
+            'body'  => []
+        ];
+
+        if(isset($this->options['order'])){
+            foreach($this->options['order'] as $v){
+                $arr = explode(' ', $v);
+                $params['body']['sort']['should'] = [];
+            }
+        }
+
+        if(isset($this->options['where'])){
+            foreach($this->options['where'] as $v){
+                if($v[1] == 'like'){
+                    $params['body']['query']['bool']['should'][] = [
+                        'wildcard' => [$v[0] => '*'.$v[2].'*']
+                    ];
+                }
+            }
+        }
+        return $params;
+    }
+
+    public function finder(int $page = 1, int $limit = 20){
+        $offset = ($page - 1) * $limit;
+        $page--;
+        // 字符串字段不支持排序
+        $params = $this->requestParam();
+        $params['from'] = $page;
+        $params['size'] = $limit;
+        $response = $this->client->search($params);
+        return [
+            'list' => $response['hits']['hits'],
+            'total' => $response['hits']['total']['value'],
+        ];
+    }
+
+    public function column(string $field, string $key){
+
     }
 
     /**
@@ -69,25 +155,32 @@ class Elasticsearch
      * @throws \Elastic\Elasticsearch\Exception\ServerResponseException
      */
     public function insert(array $data){
-        $this->options['id'] = Helper::orderId();
-        $this->options['body'] = $data;
-        $this->index(['body' => $saveAll]);
+        $saveData = [];
+        $saveData['id'] = Helper::orderId();
+        $saveData['index'] = $this->options['table'];
+        $saveData['body'] = $data;
         $this->options = [];
+        return $this->client->index($saveData)->asArray();
     }
 
+    /**
+     * 批量插入
+     * @param array $data
+     * @return void
+     */
     public function insertAll(array $data){
         $saveAll = [];
         foreach($data as $k => $v){
             $orderId = Helper::orderId((string)$k);
             $saveAll[] = [
                 'index' => [
-                    '_index' => $this->options['index'],
+                    '_index' => $this->options['table'],
                     '_id' => $orderId
                 ],
             ];
             $saveAll[] = $v;
         }
-        $this->bulk(['body' => $saveAll]);
+        $this->client->bulk(['body' => $saveAll]);
         $this->options = [];
     }
 
@@ -95,11 +188,10 @@ class Elasticsearch
     public function __call(string $name, array $arguments)
     {
         try {
-            return $this->$name(...$arguments);
+            return $this->client->$name(...$arguments);
         }catch (\Throwable $e){
-            print_r($e);
+            App::error()->setError($e->getMessage());
         }
-
     }
 
 }
