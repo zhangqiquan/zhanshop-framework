@@ -16,6 +16,7 @@ class Curl
         'cookie' => '',
         'timeout' => 60000,
         'header' => [],
+        'opts' => [],
         'upload' => [], // 上传对象
         'useragent' => 'Mozilla/5.0 (Windows NT 11.0; Win64; x64; rv:96.0) Gecko/20100101 Firefox/96.0',
         'ipresolve' => 1,
@@ -23,6 +24,17 @@ class Curl
         'maxredirs' => 3, // 最大跳转次数
         'encodeng' => 'gzip', // 解压编码
     ];
+
+    /**
+     * 更新curl参数
+     * @param int $key
+     * @param mixed $val
+     * @return $this
+     */
+    public function setopt(int $key, mixed $val){
+        $this->config['opt'][$key] = $val;
+        return $this;
+    }
 
     /**
      * 设置curl请求超时时间
@@ -145,7 +157,7 @@ class Curl
      * @param array $data
      * @return bool|string
      */
-    public function request(string $url, string $method = 'GET', string|array $data = [], $contentType = '', bool $report = false, bool $again = true){
+    public function request(string $url, string $method = 'GET', string|array $data = [], bool $report = false, bool $again = true){
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method); //设置请求方式
@@ -163,8 +175,6 @@ class Curl
             curl_setopt($ch, CURLOPT_POSTFIELDS, $this->config['upload']);
         }
 
-        if($contentType) $this->config['header'][] = 'Content-Type'.':'.$contentType;
-
         curl_setopt($ch, CURLOPT_REFERER, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // 跟踪爬取重定向页面302 redirect
@@ -179,6 +189,11 @@ class Curl
         if($this->config['header']){
             curl_setopt($ch, CURLOPT_HTTPHEADER, $this->config['header']);//设置请求头
         }
+
+        foreach ($this->config['opts'] as $k => $v){
+            curl_setopt($ch, $k, $v);
+        }
+
         $output = curl_exec($ch);
         $curlInfo = curl_getinfo($ch);
         $httpCode = $curlInfo['http_code'];
@@ -186,7 +201,7 @@ class Curl
         // 如果发生错误打印错误报告
         if($httpCode != 200){
             if($again){
-                return self::request($url,  $method, $data, $contentType, $report, false); // 再次尝试
+                return self::request($url,  $method, $data, $report, false); // 再次尝试
             }
             App::error()->setError($url.'请求'.$httpCode.'错误'.',请求:'. "".',响应:'.$output, 500);
         }

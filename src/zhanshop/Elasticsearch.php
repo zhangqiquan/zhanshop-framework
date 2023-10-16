@@ -7,46 +7,25 @@ use Elastic\Elasticsearch\ClientBuilder;
 
 class Elasticsearch
 {
-    /**
-     * @var Client
-     */
-    protected mixed $client;
+    protected $baseUrl = "";
     protected $options = [];
     public function __construct()
     {
+        // http://elastic:zhangqiquan123@127.0.0.1:9200/_cat/indices
         $connection = App::config()->get('elasticsearch.connection');
-
-        $client = ClientBuilder::create();
-        $hosts = [];
-        foreach($connection['host'] as $v){
-            $hosts[] = $connection['scheme'].'://'.$v.':'.$connection['port'];
-        }
-        $client->setHosts($hosts);
+        $auth = '';
         if($connection['user'] && $connection['pass']){
-            $client->setBasicAuthentication($connection['user'], $connection['pass']);
+            $auth = $connection['user'].':'.$connection['pass'].'@';
         }
-
-        if($connection['crt'] && file_exists($connection['crt'])){
-            $client->setCABundle($connection['crt']);
-        }
-
-        if($connection['key']){
-            $client->setApiKey($connection['key']);
-        }
-
-        if($connection['cloud']){
-            $client->setElasticCloudId($connection['cloud']);
-        }
-        $this->client = $client->build();
+        $this->baseUrl = $connection['scheme'].'://'.$auth.$connection['host'][0].':'.$connection['port']; // 暂时仅执行用户和密码
     }
 
-    protected function __client(){
-
+    public function client(){
+        return $this->client;
     }
 
     public function indexName(string $name){
         $this->options['index'] = $name;
-        sleep(10);
         return $this;
     }
 
@@ -71,8 +50,11 @@ class Elasticsearch
     public function insert(array $data){
         $this->options['id'] = Helper::orderId();
         $this->options['body'] = $data;
-        $this->index(['body' => $saveAll]);
-        $this->options = [];
+
+        $curl = new Curl();
+        $curl->setHeader('Content-Type', 'application/json');
+        $ret = $curl->request($this->baseUrl.'/'.$this->options['index'].'/_doc/'.Helper::orderId().'?pretty', 'POST', $data);
+        return json_decode($ret['body'], true);
     }
 
     public function insertAll(array $data){
@@ -87,19 +69,9 @@ class Elasticsearch
             ];
             $saveAll[] = $v;
         }
-        $this->bulk(['body' => $saveAll]);
+
         $this->options = [];
-    }
-
-
-    public function __call(string $name, array $arguments)
-    {
-        try {
-            return $this->$name(...$arguments);
-        }catch (\Throwable $e){
-            print_r($e);
-        }
-
+        $this->client->bulk(['body' => $saveAll])->asArray();
     }
 
 }
