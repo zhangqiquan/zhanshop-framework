@@ -48,7 +48,7 @@ class Elasticsearch
     }
 
     /**
-     * 使用sql查询
+     * 使用sql查询【仅限查询 不会返回_index, _id等字段】
      * @param string $sql
      * @return array
      * @throws \Elastic\Elasticsearch\Exception\ClientResponseException
@@ -61,8 +61,8 @@ class Elasticsearch
             ],
         ];
         $data = [];
+        $this->client->sql()->query($body);
         $resp = $this->client->sql()->query($body)->asArray();
-
         foreach($resp['rows'] as $k => $v){
             foreach($v as $kk => $vv){
                 $data[$k][$resp['columns'][$kk]['name']] = $vv;
@@ -169,7 +169,6 @@ class Elasticsearch
                 'doc' => $data,
             ],
         ];
-
         return $this->client->update($params)->asArray();
     }
 
@@ -188,5 +187,22 @@ class Elasticsearch
         ];
 
         return $this->client->delete($params)->asArray();
+    }
+
+    /**
+     * 删除表
+     * @param string $table
+     * @return void
+     */
+    public function drop(string $table){
+        $params = [
+            'index' => $table,
+        ];
+        try {
+            return $this->client->indices()->delete($params)->asArray();
+        }catch (\Throwable $e){
+            return $e->getMessage();
+        }
+
     }
 }
