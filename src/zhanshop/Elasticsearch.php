@@ -15,7 +15,7 @@ class Elasticsearch
         $connection = App::config()->get('elasticsearch.connection');
         $auth = '';
         if($connection['user'] && $connection['pass']){
-            $auth = $connection['user'].':'.$connection['pass'].'@';
+            //$auth = $connection['user'].':'.$connection['pass'].'@';
         }
         $this->baseUrl = $connection['scheme'].'://'.$auth.$connection['host'][0].':'.$connection['port']; // 暂时仅执行用户和密码
     }
@@ -52,8 +52,11 @@ class Elasticsearch
         $this->options['body'] = $data;
 
         $curl = new Curl();
+        $curl->setopt(CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+        $curl->setopt(CURLOPT_USERPWD, 'elastic:zhangqiquan123');
         $curl->setHeader('Content-Type', 'application/json');
-        $ret = $curl->request($this->baseUrl.'/'.$this->options['index'].'/_doc/'.Helper::orderId().'?pretty', 'POST', $data);
+        //var_dump($this->baseUrl.'/'.$this->options['index'].'/_doc/'.Helper::orderId().'?pretty');die;
+        $ret = $curl->request($this->baseUrl.'/'.$this->options['index'].'/_doc/'.Helper::orderId().'?pretty', 'GET');
         return json_decode($ret['body'], true);
     }
 
