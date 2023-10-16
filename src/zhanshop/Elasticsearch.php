@@ -8,6 +8,7 @@ use Elastic\Elasticsearch\ClientBuilder;
 class Elasticsearch
 {
     protected $baseUrl = "";
+    protected $userPwd = "";
     protected $options = [];
     public function __construct()
     {
@@ -15,9 +16,9 @@ class Elasticsearch
         $connection = App::config()->get('elasticsearch.connection');
         $auth = '';
         if($connection['user'] && $connection['pass']){
-            //$auth = $connection['user'].':'.$connection['pass'].'@';
+            $this->userPwd = $connection['user'].':'.$connection['pass'];
         }
-        $this->baseUrl = $connection['scheme'].'://'.$auth.$connection['host'][0].':'.$connection['port']; // 暂时仅执行用户和密码
+        $this->baseUrl = $connection['scheme'].'://'.$connection['host'][0].':'.$connection['port'];
     }
 
     public function client(){
@@ -52,29 +53,41 @@ class Elasticsearch
         $this->options['body'] = $data;
 
         $curl = new Curl();
-        $curl->setopt(CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-        $curl->setopt(CURLOPT_USERPWD, 'elastic:zhangqiquan123');
+        if($this->userPwd) $curl->setopt(CURLOPT_USERPWD, $this->userPwd);
         $curl->setHeader('Content-Type', 'application/json');
-        //var_dump($this->baseUrl.'/'.$this->options['index'].'/_doc/'.Helper::orderId().'?pretty');die;
-        $ret = $curl->request($this->baseUrl.'/'.$this->options['index'].'/_doc/'.Helper::orderId().'?pretty', 'GET');
+        $ret = $curl->request($this->baseUrl.'/'.$this->options['index'].'/_doc/'.Helper::orderId().'?pretty', 'POST', $data);
         return json_decode($ret['body'], true);
     }
 
+    /**
+     * 插入多条
+     * @param array $data
+     * @return mixed
+     */
     public function insertAll(array $data){
-        $saveAll = [];
+        $saveAll = "";
         foreach($data as $k => $v){
             $orderId = Helper::orderId((string)$k);
-            $saveAll[] = [
+            $save = [
                 'index' => [
                     '_index' => $this->options['index'],
+                    //'_type' => '_doc',
                     '_id' => $orderId
                 ],
             ];
-            $saveAll[] = $v;
+            $saveAll .= json_encode($save)."\n";
+            $saveAll .= json_encode($v)."\n";
+            //$saveAll[] = $v;
         }
-
+        $saveAll .= "\r\n";
         $this->options = [];
-        $this->client->bulk(['body' => $saveAll])->asArray();
+        $curl = new Curl();
+        if($this->userPwd) $curl->setopt(CURLOPT_USERPWD, $this->userPwd);
+        $curl->setHeader('Content-Type', 'application/json');
+
+        //print_r($saveAll);die;
+        $ret = $curl->request($this->baseUrl.'/_bulk', 'POST', $saveAll, 'POST');
+        return json_decode($ret['body'], true);
     }
 
 }

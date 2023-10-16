@@ -32,7 +32,7 @@ class Curl
      * @return $this
      */
     public function setopt(int $key, mixed $val){
-        $this->config['opt'][$key] = $val;
+        $this->config['opts'][$key] = $val;
         return $this;
     }
 
@@ -159,6 +159,10 @@ class Curl
      */
     public function request(string $url, string $method = 'GET', string|array $data = [], bool $report = false, bool $again = true){
         $ch = curl_init();
+        foreach ($this->config['opts'] as $k => $v){
+            curl_setopt($ch, $k, $v);
+        }
+
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method); //设置请求方式
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
@@ -190,9 +194,6 @@ class Curl
             curl_setopt($ch, CURLOPT_HTTPHEADER, $this->config['header']);//设置请求头
         }
 
-        foreach ($this->config['opts'] as $k => $v){
-            curl_setopt($ch, $k, $v);
-        }
 
         $output = curl_exec($ch);
         $curlInfo = curl_getinfo($ch);
