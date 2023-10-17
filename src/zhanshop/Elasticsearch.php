@@ -237,9 +237,7 @@ class Elasticsearch
      * 请求参数组合AND
      * @return array
      */
-    protected function getQueryAndParam(){
-        $params = [];
-
+    protected function getQueryAndParam(array &$params){
         if(isset($this->options['where'])){
             foreach($this->options['where'] as $v){
                 if($v[1] == 'like'){
@@ -248,18 +246,18 @@ class Elasticsearch
                     ];
                 }else if($v[1] == '='){
                     $params['match'][$v[0]] = $v[2];
+                }else if($v[1] == 'in'){
+                    $params['terms'][$v[0]] = $v[2];
                 }
             }
         }
-        return $params;
     }
 
     /**
      * 请求参数组合OR
      * @return array
      */
-    protected function getQueryORParam(){
-        $params = [];
+    protected function getQueryORParam(array &$params){
         if(isset($this->options['whereOr'])){
             foreach($this->options['whereOr'] as $v){
 
@@ -276,23 +274,19 @@ class Elasticsearch
                 }
             }
         }
-        return $params;
     }
 
     /**
      * 获取排序参数
      * @return array
      */
-    protected function getOrderParam(){
-        $params = [];
-
+    protected function getOrderParam(array &$params){
         if(isset($this->options['order'])){
             foreach($this->options['order'] as $v){
                 $arr = explode(' ', $v);
-                $params['sort']['should'] = [];
+                $params['sort']['should'] = [$arr[0] => $arr[1]];
             }
         }
-        return $params;
     }
 
     /**
@@ -306,21 +300,17 @@ class Elasticsearch
         $offset = ($page - 1) * $limit;
         $page--;
         // 字符串字段不支持排序
-        $params = [];
+        $params = ['query' => []];
         $params['from'] = $page;
         $params['size'] = $limit;
 
-        if($query = $this->getQueryAndParam()){
-            $params['query'] = $query;
-        }
+        $this->getQueryAndParam($params['query']);
 
-        if($query = $this->getQueryORParam()){
-            $params['query'] = $params['query'] ?? [] + $query;
-        }
+        $this->getQueryORParam($params['query']);
 
-        if($order = $this->getOrderParam()){
-            $params['query'] = $params['query'] ?? [] + $order;
-        }
+        $this->getOrderParam($params['query']);
+
+        if($params['query'] == false) unset($params['query']);
 
         print_r($params);
         $this->options = [];
