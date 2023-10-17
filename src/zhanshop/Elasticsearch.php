@@ -212,6 +212,18 @@ class Elasticsearch
     }
 
     /**
+     * 或条件
+     * @param string $field
+     * @param string $condition
+     * @param mixed $value
+     * @return $this
+     */
+    public function whereOr(string $field, string $condition, mixed $value){
+        $this->options['whereOr'][] = [$field, $condition, $value];
+        return $this;
+    }
+
+    /**
      * 排序值
      * @param string $order
      * @return void
@@ -222,7 +234,7 @@ class Elasticsearch
     }
 
     /**
-     * 请求参数组合
+     * 请求参数组合AND
      * @return array
      */
     protected function getQueryAndParam(){
@@ -236,6 +248,31 @@ class Elasticsearch
                     ];
                 }else if($v[1] == '='){
                     $params['match'][$v[0]] = $v[2];
+                }
+            }
+        }
+        return $params;
+    }
+
+    /**
+     * 请求参数组合OR
+     * @return array
+     */
+    protected function getQueryORParam(){
+        $params = [];
+        if(isset($this->options['whereOr'])){
+            foreach($this->options['whereOr'] as $v){
+
+                if($v[1] == 'like'){
+                    $params['bool']['should'][] = [
+                        'wildcard' => [$v[0] => '*'.$v[2].'*']
+                    ];
+                }else if($v[1] == '='){
+                    $params['bool']['should'][] = [
+                        'match' => [
+                            $v[0] => $v[2],
+                        ],
+                    ];
                 }
             }
         }
@@ -275,6 +312,10 @@ class Elasticsearch
 
         if($query = $this->getQueryAndParam()){
             $params['query'] = $query;
+        }
+
+        if($query = $this->getQueryORParam()){
+            $params['query'] = $params['query'] ?? [] + $query;
         }
 
         if($order = $this->getOrderParam()){
