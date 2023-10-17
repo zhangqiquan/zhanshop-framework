@@ -202,21 +202,92 @@ class Elasticsearch
     }
 
     /**
+     * 条件
+     * @param array $data
+     * @return void
+     */
+    public function where(string $field, string $condition, mixed $value){
+        $this->options['where'][] = [$field, $condition, $value];
+        return $this;
+    }
+
+    /**
+     * 排序值
+     * @param string $order
+     * @return void
+     */
+    public function order(string $order){
+        $this->options['order'][] = $order;
+        return $this;
+    }
+
+    /**
+     * 请求参数组合
+     * @return array
+     */
+    protected function getQueryAndParam(){
+        $params = [];
+
+        if(isset($this->options['where'])){
+            foreach($this->options['where'] as $v){
+                if($v[1] == 'like'){
+                    $params['bool']['should'][] = [
+                        'wildcard' => [$v[0] => '*'.$v[2].'*']
+                    ];
+                }else if($v[1] == '='){
+                    $params['match'][$v[0]] = $v[2];
+                }
+            }
+        }
+        return $params;
+    }
+
+    /**
+     * 获取排序参数
+     * @return array
+     */
+    protected function getOrderParam(){
+        $params = [];
+
+        if(isset($this->options['order'])){
+            foreach($this->options['order'] as $v){
+                $arr = explode(' ', $v);
+                $params['sort']['should'] = [];
+            }
+        }
+        return $params;
+    }
+
+    /**
      * 分页查询
      * @param int $page
      * @param in $limit
      * @return void
      */
     public function finder(int $page = 1, int $limit = 20){
+        $url = $this->baseUrl.'/'.$this->options['index'].'/_search';
+        $offset = ($page - 1) * $limit;
+        $page--;
+        // 字符串字段不支持排序
+        $params = [];
+        $params['from'] = $page;
+        $params['size'] = $limit;
 
-    }
+        if($query = $this->getQueryAndParam()){
+            $params['query'] = $query;
+        }
 
-    /**
-     * 查询条件
-     * @return void
-     */
-    public function where(){
+        if($order = $this->getOrderParam()){
+            $params['query'] = $params['query'] ?? [] + $order;
+        }
 
+        print_r($params);
+        $this->options = [];
+        $curl = new Curl();
+        if($this->userPwd) $curl->setopt(CURLOPT_USERPWD, $this->userPwd);
+        $curl->setHeader('Content-Type', 'application/json');
+        $ret = $curl->request($url, 'POST', $params);
+        return json_decode($ret['body'], true);
     }
 
     /**
