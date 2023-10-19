@@ -241,8 +241,9 @@ class Elasticsearch
         if(isset($this->options['where'])){
             foreach($this->options['where'] as $v){
                 if($v[1] == 'like'){
+                    $field = is_int($v[2]) ?  $v[0] : $v[0].'.keyword';
                     $params['bool']['should'][] = [
-                        'wildcard' => [$v[0] => '*'.$v[2].'*']
+                        'wildcard' => [$field => '*'.$v[2].'*']
                     ];
                 }else if($v[1] == '='){
                     $field = is_int($v[2]) ?  $v[0] : $v[0].'.keyword';
@@ -250,6 +251,16 @@ class Elasticsearch
                 }else if($v[1] == 'in'){
                     $field = is_int($v[2][0]) ?  $v[0] : $v[0].'.keyword';
                     $params['bool']['must'][]['terms'][$field] = $v[2];
+                }else if($v[1] == '!='){
+                    $field = is_int($v[2]) ?  $v[0] : $v[0].'.keyword';
+                    $params['bool']['must_not'][]['terms'][$field] = $v[2];
+                }else if($v[1] == 'not in'){
+                    $field = is_int($v[2][0]) ?  $v[0] : $v[0].'.keyword';
+                    $params['bool']['must_not'][]['terms'][$field] = $v[2];
+                }else{
+                    // 大于等于 小于等于 不等于 range
+                    $arr = [">=" => 'gte', '>' => 'gt', '<=' => 'lte', '<' => 'lt'];
+                    $params['bool']['must'][]['range'][$v[0]][$arr[$v[1]] ?? App::error()->setError($v[1].'不支持的操作符')] = $v[2];
                 }
             }
         }
