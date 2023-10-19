@@ -245,9 +245,11 @@ class Elasticsearch
                         'wildcard' => [$v[0] => '*'.$v[2].'*']
                     ];
                 }else if($v[1] == '='){
-                    $params['match'][$v[0]] = $v[2];
+                    $field = is_int($v[2]) ?  $v[0] : $v[0].'.keyword';
+                    $params['bool']['must'][]['term'][$field] = $v[2];
                 }else if($v[1] == 'in'){
-                    $params['terms'][$v[0]] = $v[2];
+                    $field = is_int($v[2][0]) ?  $v[0] : $v[0].'.keyword';
+                    $params['bool']['must'][]['terms'][$field] = $v[2];
                 }
             }
         }
@@ -284,7 +286,7 @@ class Elasticsearch
         if(isset($this->options['order'])){
             foreach($this->options['order'] as $v){
                 $arr = explode(' ', $v);
-                $params['sort']['should'] = [$arr[0] => $arr[1]];
+                $params['sort'][$arr[0]] = ['order' => $arr[1]];
             }
         }
     }
@@ -308,7 +310,7 @@ class Elasticsearch
 
         $this->getQueryORParam($params['query']);
 
-        $this->getOrderParam($params['query']);
+        $this->getOrderParam($params);
 
         if($params['query'] == false) unset($params['query']);
 
