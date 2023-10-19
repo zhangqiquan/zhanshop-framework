@@ -329,38 +329,6 @@ class Elasticsearch
 
         if($params['query'] == false) unset($params['query']);
 
-        print_r($params);
-        $this->options = [];
-        $curl = new Curl();
-        if($this->userPwd) $curl->setopt(CURLOPT_USERPWD, $this->userPwd);
-        $curl->setHeader('Content-Type', 'application/json');
-        $ret = $curl->request($url, 'POST', $params);
-        return json_decode($ret['body'], true);
-    }
-
-    /**
-     * 聚合查询
-     * @param string $field
-     * @return void
-     */
-    public function avg(string $field){
-        $url = $this->baseUrl.'/'.$this->options['index'].'/_search';
-        $offset = ($page - 1) * $limit;
-        $page--;
-        // 字符串字段不支持排序
-        $params = ['query' => []];
-        $params['from'] = $page;
-        $params['size'] = $limit;
-
-        $this->getQueryAndParam($params['query']);
-
-        $this->getQueryORParam($params['query']);
-
-        $this->getOrderParam($params);
-
-        if($params['query'] == false) unset($params['query']);
-
-        print_r($params);
         $this->options = [];
         $curl = new Curl();
         if($this->userPwd) $curl->setopt(CURLOPT_USERPWD, $this->userPwd);
@@ -397,11 +365,62 @@ class Elasticsearch
     }
 
     /**
-     * 更新条件删除
+     * 查询并删除
      * @return void
      */
     public function delete(){
-        // 根据条件删除
+        $url = $this->baseUrl.'/'.$this->options['index'].'/_delete_by_query';
+        $params = ['query' => []];
+
+        $this->getQueryAndParam($params['query']);
+
+        $this->getQueryORParam($params['query']);
+
+        if($params['query'] == false) unset($params['query']);
+
+        $this->options = [];
+        $curl = new Curl();
+        if($this->userPwd) $curl->setopt(CURLOPT_USERPWD, $this->userPwd);
+        $curl->setHeader('Content-Type', 'application/json');
+        $ret = $curl->request($url, 'POST', $params);
+        return json_decode($ret['body'], true);
+    }
+
+    /**
+     * 查询并更新
+     * @return mixed
+     */
+    public function update(array $data){
+        $url = $this->baseUrl.'/'.$this->options['index'].'/_update_by_query?conflicts=proceed&wait_for_completion=false';
+        $params = ['query' => []];
+
+        $this->getQueryAndParam($params['query']);
+
+        $this->getQueryORParam($params['query']);
+
+        if($params['query'] == false) unset($params['query']);
+
+        $source = "";
+        foreach($data as $k => $v){
+            if(is_int($k)){
+                $source .= 'ctx._source.'.$v.';';
+            }else{
+                $source .= "ctx._source.{$k} = '".$v."';";
+            }
+        }
+        $source = rtrim($source, ';');
+
+        $params['script'] = [
+            'source' => $source,
+            'lang' => 'painless',
+        ];
+
+        $this->options = [];
+        $curl = new Curl();
+        if($this->userPwd) $curl->setopt(CURLOPT_USERPWD, $this->userPwd);
+        $curl->setHeader('Content-Type', 'application/json');
+        $ret = $curl->request($url, 'POST', $params);
+        return json_decode($ret['body'], true);
     }
 
 }
