@@ -339,12 +339,61 @@ class Elasticsearch
     }
 
     /**
+     * 聚合查询
+     * @param string $field
+     * @return void
+     */
+    public function avg(string $field){
+        $url = $this->baseUrl.'/'.$this->options['index'].'/_search';
+        $offset = ($page - 1) * $limit;
+        $page--;
+        // 字符串字段不支持排序
+        $params = ['query' => []];
+        $params['from'] = $page;
+        $params['size'] = $limit;
+
+        $this->getQueryAndParam($params['query']);
+
+        $this->getQueryORParam($params['query']);
+
+        $this->getOrderParam($params);
+
+        if($params['query'] == false) unset($params['query']);
+
+        print_r($params);
+        $this->options = [];
+        $curl = new Curl();
+        if($this->userPwd) $curl->setopt(CURLOPT_USERPWD, $this->userPwd);
+        $curl->setHeader('Content-Type', 'application/json');
+        $ret = $curl->request($url, 'POST', $params);
+        return json_decode($ret['body'], true);
+    }
+
+    /**
      * 执行sql
      * @param string $sql
      * @return void
      */
     public function query(string $sql){
-
+        //POST /_sql?format=txt
+        $url = $this->baseUrl.'/_sql?format=json';
+        // 字符串字段不支持排序
+        $params = ['query' => $sql];
+        $this->options = [];
+        $curl = new Curl();
+        if($this->userPwd) $curl->setopt(CURLOPT_USERPWD, $this->userPwd);
+        $curl->setHeader('Content-Type', 'application/json');
+        $ret = $curl->request($url, 'POST', $params);
+        $ret = json_decode($ret['body'], true);
+        $data = [];
+        foreach($ret['rows'] as $vals){
+            $row = [];
+            foreach($vals as $k => $v){
+                $row[$ret['columns'][$k]['name']] = $v;
+            }
+            $data[] = $row;
+        }
+        return $data;
     }
 
     /**
