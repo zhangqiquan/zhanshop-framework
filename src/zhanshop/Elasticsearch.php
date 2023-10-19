@@ -242,7 +242,7 @@ class Elasticsearch
             foreach($this->options['where'] as $v){
                 if($v[1] == 'like'){
                     $field = is_int($v[2]) ?  $v[0] : $v[0].'.keyword';
-                    $params['bool']['should'][] = [
+                    $params['bool']['must'][] = [
                         'wildcard' => [$field => '*'.$v[2].'*']
                     ];
                 }else if($v[1] == '='){
@@ -273,17 +273,21 @@ class Elasticsearch
     protected function getQueryORParam(array &$params){
         if(isset($this->options['whereOr'])){
             foreach($this->options['whereOr'] as $v){
-
                 if($v[1] == 'like'){
+                    $field = is_int($v[2]) ?  $v[0] : $v[0].'.keyword';
                     $params['bool']['should'][] = [
-                        'wildcard' => [$v[0] => '*'.$v[2].'*']
+                        'wildcard' => [$field => '*'.$v[2].'*']
                     ];
                 }else if($v[1] == '='){
-                    $params['bool']['should'][] = [
-                        'match' => [
-                            $v[0] => $v[2],
-                        ],
-                    ];
+                    $field = is_int($v[2]) ?  $v[0] : $v[0].'.keyword';
+                    $params['bool']['should'][]['term'][$field] = $v[2];
+                }else if($v[1] == 'in'){
+                    $field = is_int($v[2][0]) ?  $v[0] : $v[0].'.keyword';
+                    $params['bool']['should'][]['terms'][$field] = $v[2];
+                }else{
+                    // 大于等于 小于等于 不等于 range
+                    $arr = [">=" => 'gte', '>' => 'gt', '<=' => 'lte', '<' => 'lt'];
+                    $params['bool']['should'][]['range'][$v[0]][$arr[$v[1]] ?? App::error()->setError($v[1].'不支持的操作符')] = $v[2];
                 }
             }
         }
