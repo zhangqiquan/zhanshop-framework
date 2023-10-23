@@ -12,6 +12,18 @@ use zhanshop\Response;
 class Gitee
 {
     protected  $pullBranch = 'master';
+
+    protected  $pullAuth = 'zhangqiquan';
+
+    public function __construct()
+    {
+        $pullAuth = App::env()->get('GIT_KEY', '');
+        if($pullAuth) $this->pullAuth = $pullAuth;
+
+        $pullBranch = App::env()->get('GIT_BRANCH', '');
+        if($pullBranch) $this->pullBranch = $pullBranch;
+    }
+
     /**
      * 获取事件
      * @param string $hookName
@@ -27,7 +39,7 @@ class Gitee
     }
 
     public function verify(string $auth){
-        $gitKey = App::env()->get('GIT_KEY', 'zhangqiquan');
+
         if($auth != $gitKey){
             App::error()->setError("认证失败", Error::FORBIDDEN);
         }
@@ -68,7 +80,7 @@ class Gitee
      */
     public function push(Request &$request, Response &$response){
         $arr = $data ?? [];
-        //$this->verify();
+        $this->verify();
         error_log(print_r($request->param(), true), 3, App::runtimePath().'/gitee.log');
     }
 }
