@@ -14,8 +14,8 @@ class Git
      * @param Response $response
      * @return void
      */
-    public function push(Request &$request, Response &$response){
-        $type = '\\zhanshop\\service\\git\\'.strtoupper($request->get('type'));
+    public function call(Request &$request, Response &$response){
+        $type = '\\zhanshop\\service\\git\\'.strtoupper($request->get('type', "other"));
         $obj = new $type();
         return $obj->push($request, $response);
     }

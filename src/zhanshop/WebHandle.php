@@ -15,6 +15,7 @@ use zhanshop\cache\CacheManager;
 use zhanshop\database\DbManager;
 use zhanshop\route\Dispatch;
 use zhanshop\service\ApiDoc;
+use zhanshop\service\Git;
 
 class WebHandle
 {
@@ -63,7 +64,7 @@ class WebHandle
             App::route()->rule('GET', '/api.doc', [ApiDoc::class, 'call'])->extra([$v]);
             App::route()->rule('POST', '/api.doc', [ApiDoc::class, 'call'])->extra([$v]);
 
-            App::route()->rule('POST', '/git.push', [ApiDoc::class, 'call'])->extra([$v]);
+            App::route()->rule('POST', '/git.push', [Git::class, 'call'])->extra([$v]);
         }
     }
 
