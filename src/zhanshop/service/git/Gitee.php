@@ -40,7 +40,7 @@ class Gitee
 
     public function verify(string $auth){
 
-        if($auth != $gitKey){
+        if($auth != $this->pullAuth){
             App::error()->setError("认证失败", Error::FORBIDDEN);
         }
     }
