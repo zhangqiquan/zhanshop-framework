@@ -79,8 +79,8 @@ class Gitee
      * @return void
      */
     public function push(Request &$request, Response &$response){
-        $arr = $data ?? [];
-        $this->verify();
-        error_log(print_r($request->param(), true), 3, App::runtimePath().'/gitee.log');
+        $auth = $request->get("auth");
+        $this->verify($auth);
+        $this->handle($request->param());
     }
 }
