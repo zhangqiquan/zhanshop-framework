@@ -267,7 +267,7 @@ class ServEvent
                 Log::errorLog(SWOOLE_LOG_ERROR,'投递的task必须是一个数组');
             }
             $action = $task->data['callback'][1];
-            App::make($task->data['callback'][0])->$action($task->data['value']);
+            App::make($task->data['callback'][0])->$action(...$task->data['value']);
         }catch (\Throwable $e){
             Log::errorLog(SWOOLE_LOG_ERROR,'task出错 '.$e->getMessage().PHP_EOL.'#@ '.$e->getFile().':'.$e->getLine().PHP_EOL.$e->getTraceAsString().PHP_EOL);
         }

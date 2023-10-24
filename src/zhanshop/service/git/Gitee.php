@@ -81,6 +81,6 @@ class Gitee
     public function push(Request &$request, Response &$response){
         $auth = $request->get("auth");
         $this->verify($auth);
-        $this->handle($request->param());
+        $this->handle($request->post());
     }
 }
