@@ -34,6 +34,8 @@ class Gitee
     protected function getEvent(string $hookName, bool $create, bool $delete){
         if($hookName == 'push_hooks'){
             return 'push';
+        }else if($hookName == 'tag_push_hooks'){
+            return 'tag';
         }
         return 'other';
     }

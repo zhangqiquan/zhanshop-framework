@@ -167,7 +167,7 @@ class Query
         return $this;
     }
 
-    public function insert(array $data, mixed $pdo = null) :float{
+    public function insert(array $data, mixed $pdo = null){
         if (!empty($data)) {
             $this->options['data'][] = $data;
             $sql = $this->builder->insert($this);
