@@ -305,7 +305,7 @@ class ServEvent
      * @return void
      */
     public function onPacket(\Swoole\Server $server, string $data, array $clientInfo) :void{
-
+        $server->sendto($clientInfo['address'], $clientInfo['port'], "1");
     }
 
     /**

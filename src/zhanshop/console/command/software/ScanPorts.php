@@ -100,7 +100,7 @@ class ScanPorts extends Command
     }
 
     public function scan(string $ip, int $port){
-        $status = self::check($ip, $port);
+        $status = self::checkTcp($ip, $port);
         $description = $this->portDescription[$port] ?? '未知端口用途';
         $length = 8 - mb_strlen((string)$port);
         $port = str_repeat(' ', $length).$port;
@@ -113,8 +113,15 @@ class ScanPorts extends Command
         }
     }
 
-    public static function check(string $ip, int $port, $protocol = SOL_TCP){
-        $sock = socket_create(AF_INET, SOCK_STREAM, $protocol);
+    /**
+     * 检查tcp端口是否开放
+     * @param string $ip
+     * @param int $port
+     * @return false|int
+     */
+    public static function checkTcp(string $ip, int $port){
+
+        $sock = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
 
         socket_set_option($sock,SOL_SOCKET,SO_RCVTIMEO, array("sec" => 0, "usec"=> 300000) );
         socket_set_option($sock,SOL_SOCKET,SO_SNDTIMEO, array("sec" => 0, "usec"=> 300000) );
@@ -129,4 +136,29 @@ class ScanPorts extends Command
         return($status);
     }
 
+    /**
+     * 检查udp是否开放并有响应
+     * @param string $ip
+     * @param int $port
+     * @return false|int
+     */
+    public static function checkUdp(string $ip, int $port){
+        $sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+        socket_set_option($sock,SOL_SOCKET,SO_RCVTIMEO, array("sec" => 0, "usec"=> 300000) );
+        socket_set_option($sock,SOL_SOCKET,SO_SNDTIMEO, array("sec" => 0, "usec"=> 300000) );
+        $data = "1";
+
+        // 发送失败
+        if(socket_sendto($sock, $data, strlen($data), 0, $ip, $port) === false){
+            return 0;
+        }
+
+        // 接收失败
+        if(socket_recvfrom($sock, $data, 1024, 0, $ip, $port) === false){
+            return 0;
+        }
+
+        socket_close($sock);
+        return 1;
+    }
 }

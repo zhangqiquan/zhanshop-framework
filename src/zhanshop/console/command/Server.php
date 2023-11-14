@@ -12,6 +12,7 @@ namespace zhanshop\console\command;
 
 use zhanshop\App;
 use zhanshop\console\Command;
+use zhanshop\console\command\software\ScanPorts;
 use zhanshop\console\crontab\WatchLogCronTab;
 use zhanshop\console\Input;
 use zhanshop\console\Output;
@@ -207,6 +208,28 @@ class Server extends Command
     }
 
     /**
+     * 检查服务端口是否被占用
+     * @return bool
+     */
+    protected function isUsePort(){
+        foreach($this->config['servers'] as $server){
+            $host = $server['host'];
+            $port = $server['port'];
+            $servType = $server['serv_type'];
+            if($servType == 2){
+                if(ScanPorts::checkUdp($host, $port) == 1){
+                    return true; // 被占用
+                }
+            }else{
+                if(ScanPorts::checkTcp($host, $port) == 1){
+                    return true; // 被占用
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
      * 服务事件绑定
      * @param \Swoole\Server $server
      * @param $callbacks
@@ -311,7 +334,8 @@ class Server extends Command
      */
     public function start(){
 
-        if($this->isRuning()){
+        // 并且检查端口是否被占用
+        if($this->isRuning() && $this->isUsePort()){
             return $this->output->output("程序已在运行...", 'info');
         }
         $server = null;
