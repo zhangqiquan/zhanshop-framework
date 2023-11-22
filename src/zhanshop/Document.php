@@ -184,16 +184,19 @@ class Document
                     if($mateHtml[$k]['body'] == false ||  $startLabelCount != $endLabelCount){
                         $rowHtml = str_replace([" ", "\r", "\n"], "", $vv);
                         $vv = str_replace('<---ZHANSHOP###分割符号--->', '', $vv);
-                        if(strpos($rowHtml, '<---ZHANSHOP###分割符号--->') === 0){
+                        $strpos = strpos($rowHtml, '<---ZHANSHOP###分割符号--->');
+                        if($strpos === 0){
                             $mateHtml[$k]['body'] .= $v['end'] ? '</'.$v['end'].'>' : "";
                             if(substr_count($mateHtml[$k]['body'], '<'.$v['end']) == substr_count($mateHtml[$k]['body'], '</'.$v['end'].'>')){
                                 break;
                             }
                             $mateHtml[$k]['body'] .= $vv;
                             // 先统计一下 如果满了就跳出
-                        }else{
+                        }else if($strpos > 0){
                             $mateHtml[$k]['body'] .= $vv;
                             $mateHtml[$k]['body'] .= $v['end'] ? '</'.$v['end'].'>' : "";
+                        }else{
+                            $mateHtml[$k]['body'] .= $vv;
                         }
                     }
                 }
