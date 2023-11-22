@@ -134,33 +134,76 @@ class Document
     /**
      * 获取class的数据
      * @param $className
-     * @return string[]|\string[][]
+     * @param $isPattern
+     * @return array
      */
-    /**
-     * 获取class的数据
-     * @param $className
-     * @return $this
-     */
-    public function getElementsByClassName($className){
+    public function getElementsByClassName($className, $isPattern = false){
         $allMatches = [];
         foreach($this->outHTML as $html){
-            $pattern = '/<([a-zA-Z]+) [^<>]*class="'.$className.'".*>/iUs'; // 加上U之后它只匹配了每个的第一个值
-            if(preg_match($pattern, $html, $matches)){
-                $label = $matches[1];
-                if(in_array($label, self::selfCloseLabel)){
-                    $pattern = '/<'.$label.' [^<>]*class=["|\']'.$className.'[^<>]*>(.*)'.'>/iUs';
-                    preg_match_all($pattern, $html, $matches);
-                    $allMatches = array_merge($allMatches, $matches[0]);
+            $pattern = '/<([a-zA-Z0-9_]+) [^<>]*class="(\S*)(\s*)'.$className.'(.*)".*>/iUs';  // 字母 空格 [匹配任意字符除<>]0个多个 // U 禁止贪婪匹配
+            if($isPattern) $pattern = $className;
+            preg_match_all($pattern, $html, $matches);
+            $labelCount = count($matches[0]);
+            $startLabel = array_unique($matches[0]);
+
+            $mateHtml = [];
+            foreach($startLabel as $k => $v){
+                // 判断他是否是单行标签
+                //var_dump($v);
+                preg_match("/<([a-zA-Z0-9_]+)/is", $v, $matche);
+                $tagName = $matche[1];
+                if(in_array($tagName, self::selfCloseLabel)){
+                    $mateHtml[] = [
+                        'start' => $v,
+                        'body' => $v,
+                        'end' => ""
+                    ];
                 }else{
-                    $pattern = '/<'.$label.' [^<>]*class=["|\']'.$className.'[^<>]*>(.*)<\/'.$label.'>/iUs'; // 没有s会导致匹配失败
-                    preg_match_all($pattern, $html, $matches);
-                    $allMatches = array_merge($allMatches, $matches[0]);
+                    $arr = explode($v, $html);
+                    unset($arr[0]);
+                    foreach($arr as $vv){
+                        $mateHtml[] = [
+                            'start' => $v,
+                            'body' => $v.$vv,
+                            'end' => $matches[1][$k]
+                        ];
+                    }
+                }
+
+            }
+
+            foreach($mateHtml as $k => $v){
+                $body = $v['body'];
+                $body = str_replace('</'.$v['end'].'>', '</'.$v['end'].'>'.'<---ZHANSHOP###分割符号--->', $body);
+                //print_r($body);
+                $arr = explode('</'.$v['end'].'>', $body);
+                $mateHtml[$k]['body'] = "";
+                foreach($arr as $kk => $vv){
+                    $startLabelCount = substr_count($mateHtml[$k]['body'], '<'.$v['end']);
+                    $endLabelCount = substr_count($mateHtml[$k]['body'], '</'.$v['end'].'>');
+                    if($mateHtml[$k]['body'] == false ||  $startLabelCount != $endLabelCount){
+                        $rowHtml = str_replace([" ", "\r", "\n"], "", $vv);
+                        $vv = str_replace('<---ZHANSHOP###分割符号--->', '', $vv);
+                        if(strpos($rowHtml, '<---ZHANSHOP###分割符号--->') === 0){
+                            $mateHtml[$k]['body'] .= $v['end'] ? '</'.$v['end'].'>' : "";
+                            if(substr_count($mateHtml[$k]['body'], '<'.$v['end']) == substr_count($mateHtml[$k]['body'], '</'.$v['end'].'>')){
+                                break;
+                            }
+                            $mateHtml[$k]['body'] .= $vv;
+                            // 先统计一下 如果满了就跳出
+                        }else{
+                            $mateHtml[$k]['body'] .= $vv;
+                            $mateHtml[$k]['body'] .= $v['end'] ? '</'.$v['end'].'>' : "";
+                        }
+                    }
                 }
             }
+            $allMatches = array_merge($allMatches, $mateHtml);
         }
-        $this->outHTML = $allMatches;
-        return $this;
+        return $allMatches;
     }
+
+
 
     /**
      * 获取包含自身的html
