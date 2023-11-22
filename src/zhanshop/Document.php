@@ -107,9 +107,9 @@ class Document
                     }
                 }
             }
-            $allMatches = array_merge($allMatches, $mateHtml);
+            $allMatches[] = $mateHtml;
         }
-        $this->outHTML = $allMatches;
+        $this->outHTML = array_column($allMatches, 'body');
         return $this;
     }
 
@@ -234,7 +234,7 @@ class Document
             }
             $allMatches = array_merge($allMatches, $mateHtml);
         }
-        $this->outHTML = $allMatches;
+        $this->outHTML = array_column($allMatches, 'body');
         return $this;
     }
 
