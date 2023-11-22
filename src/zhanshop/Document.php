@@ -121,7 +121,7 @@ class Document
     public function getElementsByName(string $name){
         $allMatches = [];
         foreach($this->outHTML as $html){
-            $pattern = '/<([a-zA-Z]+) [^<>]*name="'.$name.'".*>/iUs'; // 加上U之后它只匹配了每个的第一个值
+            $pattern = '/<([a-zA-Z0-9_]+) [^<>]*name="'.$name.'".*>/iUs'; // 加上U之后它只匹配了每个的第一个值
             if(preg_match($pattern, $html, $matches)){
                 $label = $matches[1];
                 if(in_array($label, self::selfCloseLabel)){
@@ -166,7 +166,7 @@ class Document
      * 获取class的数据
      * @param $className
      * @param $isPattern
-     * @return array
+     * @return $this
      */
     public function getElementsByClassName($className, $isPattern = false){
         $allMatches = [];
