@@ -66,19 +66,48 @@ class Document
     public function getElementById(string $idName){
         $allMatches = [];
         foreach($this->outHTML as $html){
-            $pattern = '/<([a-zA-Z]+) [^<>]*id="'.$className.'".*>/iUs'; // 加上U之后它只匹配了每个的第一个值
-            if(preg_match($pattern, $html, $matches)){
-                $label = $matches[1];
-                if(in_array($label, self::selfCloseLabel)){
-                    $pattern = '/<'.$label.' [^<>]*id=["|\']'.$className.'[^<>]*>(.*)'.'>/iUs';
-                    preg_match_all($pattern, $html, $matches);
-                    $allMatches = array_merge($allMatches, $matches[0]);
-                }else{
-                    $pattern = '/<'.$label.' [^<>]*id=["|\']'.$className.'[^<>]*>(.*)<\/'.$label.'>/iUs'; // 没有s会导致匹配失败
-                    preg_match_all($pattern, $html, $matches);
-                    $allMatches = array_merge($allMatches, $matches[0]);
+            $pattern = '/<([a-zA-Z0-9_]+) [^<>]*id="(\S*)(\s*)".$idName."(.*)".*>/iUs';  // 字母 空格 [匹配任意字符除<>]0个多个 // U 禁止贪婪匹配
+            if($isPattern) $pattern = $className;
+            preg_match($pattern, $html, $matche);
+            $startLabel = $matche[0];
+
+            $arr = explode($matche[0], $html);
+
+            $mateHtml = [
+                'start' => $matche[0],
+                'body' => $matche[0].$arr[1],
+                'end' => $matche[1]
+            ];
+
+            $body = $mateHtml['body'];
+            $body = str_replace('</'.$mateHtml['end'].'>', '</'.$mateHtml['end'].'>'.'<---ZHANSHOP###分割符号--->', $body);
+            $arr = explode('</'.$mateHtml['end'].'>', $body);
+
+            $mateHtml['body'] = "";
+            foreach($arr as $kk => $vv){
+                $startLabelCount = substr_count($mateHtml['body'], '<'.$mateHtml['end']);
+                $endLabelCount = substr_count($mateHtml['body'], '</'.$mateHtml['end'].'>');
+                echo $startLabelCount.'=='.$endLabelCount.PHP_EOL;
+                if($mateHtml['body'] == false ||  $startLabelCount != $endLabelCount){
+                    $rowHtml = str_replace([" ", "\r", "\n"], "", $vv);
+                    $vv = str_replace('<---ZHANSHOP###分割符号--->', '', $vv);
+                    $strpos = strpos($rowHtml, '<---ZHANSHOP###分割符号--->');
+                    if($strpos === 0){
+                        $mateHtml['body'] .= '</'.$mateHtml['end'].'>';
+                        if(substr_count($mateHtml['body'], '<'.$mateHtml['end']) == substr_count($mateHtml['body'], '</'.$mateHtml['end'].'>')){
+                            break;
+                        }
+                        $mateHtml['body'] .= $vv;
+                        // 先统计一下 如果满了就跳出
+                    }else if($strpos > 0){
+                        $mateHtml['body'] .= $vv;
+                        $mateHtml['body'] .= '</'.$mateHtml['end'].'>';
+                    }else{
+                        $mateHtml['body'] .= $vv;
+                    }
                 }
             }
+            $allMatches = array_merge($allMatches, $mateHtml);
         }
         $this->outHTML = $allMatches;
         return $this;
@@ -115,12 +144,14 @@ class Document
      * @param string $tag
      * @return $this
      */
-    public function getElementsByTagName(string $tag){
+    public function getElementsByTagName(string $tag, $isPattern = false){
         if(in_array($tag, self::selfCloseLabel)){
             $pattern = '/<'.$tag.'.*>/iUs';
         }else{
             $pattern = '/<'.$tag.'.*>(.*)<\/'.$tag.'>/iUs';
         }
+
+        if($isPattern) $pattern = $tag;
 
         $allMatches = [];
         foreach($this->outHTML as $html){
@@ -203,7 +234,8 @@ class Document
             }
             $allMatches = array_merge($allMatches, $mateHtml);
         }
-        return $allMatches;
+        $this->outHTML = $allMatches;
+        return $this;
     }
 
 
