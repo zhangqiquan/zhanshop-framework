@@ -57,8 +57,12 @@ class Elasticsearch
         $curl = new Curl();
         if($this->userPwd) $curl->setopt(CURLOPT_USERPWD, $this->userPwd);
         $curl->setHeader('Content-Type', 'application/json');
-        $ret = $curl->request($this->baseUrl.'/'.$this->options['index'], 'DELETE');
-        return true;
+        try {
+            $curl->request($this->baseUrl.'/'.$this->options['index'], 'DELETE');
+            return true;
+        }catch (\Throwable $e){
+            return false;
+        }
     }
 
     public function indexName(string $name){
