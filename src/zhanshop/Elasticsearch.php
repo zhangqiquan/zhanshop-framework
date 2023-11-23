@@ -167,8 +167,9 @@ class Elasticsearch
      * @throws \Elastic\Elasticsearch\Exception\MissingParameterException
      * @throws \Elastic\Elasticsearch\Exception\ServerResponseException
      */
-    public function insert(array $data){
-        $this->options['id'] = Helper::orderId();
+    public function insert(array $data, string $id = ""){
+        $this->options['id'] = $id;
+        if($this->options['id'] == false) $this->options['id'] = Helper::orderId();
         $this->options['body'] = $data;
 
         $curl = new Curl();
@@ -183,10 +184,10 @@ class Elasticsearch
      * @param array $data
      * @return array
      */
-    public function insertAll(array $data){
+    public function insertAll(array $data, array $ids = []){
         $saveAll = "";
         foreach($data as $k => $v){
-            $orderId = Helper::orderId((string)$k);
+            $orderId = $ids[$k] ?? Helper::orderId((string)$k);
             $save = [
                 'index' => [
                     '_index' => $this->options['index'],
