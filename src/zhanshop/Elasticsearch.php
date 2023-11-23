@@ -207,6 +207,16 @@ class Elasticsearch
     }
 
     /**
+     * 原始查询
+     * @param array $arr
+     * @return $this
+     */
+    public function whereRaw(array $arr){
+        $this->options['whereRaw'][] = $arr;
+        return $this;
+    }
+
+    /**
      * 条件
      * @param array $data
      * @return $this
@@ -229,6 +239,15 @@ class Elasticsearch
     }
 
     /**
+     * 仅返回指定字段
+     * @param string $field
+     * @return $this
+     */
+    public function field(string $field){
+        $this->options['field'] = $field;
+        return $this;
+    }
+    /**
      * 排序值
      * @param string $order
      * @return $this
@@ -238,6 +257,14 @@ class Elasticsearch
         return $this;
     }
 
+    protected function getRawParam(array &$params){
+        if(isset($this->options['whereRaw'])){
+            foreach ($this->options['whereRaw'] as $v){
+                $params = array_merge($params, $v);
+            }
+
+        }
+    }
     /**
      * 请求参数组合AND
      * @return array
@@ -330,7 +357,11 @@ class Elasticsearch
 
         $this->getQueryORParam($params['query']);
 
+        $this->getRawParam($params['query']);
+
         $this->getOrderParam($params);
+
+        if(isset($this->options['field'])) $params['_source'] = explode(',', $this->options['field']);
 
         if($params['query'] == false) unset($params['query']);
 
