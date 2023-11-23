@@ -168,14 +168,14 @@ class Elasticsearch
      * @throws \Elastic\Elasticsearch\Exception\ServerResponseException
      */
     public function insert(array $data, string $id = ""){
+        if($id == false) $id = Helper::orderId();
         $this->options['id'] = $id;
-        if($this->options['id'] == false) $this->options['id'] = Helper::orderId();
         $this->options['body'] = $data;
 
         $curl = new Curl();
         if($this->userPwd) $curl->setopt(CURLOPT_USERPWD, $this->userPwd);
         $curl->setHeader('Content-Type', 'application/json');
-        $ret = $curl->request($this->baseUrl.'/'.$this->options['index'].'/_doc/'.Helper::orderId().'?pretty', 'POST', $data);
+        $ret = $curl->request($this->baseUrl.'/'.$this->options['index'].'/_doc/'.$id.'?pretty', 'POST', $data);
         return json_decode($ret['body'], true);
     }
 
