@@ -177,7 +177,7 @@ class Elasticsearch
     /**
      * 插入多条
      * @param array $data
-     * @return mixed
+     * @return array
      */
     public function insertAll(array $data){
         $saveAll = "";
@@ -204,7 +204,7 @@ class Elasticsearch
     /**
      * 条件
      * @param array $data
-     * @return void
+     * @return $this
      */
     public function where(string $field, string $condition, mixed $value){
         $this->options['where'][] = [$field, $condition, $value];
@@ -226,7 +226,7 @@ class Elasticsearch
     /**
      * 排序值
      * @param string $order
-     * @return void
+     * @return $this
      */
     public function order(string $order){
         $this->options['order'][] = $order;
@@ -310,7 +310,7 @@ class Elasticsearch
      * 分页查询
      * @param int $page
      * @param in $limit
-     * @return void
+     * @return array
      */
     public function finder(int $page = 1, int $limit = 20){
         $url = $this->baseUrl.'/'.$this->options['index'].'/_search';
@@ -333,14 +333,31 @@ class Elasticsearch
         $curl = new Curl();
         if($this->userPwd) $curl->setopt(CURLOPT_USERPWD, $this->userPwd);
         $curl->setHeader('Content-Type', 'application/json');
-        $ret = $curl->request($url, 'POST', $params);
-        return json_decode($ret['body'], true);
+        $data = [
+            'total' => 0,
+            'list' => [],
+            'max_score' => 0,
+            'errmsg' => '',
+            'original' => [],
+        ];
+        try {
+            $ret = $curl->request($url, 'POST', $params);
+            $resp = json_decode($ret['body'], true);
+            $data['total'] = $resp['hits']['total'];
+            $data['max_score'] = $resp['hits']['max_score'];
+            $data['list'] = $resp['hits']['hits'];
+            unset($resp['hits']);
+            $data['original'] = $resp;
+        }catch (\Throwable $e){
+            $data['errmsg'] = $e->getMessage();
+        }
+        return $data;
     }
 
     /**
      * 执行sql
      * @param string $sql
-     * @return void
+     * @return array
      */
     public function query(string $sql){
         //POST /_sql?format=txt
@@ -366,7 +383,7 @@ class Elasticsearch
 
     /**
      * 查询并删除
-     * @return void
+     * @return array
      */
     public function delete(){
         $url = $this->baseUrl.'/'.$this->options['index'].'/_delete_by_query';
@@ -388,7 +405,7 @@ class Elasticsearch
 
     /**
      * 查询并更新
-     * @return mixed
+     * @return array
      */
     public function update(array $data){
         $url = $this->baseUrl.'/'.$this->options['index'].'/_update_by_query?conflicts=proceed&wait_for_completion=false';
