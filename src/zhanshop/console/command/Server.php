@@ -377,7 +377,6 @@ class Server extends Command
         if($this->config['process']){
             foreach($this->config['process'] as $v){
                 $process = new \Swoole\Process(function ($process) use ($server, $v) {
-                    $process->set(['enable_coroutine' => true]);
                     App::make($v)->execute($server);
                 }, false, 2, true);
                 $server->addProcess($process);
