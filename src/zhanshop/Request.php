@@ -320,19 +320,4 @@ class Request
     public function validateData(array $data, array $rules, array $message = []){
         return new Validate($data, $rules, $message);
     }
-
-    /**
-     * 使用验证配置类
-     * @return void|Validate
-     * @throws \Exception
-     */
-    public function validate(){
-        $roure = $this->getRoure();
-        $validate = $roure['validate'];
-        if($validate && isset($validate[0])){
-            $class = App::make($validate[0]);
-            return new Validate($this->param(), $class->rule, $class->message);
-        }
-        App::error()->setError($roure['handler'][0].':'.$roure['handler'][1]."关联的验证器未定义");
-    }
 }
