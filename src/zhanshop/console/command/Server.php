@@ -357,6 +357,10 @@ class Server extends Command
             }
             $this->listenProtocol($v);
         }
+
+        $customMsg = "";
+        if($this->config['settings']['task_worker_num']) $customMsg .= "task进程开启数".$this->config['settings']['task_worker_num'].',';
+
         // 用户进程的生存周期与 Master 和 Manager 是相同的，不会受到 reload 影响 修改定时任务啥的需要重启
         if($this->config['crontab']){
             // 当存在定时任务的时候才会启动定时任务进程
@@ -369,7 +373,21 @@ class Server extends Command
                 //echo PHP_EOL.'['.date('Y-m-d H:i:s').']' .' ###[info]### 定时任务启动, 进程'.getmypid().PHP_EOL.PHP_EOL;
             }, false, 2, true);
             $server->addProcess($process);
+            $customMsg .= "定时进程开启,";
         }
+
+        // 用户自定义进程
+        if($this->config['process']){
+            foreach($this->config['process'] as $v){
+                $process = new \Swoole\Process(function ($process) use ($server, $v) {
+                    App::make($v)->execute($server);
+                }, false, 2, true);
+                $server->addProcess($process);
+            }
+            $customMsg .= "自定义进程数".count($this->config['process']);
+
+        }
+        if($customMsg) Log::errorLog(SWOOLE_LOG_NOTICE, $customMsg);
 
         $server->start();
     }
