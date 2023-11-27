@@ -232,7 +232,7 @@ class ServEvent
      * @param \Swoole\Http\Request $request
      * @return void
      */
-    public function onOpen(Swoole\WebSocket\Server $server, mixed $request) :void{
+    public function onOpen(\Swoole\WebSocket\Server $server, mixed $request) :void{
     }
 
     /**
@@ -241,7 +241,7 @@ class ServEvent
      * @param $frame
      * @return void
      */
-    public function onMessage(Swoole\WebSocket\Server $server, Swoole\WebSocket\Frame $frame) :void{
+    public function onMessage(\Swoole\WebSocket\Server $server, \Swoole\WebSocket\Frame $frame) :void{
     }
 
     /**
