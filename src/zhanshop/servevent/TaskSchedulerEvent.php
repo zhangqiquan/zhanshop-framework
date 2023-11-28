@@ -54,20 +54,20 @@ class TaskSchedulerEvent extends ServEvent
      * @return void
      */
     public function onMessage($server, $frame) :void{
-        print_r($frame);
         try {
-            $result = json_decode($frame->data, true);
-            $notifyFd = $result['notifyfd'];
-            unset($result['notifyfd']);
-            $resp = $this->taskResp[$notifyFd] ?? "";
-            unset($this->taskResp[$notifyFd]);
-            $ip = $server->getClientInfo($frame->fd)['remote_ip'];
-            $result['task_ip'] = $ip;
-            $result['task_fd'] = $frame->fd;
-            $this->clientInfo[$ip][$frame->fd] = 0; // 闲置中
-            if($resp){
-                App::log()->push("向".$notifyFd.'响应http结果');
-                $resp->end(json_encode($result));
+            if($frame->data && $result = json_decode($frame->data, true)){
+                $notifyFd = $result['notifyfd'];
+                unset($result['notifyfd']);
+                $resp = $this->taskResp[$notifyFd] ?? "";
+                unset($this->taskResp[$notifyFd]);
+                $ip = $server->getClientInfo($frame->fd)['remote_ip'];
+                $result['task_ip'] = $ip;
+                $result['task_fd'] = $frame->fd;
+                $this->clientInfo[$ip][$frame->fd] = 0; // 闲置中
+                if($resp){
+                    App::log()->push("向".$notifyFd.'响应http结果');
+                    $resp->end(json_encode($result));
+                }
             }
         }catch (\Throwable $e){
             App::log()->push($e->getMessage().'/'.$e->getFile().':'.$e->getLine(), 'ERROR');
