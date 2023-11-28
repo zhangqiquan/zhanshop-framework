@@ -73,19 +73,20 @@ class TaskScheduler
                 $data = json_decode($recv->data, true);
                 if($data){
                     try {
-                        $resp = $this->dispatch($data['app'], $data['param']);
+                        $resp = $this->dispatch($data['handler'], $data['param']);
                         $ok = $client->push(json_encode([
                             'code' => 0,
                             'msg' => 'ok',
-                            'data' => $resp
+                            'data' => $resp,
+                            'notifyfd' => $data['notifyfd'], // 需要通知的fd
                         ], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE));
                         echo "发送状态:".$ok.PHP_EOL;
                     }catch (\Throwable $e){
                         $client->push(json_encode([
-                            'code' => 500,
+                            'code' => 417,
                             'msg' => $e->getMessage(),
                             'data' => ['file' => $e->getFile(), 'line' => $e->getLine()],
-                            //'trace' => $e->getTrace()
+                            'notifyfd' => $data['notifyfd'], // 需要通知的fd
                         ]));
                     }
                 }

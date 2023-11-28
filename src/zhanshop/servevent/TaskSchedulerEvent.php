@@ -7,8 +7,10 @@ use Swoole\Http\Response;
 use Swoole\Http\Server;
 use zhanshop\App;
 use zhanshop\Error;
+use zhanshop\Log;
+use zhanshop\ServEvent;
 
-class TaskSchedulerEvent
+class TaskSchedulerEvent extends ServEvent
 {
     /**
      * websocket连接
@@ -30,7 +32,7 @@ class TaskSchedulerEvent
      * @return void
      */
     public function onConnect($server, int $fd, int $reactorId) :void{
-
+        var_dump($fd.'连接');
     }
 
     /**
@@ -40,7 +42,7 @@ class TaskSchedulerEvent
      * @return void
      */
     public function onOpen($server, $request) :void{
-        $this->clientInfo[$request->server['remote_addr']][$request->fd] = $request->fd;
+        $this->clientInfo[$request->server['remote_addr']][$request->fd] = ['is_work' => 0];
         App::log()->push($request->server['remote_addr'].':'.$request->fd.'建立连接');
     }
 
@@ -51,11 +53,21 @@ class TaskSchedulerEvent
      * @return void
      */
     public function onMessage($server, $frame) :void{
-        $resp = $this->taskResp[$frame->fd] ?? "";
-        if($resp){
-            $resp->end($frame->data);
-            unset($this->taskResp[$frame->fd]);
-            return;
+        try {
+            $result = json_decode($frame->data, true);
+            $notifyFd = $result['notifyfd'];
+            unset($result['notifyfd']);
+            $resp = $this->taskResp[$notifyFd] ?? "";
+            unset($this->taskResp[$notifyFd]);
+            $ip = $server->getClientInfo($frame->fd)['remote_ip'];
+            $result['task_ip'] = $ip;
+            $result['task_fd'] = $frame->fd;
+            $this->clientInfo[$ip][$frame->fd]['is_work'] = 0; // 闲置中
+            if($resp){
+                $resp->end(json_encode($result));
+            }
+        }catch (\Throwable $e){
+            Log::errorLog(5, $e->getMessage());
         }
     }
 
@@ -87,7 +99,7 @@ class TaskSchedulerEvent
                 'handler' => 'required | string',
                 'param' => 'array'
             ])->getData();
-            $this->dispatchTask($inputData['handler'], (array)$inputData['param']);
+            $this->dispatchTask($inputData['handler'], (array)$inputData['param'], $request->fd);
             $this->taskResp[$request->fd] = $response;
         }catch (\Throwable $e){
             $code = $e->getCode();
@@ -118,7 +130,7 @@ class TaskSchedulerEvent
             if($this->clientInfo[$ip] == false) unset($this->clientInfo[$ip]);
             App::log()->push($ip.':'.$fd.'断开连接');
         }
-        usleep($this->taskResp[$fd]);
+        unset($this->taskResp[$fd]);
     }
     protected $ipIndex = 0;
     protected $ipFdIndex = [];
@@ -128,12 +140,13 @@ class TaskSchedulerEvent
      * @param array $param
      * @return void
      */
-    protected function dispatchTask(string $handler, array $param){
+    protected function dispatchTask(string $handler, array $param, int $notifyFd){
         $fd = $this->getTaskFd();
         if($fd == false) App::error()->setError('没有任何可执行的客户端连接', 503);
         $this->server->push($fd, json_encode([
-            'app' => $app,
+            'handler' => $handler,
             'param' => $param,
+            'notifyfd' => $notifyFd
         ], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE));
     }
 
@@ -142,7 +155,7 @@ class TaskSchedulerEvent
      * @return int|string
      */
     protected function getTaskFd(){
-        if($this->ipIndex > count($this->clientInfo)){
+        if($this->ipIndex >= count($this->clientInfo)){
             $this->ipIndex = 0;
         }
 
@@ -151,31 +164,18 @@ class TaskSchedulerEvent
         foreach($this->clientInfo as $ip => $client){
             if($clientIpNumber == $this->ipIndex){
                 $clients = $client;
+                break;
             }
             $clientIpNumber++;
         }
 
-        if(isset($this->ipFdIndex[$this->ipIndex]) == false){
-            $this->ipFdIndex[$this->ipIndex] = 0;
-        }
-        $clientNumber = 0;
-        $fd = 0;
-
-        if($this->ipFdIndex[$this->ipIndex] > count($clients)){
-            $this->ipFdIndex[$this->ipIndex] = 0;
-        }
-
-        foreach($clients as $fd => $client){
-            if($clientNumber == $this->ipFdIndex[$this->ipIndex]){
-                $fd = $fd;
-                break;
+        $clientFd = 0;
+        foreach($client as $fd => $client){
+            if($client['is_work'] == 0){
+                $clientFd = $fd;
+                $this->clientInfo[$ip][$fd]['is_work'] = 1;
             }
-            $clientNumber++;
         }
-
-        $this->ipFdIndex[$this->ipIndex]++;
-
-        $this->ipIndex++;
-        return $fd;
+        return $clientFd;
     }
 }
