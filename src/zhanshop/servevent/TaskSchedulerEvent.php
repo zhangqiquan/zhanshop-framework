@@ -172,7 +172,6 @@ class TaskSchedulerEvent extends ServEvent
 
         $clientFd = 0;
         foreach($client as $fd => $isWork){
-            echo $fd .' => '.$isWork.PHP_EOL;
             if($isWork == 0){
                 $clientFd = $fd;
                 $this->clientInfo[$ip][$fd] = 1;
