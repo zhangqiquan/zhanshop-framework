@@ -163,9 +163,9 @@ class TaskSchedulerEvent extends ServEvent
 
         $clientIpNumber = 0;
         $clients = [];
-        foreach($this->clientInfo as $ip => $client){
+        foreach($this->clientInfo as $ip => $cls){
             if($clientIpNumber == $this->ipIndex){
-                $clients = $client;
+                $clients = $cls;
                 break;
             }
             $clientIpNumber++;
@@ -173,7 +173,7 @@ class TaskSchedulerEvent extends ServEvent
         $this->ipIndex++;
 
         $clientFd = 0;
-        foreach($client as $fd => $isWork){
+        foreach($clients as $fd => $isWork){
             if($isWork == 0){
                 $clientFd = $fd;
                 $this->clientInfo[$ip][$fd] = 1;
