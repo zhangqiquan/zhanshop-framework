@@ -44,7 +44,7 @@ class TaskSchedulerEvent extends ServEvent
      */
     public function onOpen($server, $request) :void{
         $this->clientInfo[$request->server['remote_addr']][$request->fd] = 0;
-        Log::errorLog(1, $request->server['remote_addr'].':'.$request->fd.'建立连接');
+        App::log()->push($request->server['remote_addr'].':'.$request->fd.'建立连接');
     }
 
     /**
@@ -54,7 +54,6 @@ class TaskSchedulerEvent extends ServEvent
      * @return void
      */
     public function onMessage($server, $frame) :void{
-        print_r($frame);
         try {
             $result = json_decode($frame->data, true);
             $notifyFd = $result['notifyfd'];
@@ -69,7 +68,7 @@ class TaskSchedulerEvent extends ServEvent
                 $resp->end(json_encode($result));
             }
         }catch (\Throwable $e){
-            Log::errorLog(5, $e->getMessage());
+            App::log()->push($e->getMessage().'/'.$e->getFile().':'.$e->getLine(), 'ERROR');
         }
     }
 
