@@ -129,7 +129,6 @@ class TaskSchedulerEvent extends ServEvent
         if(isset($this->clientInfo[$ip][$fd])){
             unset($this->clientInfo[$ip][$fd]);
             if($this->clientInfo[$ip] == false) unset($this->clientInfo[$ip]);
-            Log::errorLog(1, $ip.':'.$fd.'断开连接');
         }
         unset($this->taskResp[$fd]);
     }

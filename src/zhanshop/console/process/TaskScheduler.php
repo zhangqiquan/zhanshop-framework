@@ -14,7 +14,7 @@ class TaskScheduler
 
     protected function init(){
         $taskHost = explode(':', App::env()->get("TASK_HOST", "127.0.0.1:7201"));
-        $maxConnections = (int)App::env()->get("TASK_SCHEDULER_CONN", "10");
+        $maxConnections = (int)App::env()->get("TASK_SCHEDULER_CONN", "20");
         $this->config = [
             'ip' => $taskHost[0],
             'port' => (int)$taskHost[1],
