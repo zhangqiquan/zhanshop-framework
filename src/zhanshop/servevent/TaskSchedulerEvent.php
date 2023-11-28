@@ -54,6 +54,7 @@ class TaskSchedulerEvent extends ServEvent
      * @return void
      */
     public function onMessage($server, $frame) :void{
+        print_r($frame);
         try {
             $result = json_decode($frame->data, true);
             $notifyFd = $result['notifyfd'];
