@@ -6,6 +6,7 @@ use Swoole\Coroutine;
 use Swoole\Coroutine\Http\Client;
 use Swoole\WebSocket\Frame;
 use zhanshop\App;
+use zhanshop\Log;
 
 class TaskScheduler
 {
@@ -13,7 +14,7 @@ class TaskScheduler
 
     protected function init(){
         $taskHost = explode(':', App::env()->get("TASK_HOST", "127.0.0.1:7201"));
-        $maxConnections = (int)App::env()->get("TASK_SCHEDULER_CONN", "100");
+        $maxConnections = (int)App::env()->get("TASK_SCHEDULER_CONN", "10");
         $this->config = [
             'ip' => $taskHost[0],
             'port' => (int)$taskHost[1],
@@ -80,7 +81,7 @@ class TaskScheduler
                             'data' => $resp,
                             'notifyfd' => $data['notifyfd'], // 需要通知的fd
                         ], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE));
-                        echo "发送状态:".$ok.PHP_EOL;
+                        Log::errorLog(1, 'task结果推送');
                     }catch (\Throwable $e){
                         $client->push(json_encode([
                             'code' => 417,

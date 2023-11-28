@@ -2,6 +2,7 @@
 
 namespace zhanshop\servevent;
 
+use Random\BrokenRandomEngineError;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Swoole\Http\Server;
@@ -32,7 +33,7 @@ class TaskSchedulerEvent extends ServEvent
      * @return void
      */
     public function onConnect($server, int $fd, int $reactorId) :void{
-        var_dump($fd.'连接');
+        //var_dump($fd.'连接');
     }
 
     /**
@@ -42,8 +43,8 @@ class TaskSchedulerEvent extends ServEvent
      * @return void
      */
     public function onOpen($server, $request) :void{
-        $this->clientInfo[$request->server['remote_addr']][$request->fd] = ['is_work' => 0];
-        App::log()->push($request->server['remote_addr'].':'.$request->fd.'建立连接');
+        $this->clientInfo[$request->server['remote_addr']][$request->fd] = 0;
+        Log::errorLog(1, $request->server['remote_addr'].':'.$request->fd.'建立连接');
     }
 
     /**
@@ -62,7 +63,7 @@ class TaskSchedulerEvent extends ServEvent
             $ip = $server->getClientInfo($frame->fd)['remote_ip'];
             $result['task_ip'] = $ip;
             $result['task_fd'] = $frame->fd;
-            $this->clientInfo[$ip][$frame->fd]['is_work'] = 0; // 闲置中
+            $this->clientInfo[$ip][$frame->fd] = 0; // 闲置中
             if($resp){
                 $resp->end(json_encode($result));
             }
@@ -128,7 +129,7 @@ class TaskSchedulerEvent extends ServEvent
         if(isset($this->clientInfo[$ip][$fd])){
             unset($this->clientInfo[$ip][$fd]);
             if($this->clientInfo[$ip] == false) unset($this->clientInfo[$ip]);
-            App::log()->push($ip.':'.$fd.'断开连接');
+            Log::errorLog(1, $ip.':'.$fd.'断开连接');
         }
         unset($this->taskResp[$fd]);
     }
@@ -168,12 +169,15 @@ class TaskSchedulerEvent extends ServEvent
             }
             $clientIpNumber++;
         }
+        $this->ipIndex++;
 
         $clientFd = 0;
-        foreach($client as $fd => $client){
-            if($client['is_work'] == 0){
+        foreach($client as $fd => $isWork){
+            echo $fd .' => '.$isWork.PHP_EOL;
+            if($isWork == 0){
                 $clientFd = $fd;
-                $this->clientInfo[$ip][$fd]['is_work'] = 1;
+                $this->clientInfo[$ip][$fd] = 1;
+                break;
             }
         }
         return $clientFd;
