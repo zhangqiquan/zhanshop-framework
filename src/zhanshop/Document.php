@@ -259,7 +259,7 @@ class Document
             $allMatches[] = strip_tags($html);
         }
         if(count($allMatches) == 1) return $allMatches[0];
-        return $allMatches;
+        return $allMatches == false ? null : $allMatches;
     }
 
     /**
@@ -289,7 +289,7 @@ class Document
             $allMatches[] = $matches[1] ?? null;
         }
         if(count($allMatches) == 1) return $allMatches[0];
-        return $allMatches;
+        return $allMatches == false ? null : $allMatches;
     }
 
     public function toArray(){
