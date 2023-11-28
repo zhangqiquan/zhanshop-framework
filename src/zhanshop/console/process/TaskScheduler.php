@@ -81,7 +81,6 @@ class TaskScheduler
                             'data' => $resp,
                             'notifyfd' => $data['notifyfd'], // 需要通知的fd
                         ], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE));
-                        Log::errorLog(1, 'task结果推送');
                     }catch (\Throwable $e){
                         $client->push(json_encode([
                             'code' => 417,
