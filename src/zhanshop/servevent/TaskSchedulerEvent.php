@@ -54,6 +54,7 @@ class TaskSchedulerEvent extends ServEvent
      * @return void
      */
     public function onMessage($server, $frame) :void{
+        print_r($frame);
         try {
             $result = json_decode($frame->data, true);
             $notifyFd = $result['notifyfd'];
@@ -65,6 +66,7 @@ class TaskSchedulerEvent extends ServEvent
             $result['task_fd'] = $frame->fd;
             $this->clientInfo[$ip][$frame->fd] = 0; // 闲置中
             if($resp){
+                App::log()->push("向".$notifyFd.'响应http结果');
                 $resp->end(json_encode($result));
             }
         }catch (\Throwable $e){
