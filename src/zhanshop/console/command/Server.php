@@ -16,6 +16,7 @@ use zhanshop\console\command\software\ScanPorts;
 use zhanshop\console\crontab\WatchLogCronTab;
 use zhanshop\console\Input;
 use zhanshop\console\Output;
+use zhanshop\console\process\TaskScheduler;
 use zhanshop\console\ServerStatus;
 use zhanshop\Log;
 use zhanshop\ServEvent;
@@ -70,6 +71,7 @@ class Server extends Command
         // 定时任务是在子进程启动之后就开始执行【定时任务不受reload影响，需要restart后生效】
         'crontab' => [
         ],
+        // 自定义进程
         'process' => [
 
         ]
@@ -376,7 +378,7 @@ class Server extends Command
                 //echo PHP_EOL.'['.date('Y-m-d H:i:s').']' .' ###[info]### 定时任务启动, 进程'.getmypid().PHP_EOL.PHP_EOL;
             }, false, 2, true);
             $server->addProcess($process);
-            $customMsg .= "定时进程开启,";
+            $customMsg .= "定时进程开启 ";
         }
 
         // 用户自定义进程
@@ -387,9 +389,20 @@ class Server extends Command
                 }, false, 2, true);
                 $server->addProcess($process);
             }
-            $customMsg .= "自定义进程数".count($this->config['process']);
+            $customMsg .= "自定义进程数".count($this->config['process']).' ';
 
         }
+        $taskScheduler = (int)App::env()->get('TASK_SCHDULER', 0);
+        if($taskScheduler){
+            $customMsg .= "分布式任务进程".$taskScheduler.' ';
+            for($i = 0; $i < $taskScheduler; $i++){
+                $process = new \Swoole\Process(function ($process) use ($server) {
+                    App::make(TaskScheduler::class)->execute($server);
+                }, false, 2, true);
+                $server->addProcess($process);
+            }
+        }
+
         if($customMsg) Log::errorLog(SWOOLE_LOG_NOTICE, $customMsg);
 
         $server->start();
