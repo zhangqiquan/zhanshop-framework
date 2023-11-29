@@ -75,7 +75,7 @@ class Elasticsearch
      * @param array $data
      * @return void
      */
-    public function createIndex(array $data, array $settings = []){
+    public function createIndex(array $data){
         /**
          * {
         "settings": {
@@ -155,8 +155,13 @@ class Elasticsearch
         }
 
          */
-        $client->indices()->create($this->options['index'], $data);
-        $this->options = [];
+
+
+        $curl = new Curl();
+        if($this->userPwd) $curl->setopt(CURLOPT_USERPWD, $this->userPwd);
+        $curl->setHeader('Content-Type', 'application/json');
+        $ret = $curl->request($this->baseUrl.'/'.$this->options['index'], 'PUT', $data);
+        return json_decode($ret['body'], true);
     }
 
     /**
@@ -191,6 +196,7 @@ class Elasticsearch
             $save = [
                 'index' => [
                     '_index' => $this->options['index'],
+                    '_type' => '_doc',
                     '_id' => $orderId
                 ],
             ];
