@@ -14,6 +14,8 @@ use Swoole\Coroutine;
 use Swoole\Coroutine\Http\Client;
 use Swoole\WebSocket\Frame;
 use zhanshop\App;
+use zhanshop\console\command\Help;
+use zhanshop\Helper;
 
 class WebShellDevice
 {
@@ -67,9 +69,31 @@ class WebShellDevice
                 }
             }else if($recv->opcode != SWOOLE_WEBSOCKET_OPCODE_PONG){
                 $data = json_decode($recv->data, true);
-                var_dump($data);
+                $event = $data['event'];
+                $resp = $this->$event($data['body'], $data['tofd']);
+                $data['body'] = $resp;
+                $client->push(json_encode($data, JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE));
             }
         }
         $this->listen(); // 重新连接监听
+    }
+
+    /**
+     * 执行命令
+     * @param $command
+     * @param $toFd
+     * @return false|string
+     */
+    protected function command($command, $toFd){
+        $logDir = App::runtimePath().'/webshell/';
+        Helper::mkdirs($logDir);
+        $logFile = App::runtimePath().'/webshell/'.$toFd.'.log';
+        passthru($command." > ".$logFile, $code);
+        if($code !== 0){
+            return $command.' invalid command';
+        }
+        $logData = file_get_contents($logFile);
+        @unlink($logFile);
+        return $logData;
     }
 }

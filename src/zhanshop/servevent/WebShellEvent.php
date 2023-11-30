@@ -57,7 +57,7 @@ class WebShellEvent extends ServEvent
                 $server->push($request->fd, ServEvent::eventResult('deviceFd', ['tofd' => $toFd, 'myfd' => $request->fd])); // 告诉前端对方的fd和自身的fd
             }
         }catch (\Throwable $e){
-            $server->push($request->fd, ServEvent::eventResult('error', null, $e->getMessage(), $e->getCode()));
+            $server->push($request->fd, ServEvent::eventResult('notconnect', null, $e->getMessage(), $e->getCode()));
         }
     }
 
@@ -70,8 +70,8 @@ class WebShellEvent extends ServEvent
     public function onMessage($server, $frame) :void{
         $data = $frame->data;
         $data = json_decode($data, true);
-        $toFd = $data['tofd'];
-        $myFd = $data['myfd'];
+        $toFd = $data['tofd'] ?? App::error()->setError('tofd不能为空', 400);
+        $myFd = $data['myfd'] ?? App::error()->setError('myfd不能为空', 400);
         $data['tofd'] = $myFd;
         $data['myfd'] = $toFd;
         $server->push($toFd, json_encode($data, JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE));
