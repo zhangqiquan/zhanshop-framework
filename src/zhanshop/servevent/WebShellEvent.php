@@ -15,7 +15,7 @@ use Swoole\Http\Response;
 use Swoole\Http\Server;
 use zhanshop\ServEvent;
 
-class WebShell extends ServEvent
+class WebShellEvent extends ServEvent
 {
     /**
      * 有新的连接进入时，在 worker 进程中回调
