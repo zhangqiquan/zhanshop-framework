@@ -2,7 +2,6 @@
 
 namespace zhanshop\servevent;
 
-use Random\BrokenRandomEngineError;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Swoole\Http\Server;
