@@ -357,7 +357,7 @@ class ServEvent
      * @param int $code
      * @return array
      */
-    public static function eventResult(string $event, ?array $data, string $msg = 'ok', int $code = 0){
+    public static function eventResult(string $event, mixed $data, string $msg = 'ok', int $code = 0){
         return json_encode([
             'event' => $event,
             'body' => $data,
