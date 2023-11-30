@@ -348,4 +348,21 @@ class ServEvent
      */
     public function onBeforeShutdown(\Swoole\Server $server) :void{
     }
+
+    /**
+     * 事件推送统一响应格式
+     * @param string $event
+     * @param array|null $data
+     * @param string $msg
+     * @param int $code
+     * @return array
+     */
+    public static function eventResult(string $event, ?array $data, string $msg = 'ok', int $code = 0){
+        return json_encode([
+            'event' => $event,
+            'body' => $data,
+            'msg' => $msg,
+            'code' => $code
+        ], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
+    }
 }
