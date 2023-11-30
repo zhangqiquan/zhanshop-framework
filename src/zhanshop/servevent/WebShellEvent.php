@@ -36,25 +36,29 @@ class WebShellEvent extends ServEvent
      * @return void
      */
     public function onOpen($server, $request) :void{
-        if($request->server['request_uri'] = '/device'){
-            $id = $request->get['id'] ?? App::error()->setError('id不能为空', 400);
-            $this->device[$request->server['remote_addr']][$id][$request->fd] = 0;
-        }else{
-            $id = $request->get['id'] ?? App::error()->setError('设备id不能为空');
-            list($ip, $device) = explode(":", $id);
-            $devices = $this->device[$id] ?? App::error()->setError('id不能为空', 404);
-            $toFd = 0;
-            $ipDevice = $this->device[$ip][$device] ?? App::error()->setError('没有'.$id.'的在线设备可用', 404);
-            foreach($ipDevice as $fd => $status){
-                if($status == 0){
-                    // 告诉用户端你要连接的fd是多少
-                    $toFd = $fd;
-                    break;
+        try {
+            if($request->server['request_uri'] = '/device'){
+                $id = $request->get['id'] ?? App::error()->setError('id不能为空', 400);
+                $this->device[$request->server['remote_addr']][$id][$request->fd] = 0;
+            }else{
+                $id = $request->get['id'] ?? App::error()->setError('设备id不能为空');
+                list($ip, $device) = explode(":", $id);
+                $devices = $this->device[$id] ?? App::error()->setError('id不能为空', 404);
+                $toFd = 0;
+                $ipDevice = $this->device[$ip][$device] ?? App::error()->setError('没有'.$id.'的在线设备可用', 404);
+                foreach($ipDevice as $fd => $status){
+                    if($status == 0){
+                        // 告诉用户端你要连接的fd是多少
+                        $toFd = $fd;
+                        break;
+                    }
                 }
+                if($ipDevice == false) App::error()->setError($id.'统计0个可用连接');
+                if($toFd == false) App::error()->setError('没有可使用的设备连接', 503);
+                $server->push($request->fd, ServEvent::eventResult('device_fd', ['to_fd' => $toFd, 'my_fd' => $request->fd])); // 告诉前端对方的fd和自身的fd
             }
-            if($ipDevice == false) App::error()->setError($id.'统计0个可用连接');
-            if($toFd == false) App::error()->setError('没有可使用的设备连接', 503);
-            $server->push($request->fd, ServEvent::eventResult('device_fd', ['to_fd' => $toFd, 'my_fd' => $request->fd])); // 告诉前端对方的fd和自身的fd
+        }catch (\Throwable $e){
+            $server->push($request->fd, ServEvent::eventResult('error', null, $e->getMessage(), $e->getCode()));
         }
     }
 
@@ -98,6 +102,6 @@ class WebShellEvent extends ServEvent
                 }
             }
         }
-        if($this->device[$ip] == false) unset($this->device[$ip]);
+        if(isset($this->device[$ip]) && $this->device[$ip] == false) unset($this->device[$ip]);
     }
 }
