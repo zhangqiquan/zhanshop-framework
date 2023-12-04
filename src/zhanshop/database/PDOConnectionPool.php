@@ -142,7 +142,7 @@ class PDOConnectionPool
             $pdo->commit();
             $this->recoveryPDO($pdo);
         }catch (\Throwable $e){
-            if($e->getCode() == 2006 || strpos($e->getMessage(), '2006') || strpos($e->getMessage(), 'ackets ') || strpos($e->getMessage(), 'failed ')){
+            if($e->getCode() == 2006 || strpos($e->getMessage(), '2006') || strpos($e->getMessage(), 'ackets ') || strpos($e->getMessage(), 'failed ') || strpos($e->getMessage(), 'close')){
                 $this->recoveryPDO($pdo);
                 $this->reconnect(); // 重连
                 if($isRetry) return $this->transaction($call, false); // 重试

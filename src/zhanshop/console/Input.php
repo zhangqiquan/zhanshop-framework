@@ -138,6 +138,22 @@ class Input
     }
 
     /**
+     * 获取用户键盘输入内容
+     * @return string
+     */
+    public function read(){
+        if(PHP_OS == 'WINNT'){
+            $input = readline();
+        }else{
+            $fp = fopen('/dev/stdin', 'r');
+            $input = fgets($fp, 255);
+            fclose($fp);
+        }
+        $input = chop($input);
+        return $input;
+    }
+
+    /**
      * 获取所有的请求参数
      * @return array
      */
