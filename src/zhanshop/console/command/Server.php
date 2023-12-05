@@ -21,6 +21,7 @@ use zhanshop\console\ServerStatus;
 use zhanshop\Log;
 use zhanshop\ServEvent;
 use zhanshop\console\crontab\WatchServCronTab;
+use zhanshop\ShareData;
 use zhanshop\Timer;
 use zhanshop\WebHandle;
 
@@ -404,6 +405,8 @@ class Server extends Command
         }
 
         if($customMsg) Log::errorLog(SWOOLE_LOG_NOTICE, $customMsg);
+
+        ShareData::make(); // 构建共享内存实例
 
         $server->start();
     }
