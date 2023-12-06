@@ -64,7 +64,7 @@ class Dispatch
         $version = $params[1] ? $params[1] : 'v1';
         $uri     = isset($params[2]) ? '/'.$params[2] : '/index.index';
         $method = $request->server('request_method', 'GET');
-        $route = $this->routes[$name][$version][$uri][$method] ?? App::error()->setError('您所访问的API不存在', Error::NOT_FOUND);
+        $route = $this->routes[$name][$version][$uri][$method] ?? App::error()->setError('您所访问的资源不存在', Error::NOT_FOUND);
 
         foreach ($route['extra'] as $k => $v){
             $request->setData($v, $params[$k + 3] ?? null);

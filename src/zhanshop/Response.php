@@ -118,6 +118,21 @@ class Response
     }
 
     /**
+     * 发送websocket响应
+     * @return void
+     */
+    public function sendWebSocket(){
+        if($this->data){
+            $respData = $this->data;
+            if(is_array($respData)){
+                $respData['trace_id'] = microtime(true).rand(10000, 99999).'.'. App::config()->get('app.serial_code', 0).'.'.getmypid();
+                $respData = json_encode($respData);
+            }
+            $this->response->push($this->fd, $respData);
+        }
+    }
+
+    /**
      * 调用原始方法数据
      * @param string $name
      * @param array $args
