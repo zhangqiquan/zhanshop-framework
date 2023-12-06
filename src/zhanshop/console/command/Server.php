@@ -356,6 +356,7 @@ class Server extends Command
                 $server->set($settings);
                 $this->serverEventBind($server, $v['callbacks']);
             }else if($server){
+                if($v['serv_type'] > $this->config['servers'][0]['serv_type']) App::error()->setError("第".($k+1).'个server的serv_type值不得高于首个serv_type的值');
                 $subServer = $this->addListenServer($server, $v);
                 $subServer->set($v['settings']);
                 $callbacks = $v['callbacks'] ?? [];
