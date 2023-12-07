@@ -51,7 +51,7 @@ class SSHEvent extends ServEvent
      * @param string $appName
      * @return void
      */
-    public function onOpen($server, $request, int $protocol = Server::WEBSOCKET, string $appName = 'terminal') :void{
+    public function onOpen($server, $request) :void{
         try {
             App::phar()->import('app/library/phpseclib');
             $ssh = new SSH2('127.0.0.1', 22);
@@ -86,7 +86,7 @@ class SSHEvent extends ServEvent
      * @param string $appName
      * @return void
      */
-    public function onMessage($server, \Swoole\WebSocket\Frame $frame, int $protocol = Server::WEBSOCKET, string $appName = 'terminal') :void{
+    public function onMessage($server, \Swoole\WebSocket\Frame $frame) :void{
         $command = $frame->data;
         $ssh = $this->sshs[$frame->fd] ?? null;
         if($command && $ssh){
