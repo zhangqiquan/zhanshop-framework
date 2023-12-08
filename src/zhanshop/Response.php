@@ -81,6 +81,10 @@ class Response
         return $this->msg;
     }
 
+    public function setFd(int $fd){
+        $this->fd = $fd;
+    }
+
     /**
      * 设置响应data
      * @param mixed $data
