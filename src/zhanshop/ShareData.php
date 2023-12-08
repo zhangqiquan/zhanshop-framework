@@ -123,7 +123,7 @@ class ShareData
      * 获取实例
      * @return \Swoole\Table|null
      */
-    public function getInstance(){
+    public static function getInstance(){
         return self::$instance;
     }
 }
