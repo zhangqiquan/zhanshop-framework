@@ -57,20 +57,16 @@ class Mysql
         if($whereStr){
             $setVal = "SET ";
             $data = $query->getOptions("data", true);
-            $num = 0;
             foreach ($data[0] as $k => $v){
-                if($num != 0){
-                    $setVal .= ', ';
-                }
                 if(is_object($v) && isset($v->data)){
-                    $setVal .= $k.' = '.$v->data;
+                    $setVal .= $k.' = '.$v->data.', ';
                 }else{
                     $key = 'zhanshop_set_'.str_replace('.', '__', $k);
                     $query->setBind($key, $v);
-                    $setVal .= $k.' = :'.$key;
-                    $num++;
+                    $setVal .= $k.' = :'.$key.', ';
                 }
             }
+            $setVal = rtrim($setVal, ', ');
             $sql = 'UPDATE '.$query->getOptions('table').' '.$setVal.' '.$whereStr;
             return $sql;
         }
