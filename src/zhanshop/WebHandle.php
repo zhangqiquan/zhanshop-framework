@@ -11,6 +11,7 @@ declare (strict_types=1);
 namespace zhanshop;
 
 use app\exception\HttpException;
+use app\exception\WebSocketException;
 use zhanshop\cache\CacheManager;
 use zhanshop\database\DbManager;
 use zhanshop\route\Dispatch;
@@ -124,6 +125,37 @@ class WebHandle
             $servResponse->setHttpCode((int)$e->getCode());
             //$servResponse->se
             $data = App::make(HttpException::class)->handle($request, $servResponse, $e);
+            $servResponse->setData($data); // 先执行后置中间件
+        }
+    }
+
+    /**
+     * 路由调度WebSocket
+     * @param int $protocol
+     * @param Request $request
+     * @return void
+     */
+    public function dispatchWebSocket(string $appName, Request &$request, Response &$servResponse){
+        try {
+            $dispatch = App::make(Dispatch::class);
+
+            $dispatch->check($appName, $request);
+
+            $handler = $request->getRoure()['handler'];
+            $controller = $handler[0];
+            $action = $handler[1];
+
+
+            $dispatch = $this->middleware($request, function (&$request) use (&$controller, &$action, &$servResponse){
+                $data = App::make($controller)->$action($request, $servResponse);
+                $servResponse->setData($data);
+                return $servResponse;
+            });
+
+            $dispatch($request);
+        }catch (\Throwable $e){
+            $servResponse->setHttpCode((int)$e->getCode());
+            $data = App::make(WebSocketException::class)->handle($request, $servResponse, $e);
             $servResponse->setData($data); // 先执行后置中间件
         }
     }
