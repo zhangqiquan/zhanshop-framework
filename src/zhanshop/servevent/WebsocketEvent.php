@@ -27,7 +27,7 @@ class WebsocketEvent extends ServEvent
      * @return void
      */
     public function onRequest(mixed $request, mixed $response, int $protocol = Server::WEBSOCKET, string $appName = 'websocket') :void{
-        if(!$this->onStatic()){
+        if(!$this->onStatic($request, $response)){
             $servRequest = new Request($protocol, $request);
             $servResponse = new Response($response, $request->fd);
             App::webhandle()->dispatch($appName, $servRequest, $servResponse);
@@ -43,7 +43,7 @@ class WebsocketEvent extends ServEvent
      * @param string $appName
      * @return void
      */
-    public function onOpen($server, $request,int $protocol = Server::WEBSOCKET, string $appName = 'websocket') :void{
+    public function onOpen(\Swoole\WebSocket\Server $server, \Swoole\Http\Request $request,int $protocol = Server::WEBSOCKET, string $appName = 'websocket') :void{
         $servRequest = new Request($protocol, $request);
         $servResponse = new Response($server, $request->fd);
 
@@ -60,7 +60,7 @@ class WebsocketEvent extends ServEvent
      * @param string $appName
      * @return void
      */
-    public function onMessage($server, \Swoole\WebSocket\Frame $frame, int $protocol = Server::WEBSOCKET, string $appName = 'websocket') :void{
+    public function onMessage(\Swoole\WebSocket\Server $server, \Swoole\WebSocket\Frame $frame, int $protocol = Server::WEBSOCKET, string $appName = 'websocket') :void{
         if($frame->data){
             $data = json_decode($frame->data, true);
             $request = \Swoole\Http\Request::create([]);
@@ -86,17 +86,28 @@ class WebsocketEvent extends ServEvent
      * @param mixed $response
      * @return bool
      */
-    private function onStatic(mixed $request, mixed $response){
+    private function onStatic(\Swoole\Http\Request $request, \Swoole\Http\Response $response){
         try{
             $uri = App::rootPath().'/public'.$request->server['request_uri'];
-            if(is_dir($uri)) $uri = rtrim($request->server['request_uri'], '/').'/index.html';
+            if(is_dir($uri)) $uri = rtrim($uri, '/').'/index.html';
             if(file_exists($uri)){
                 $ext = pathinfo($uri, PATHINFO_EXTENSION);
-                if(in_array($ext, ['js', 'css'])){
-                    $response->header('Content-Type', 'text/'.$ext);
+                if($ext == 'js'){
+                    $response->header('Content-Type', 'text/javascript');
+                }else if($ext == 'css'){
+                    $response->header('Content-Type', 'text/css');
                 }else{
                     $response->header('Content-Type', mime_content_type($uri));
                 }
+
+                $lastModifiedTime = filemtime($uri);
+                if(isset($request->header['if-modified-since']) == $lastModifiedTime){
+                    $response->status(304);
+                    $response->end();
+                    return true;
+                }
+
+                $response->header('Last-Modified', $lastModifiedTime);
                 $response->end(file_get_contents($uri, false, null, 0, 1000000));
                 return true;
             }
