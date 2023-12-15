@@ -99,9 +99,8 @@ class WebsocketEvent extends ServEvent
                 }else{
                     $response->header('Content-Type', mime_content_type($uri));
                 }
-
                 $lastModifiedTime = filemtime($uri);
-                if(isset($request->header['if-modified-since']) == $lastModifiedTime){
+                if(($request->header['if-modified-since'] ?? 0) == $lastModifiedTime){
                     $response->status(304);
                     $response->end();
                     return true;
