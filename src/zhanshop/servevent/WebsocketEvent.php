@@ -53,6 +53,34 @@ class WebsocketEvent extends ServEvent
     }
 
     /**
+     * 消息响应
+     * @param $server
+     * @param $frame
+     * @param int $protocol
+     * @param string $appName
+     * @return void
+     */
+    public function onMessage($server, \Swoole\WebSocket\Frame $frame, int $protocol = Server::WEBSOCKET, string $appName = 'websocket') :void{
+        if($frame->data){
+            $data = json_decode($frame->data, true);
+            $request = \Swoole\Http\Request::create([]);
+            $request->fd = $frame->fd;
+            $clientInfo = $server->getClientInfo($request->fd);
+            $request->server['remote_addr'] = $clientInfo['remote_ip'] ?? '-1';
+            $request->server['request_uri'] = $data['uri'] ?? '/v1/index.index';
+            $request->server['request_time'] = time();
+            $request->server['request_method'] = 'POST';
+            $request->post = $data['body'] ?? [];
+            $servRequest = new Request($protocol, $request);
+            $servResponse = new Response($server, $frame->fd);
+            $servRequest->setData('tofd', intval($data['tofd'] ?? 0));
+            $servRequest->setData('fromfd', intval($data['fromfd'] ?? 0));
+            App::webhandle()->dispatchWebSocket($appName, $servRequest, $servResponse);
+            $servResponse->sendWebSocket();
+        }
+    }
+
+    /**
      * 静态访问响应
      * @param mixed $request
      * @param mixed $response
