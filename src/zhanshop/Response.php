@@ -126,15 +126,17 @@ class Response
      * @return void
      */
     public function sendWebSocket(){
-        if($this->data){
-            $respData = $this->data;
-            if(is_array($respData)){
-                $respData['tofd'] = $this->fd;
-                $respData['trace_id'] = microtime(true).rand(10000, 99999).'.'. App::config()->get('app.serial_code', 0).'.'.getmypid();
-                $respData = json_encode($respData);
+        try{
+            if($this->data){
+                $respData = $this->data;
+                if(is_array($respData)){
+                    $respData['tofd'] = $this->fd;
+                    $respData['trace_id'] = microtime(true).rand(10000, 99999).'.'. App::config()->get('app.serial_code', 0).'.'.getmypid();
+                    $respData = json_encode($respData);
+                }
+                $this->response->push($this->fd, $respData);
             }
-            $this->response->push($this->fd, $respData);
-        }
+        }catch (\Throwable $e){}
     }
 
     /**

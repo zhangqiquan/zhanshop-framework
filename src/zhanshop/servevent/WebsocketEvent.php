@@ -36,6 +36,23 @@ class WebsocketEvent extends ServEvent
     }
 
     /**
+     * 首次请求
+     * @param $server
+     * @param $request
+     * @param int $protocol
+     * @param string $appName
+     * @return void
+     */
+    public function onOpen($server, $request,int $protocol = Server::WEBSOCKET, string $appName = 'websocket') :void{
+        $servRequest = new Request($protocol, $request);
+        $servResponse = new Response($server, $request->fd);
+
+        App::webhandle()->dispatchWebSocket($appName, $servRequest, $servResponse);
+
+        $servResponse->sendWebSocket();
+    }
+
+    /**
      * 静态访问响应
      * @param mixed $request
      * @param mixed $response
