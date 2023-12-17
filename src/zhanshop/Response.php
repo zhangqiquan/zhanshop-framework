@@ -85,6 +85,10 @@ class Response
         $this->fd = $fd;
     }
 
+    public function getFd(){
+        return $this->fd;
+    }
+
     /**
      * 设置响应data
      * @param mixed $data
