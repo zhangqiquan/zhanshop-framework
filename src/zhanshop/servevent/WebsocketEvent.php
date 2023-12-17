@@ -70,11 +70,12 @@ class WebsocketEvent extends ServEvent
             $request->server['request_uri'] = $data['uri'] ?? '/v1/index.index';
             $request->server['request_time'] = time();
             $request->server['request_method'] = 'POST';
+            foreach($data['header'] ?? [] as $k => $v){
+                $request->header[$k] = $v;
+            }
             $request->post = $data['body'] ?? [];
             $servRequest = new Request($protocol, $request);
             $servResponse = new Response($server, $frame->fd);
-            $servRequest->setData('tofd', intval($data['tofd'] ?? 0));
-            $servRequest->setData('fromfd', intval($data['fromfd'] ?? 0));
             App::webhandle()->dispatchWebSocket($appName, $servRequest, $servResponse);
             $servResponse->sendWebSocket();
         }

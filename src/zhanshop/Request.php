@@ -269,7 +269,7 @@ class Request
         }
 
         $val = $this->extData[$name] ?? $default;
-        if($val === null) App::error()->setError($name.'参数无法获取', Error::BAD_REQUEST);
+        if($val === null) App::error()->setError($name.'不能为空。', Error::BAD_REQUEST);
         return $val;
     }
 
