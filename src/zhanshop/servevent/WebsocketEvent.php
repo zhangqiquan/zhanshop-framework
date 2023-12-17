@@ -10,6 +10,7 @@ declare (strict_types=1);
 
 namespace zhanshop\servevent;
 
+use Swoole\WebSocket\Frame;
 use zhanshop\App;
 use zhanshop\console\command\Server;
 use zhanshop\Request;
@@ -20,13 +21,13 @@ class WebsocketEvent extends ServEvent
 {
     /**
      * http请求
-     * @param mixed $request
-     * @param mixed $response
+     * @param \Swoole\Http\Response $request
+     * @param \Swoole\Http\Response $response
      * @param int $protocol
      * @param string $appName
      * @return void
      */
-    public function onRequest(mixed $request, mixed $response, int $protocol = Server::WEBSOCKET, string $appName = 'websocket') :void{
+    public function onRequest($request, $response, $protocol = Server::WEBSOCKET, $appName = 'websocket') :void{
         if(!$this->onStatic($request, $response)){
             $servRequest = new Request($protocol, $request);
             $servResponse = new Response($response, $request->fd);
@@ -37,13 +38,13 @@ class WebsocketEvent extends ServEvent
 
     /**
      * 首次请求
-     * @param $server
-     * @param $request
+     * @param \Swoole\WebSocket\Server $server
+     * @param Request $request
      * @param int $protocol
      * @param string $appName
      * @return void
      */
-    public function onOpen(\Swoole\WebSocket\Server $server, \Swoole\Http\Request $request,int $protocol = Server::WEBSOCKET, string $appName = 'websocket') :void{
+    public function onOpen($server, $request, $protocol = Server::WEBSOCKET, $appName = 'websocket') :void{
         $servRequest = new Request($protocol, $request);
         $servResponse = new Response($server, $request->fd);
 
@@ -54,13 +55,13 @@ class WebsocketEvent extends ServEvent
 
     /**
      * 消息响应
-     * @param $server
-     * @param $frame
+     * @param \Swoole\WebSocket\Server $server
+     * @param Frame $frame
      * @param int $protocol
      * @param string $appName
      * @return void
      */
-    public function onMessage(\Swoole\WebSocket\Server $server, \Swoole\WebSocket\Frame $frame, int $protocol = Server::WEBSOCKET, string $appName = 'websocket') :void{
+    public function onMessage($server, $frame, $protocol = Server::WEBSOCKET, $appName = 'websocket') :void{
         if($frame->data){
             $data = json_decode($frame->data, true);
             $request = \Swoole\Http\Request::create([]);
@@ -83,11 +84,11 @@ class WebsocketEvent extends ServEvent
 
     /**
      * 静态访问响应
-     * @param mixed $request
-     * @param mixed $response
+     * @param \Swoole\Http\Response $request
+     * @param \Swoole\Http\Response $response
      * @return bool
      */
-    private function onStatic(\Swoole\Http\Request $request, \Swoole\Http\Response $response){
+    private function onStatic($request, $response){
         try{
             $uri = App::rootPath().'/public'.$request->server['request_uri'];
             if(is_dir($uri)) $uri = rtrim($uri, '/').'/index.html';

@@ -89,7 +89,7 @@ class ServEvent
      * @param \Swoole\Server $server
      * @return void
      */
-    public function onStart(\Swoole\Server $server) :void{
+    public function onStart($server) :void{
         $msg = "启动工作进程数".($server->setting['worker_num']).', 线程数'.($server->setting['worker_num'] * $server->setting['reactor_num']).', swoole'.swoole_version().', 环境'.($_SERVER['APP_ENV'] ?? 'dev');
         Log::errorLog(SWOOLE_LOG_NOTICE, $msg);
         App::make(Robot::class)->send($msg);
@@ -101,7 +101,7 @@ class ServEvent
      * @param int $workerId
      * @return void
      */
-    public function onWorkerStart(\Swoole\Server $server, int $workerId) :void{
+    public function onWorkerStart($server, $workerId) :void{
         $msg = $workerId."号工作进程启动, 进程".getmypid();
         Log::errorLog(SWOOLE_LOG_DEBUG, $msg);
         App::make(Robot::class)->send($msg);
@@ -117,7 +117,7 @@ class ServEvent
      * @param int $workerId
      * @return void
      */
-    public function onWorkerStop(\Swoole\Server $server, int $workerId) :void{
+    public function onWorkerStop($server, $workerId) :void{
     }
 
     /**
@@ -126,7 +126,7 @@ class ServEvent
      * @param int $workerId
      * @return void
      */
-    public function onWorkerExit(\Swoole\Server $server, int $workerId) :void{
+    public function onWorkerExit($server, $workerId) :void{
         Timer::clearAll();
     }
 
@@ -139,7 +139,7 @@ class ServEvent
      * @param int $signal
      * @return void
      */
-    public function onWorkerError(\Swoole\Server $server, int $worker_id, int $worker_pid, int $exit_code, int $signal) :void{
+    public function onWorkerError($server, $worker_id, $worker_pid, $exit_code, $signal) :void{
         // 使用 gdb 来跟踪 swoole 前，需要在编译时添加 --enable-debug 参数以保留更多信息
         // ulimit -c unlimited 开启核心转储文件
         // gdb php core || gdb php /tmp/core.1234 键入命令进入 gdb 调试程序
@@ -158,7 +158,7 @@ class ServEvent
      * @param mixed $message
      * @return void
      */
-    public function onPipeMessage(\Swoole\Server $server, int $src_worker_id, mixed $message) :void{
+    public function onPipeMessage($server, $src_worker_id, $message) :void{
 
     }
 
@@ -169,7 +169,7 @@ class ServEvent
      * @param string $group
      * @return void
      */
-    public function onRequest(mixed $request, mixed $response, int $protocol = Server::HTTP, string $appName = 'index') :void{
+    public function onRequest($request, $response, $protocol = Server::HTTP, $appName = 'index') :void{
         $response->header('Server', 'zhanshop');
         $response->header('Access-Control-Allow-Origin', '*');
         $response->header('Access-Control-Allow-Headers', '*');
@@ -198,7 +198,7 @@ class ServEvent
      * @param string $data
      * @return void
      */
-    public function onReceive(\Swoole\Server $server, int $fd, int $reactorId, string $data) :void{
+    public function onReceive($server, $fd, $reactorId, $data) :void{
         if($data == 'servStatus'){
             $server->send($fd, json_encode($server->stats()));
             return;
@@ -212,7 +212,7 @@ class ServEvent
      * @param int $reactorId
      * @return void
      */
-    public function onConnect(\Swoole\Server $server, int $fd, int $reactorId) :void{
+    public function onConnect($server, $fd, $reactorId) :void{
 
     }
 
@@ -232,7 +232,7 @@ class ServEvent
      * @param \Swoole\Http\Request $request
      * @return void
      */
-    public function onOpen(\Swoole\WebSocket\Server $server, \Swoole\Http\Request $request) :void{
+    public function onOpen($server, $request) :void{
     }
 
     /**
@@ -241,7 +241,7 @@ class ServEvent
      * @param $frame
      * @return void
      */
-    public function onMessage(\Swoole\WebSocket\Server $server, \Swoole\WebSocket\Frame $frame) :void{
+    public function onMessage($server, $frame) :void{
     }
 
     /**
@@ -251,7 +251,7 @@ class ServEvent
      * @param int $reactorId
      * @return void
      */
-    public function onClose(\Swoole\Server $server, int $fd, int $reactorId) :void{
+    public function onClose($server, $fd, $reactorId) :void{
 
     }
 
@@ -261,7 +261,7 @@ class ServEvent
      * @param $task
      * @return void
      */
-    public function onTask(\Swoole\Server $server, $task) :void{
+    public function onTask($server, $task) :void{
         try{
             if($task->data == false || !is_array($task->data)){
                 Log::errorLog(SWOOLE_LOG_ERROR,'投递的task必须是一个数组');
@@ -280,7 +280,7 @@ class ServEvent
      * @param mixed $data
      * @return void
      */
-    public function onFinish(\Swoole\Server $server, int $task_id, mixed $data) :void{
+    public function onFinish($server, int $task_id, $data) :void{
 
     }
 
@@ -289,7 +289,7 @@ class ServEvent
      * @param \Swoole\Server $server
      * @return void
      */
-    public function onShutdown(\Swoole\Server $server) :void{
+    public function onShutdown($server) :void{
         $pidFile = $server->setting['pid_file'] ?? '';
         if(file_exists($pidFile)) @unlink($pidFile);
         $msg = 'server触发了正常停止';
@@ -304,7 +304,7 @@ class ServEvent
      * @param array $clientInfo
      * @return void
      */
-    public function onPacket(\Swoole\Server $server, string $data, array $clientInfo) :void{
+    public function onPacket($server, $data, $clientInfo) :void{
         $server->sendto($clientInfo['address'], $clientInfo['port'], "1");
     }
 
@@ -313,7 +313,7 @@ class ServEvent
      * @param \Swoole\Server $server
      * @return void
      */
-    public function onManagerStart(\Swoole\Server $server) :void{
+    public function onManagerStart($server) :void{
         //echo PHP_EOL.'['.date('Y-m-d H:i:s').'] ###[info]###'." 管理进程启动, 进程".getmypid();
     }
 
@@ -322,7 +322,7 @@ class ServEvent
      * @param \Swoole\Server $server
      * @return void
      */
-    public function onManagerStop(\Swoole\Server $server) :void{
+    public function onManagerStop($server) :void{
     }
 
     /**
@@ -330,7 +330,7 @@ class ServEvent
      * @param \Swoole\Server $server
      * @return void
      */
-    public function onBeforeReload(\Swoole\Server $server) :void{
+    public function onBeforeReload($server) :void{
     }
 
     /**
@@ -338,7 +338,7 @@ class ServEvent
      * @param \Swoole\Server $server
      * @return void
      */
-    public function onAfterReload(\Swoole\Server $server) :void{
+    public function onAfterReload($server) :void{
     }
 
     /**
@@ -346,23 +346,6 @@ class ServEvent
      * @param \Swoole\Server $server
      * @return void
      */
-    public function onBeforeShutdown(\Swoole\Server $server) :void{
-    }
-
-    /**
-     * 事件推送统一响应格式
-     * @param string $event
-     * @param array|null $data
-     * @param string $msg
-     * @param int $code
-     * @return array
-     */
-    public static function eventResult(string $event, mixed $data, string $msg = 'ok', int $code = 0){
-        return json_encode([
-            'event' => $event,
-            'body' => $data,
-            'msg' => $msg,
-            'code' => $code
-        ], JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
+    public function onBeforeShutdown($server) :void{
     }
 }

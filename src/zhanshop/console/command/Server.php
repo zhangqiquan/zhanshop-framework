@@ -387,6 +387,7 @@ class Server extends Command
         if($this->config['process']){
             foreach($this->config['process'] as $v){
                 $process = new \Swoole\Process(function ($process) use ($server, $v) {
+                    $process->set(['enable_coroutine' => true]);
                     App::make($v)->execute($server);
                 }, false, 2, true);
                 $server->addProcess($process);
@@ -399,6 +400,7 @@ class Server extends Command
             $customMsg .= "分布式任务进程".$taskScheduler.' ';
             for($i = 0; $i < $taskScheduler; $i++){
                 $process = new \Swoole\Process(function ($process) use ($server) {
+                    $process->set(['enable_coroutine' => true]);
                     App::make(TaskScheduler::class)->execute($server);
                 }, false, 2, true);
                 $server->addProcess($process);
