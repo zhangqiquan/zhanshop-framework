@@ -51,7 +51,7 @@ class WebsocketEvent extends ServEvent
         App::webhandle()->dispatchWebSocket($appName, $servRequest, $servResponse);
 
         if(!$servResponse->sendWebSocket()){
-            $server->close($request->fd());
+            $server->close($request->fd);
         }
     }
 
@@ -81,7 +81,7 @@ class WebsocketEvent extends ServEvent
             $servResponse = new Response($server, $frame->fd);
             App::webhandle()->dispatchWebSocket($appName, $servRequest, $servResponse);
             if(!$servResponse->sendWebSocket()){
-                $server->close($servRequest->fd());
+                $server->close($frame->fd);
             }
         }
     }
