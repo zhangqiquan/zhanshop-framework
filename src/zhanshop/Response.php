@@ -140,7 +140,10 @@ class Response
                 }
                 $this->response->push($this->fd, $respData);
             }
-        }catch (\Throwable $e){}
+            return true;
+        }catch (\Throwable $e){
+            return false;
+        }
     }
 
     /**
