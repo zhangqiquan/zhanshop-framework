@@ -36,7 +36,7 @@ class GrpcServEvent extends ServEvent
      * @param \Swoole\Server $server
      * @return void
      */
-    public function onStart(\Swoole\Server $server) :void{
+    public function onStart($server) :void{
         // 检查grpc是否安装
         App::env()->checkExtensions(['grpc', 'protobuf']);
     }
