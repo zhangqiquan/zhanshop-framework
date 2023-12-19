@@ -395,17 +395,6 @@ class Server extends Command
             $customMsg .= "自定义进程数".count($this->config['process']).' ';
 
         }
-        $taskScheduler = (int)App::env()->get('TASK_SCHDULER', 0);
-        if($taskScheduler){
-            $customMsg .= "分布式任务进程".$taskScheduler.' ';
-            for($i = 0; $i < $taskScheduler; $i++){
-                $process = new \Swoole\Process(function ($process) use ($server) {
-                    $process->set(['enable_coroutine' => true]);
-                    App::make(TaskScheduler::class)->execute($server);
-                }, false, 2, true);
-                $server->addProcess($process);
-            }
-        }
 
         if($customMsg) Log::errorLog(SWOOLE_LOG_NOTICE, $customMsg);
 
