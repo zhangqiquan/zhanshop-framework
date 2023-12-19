@@ -35,13 +35,13 @@ class Cache{
         if(gettype($connection) == 'object') return $connection;
 
         if($connection == false) $connection = App::config()->get('cache.default');
-        $redisConnectionPool = CacheManager::get($connection);
+        $redisConnectionPool = App::make(CacheManager::class)->get($connection);
         return $redisConnectionPool;
     }
 
     public function callback($callback, string $connection = null){
         if($connection == false) $connection = App::config()->get('cache.default');
-        $redisConnectionPool = CacheManager::get($connection);
+        $redisConnectionPool = App::make(CacheManager::class)->get($connection);
         return $redisConnectionPool->callback($callback);
     }
 

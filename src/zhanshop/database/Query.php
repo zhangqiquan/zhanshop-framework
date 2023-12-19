@@ -321,7 +321,7 @@ class Query
             unset($this->options['fetch_sql']);
             return $sql;
         }
-        $pdoPoll = DbManager::get($this->connection);
+        $pdoPoll = App::make(DbManager::class)->get($this->connection);
         return $pdoPoll->query($sql, $bind, $pdo);
     }
 
@@ -339,12 +339,12 @@ class Query
         }
         // 如果是fetchSql
 
-        $pdoPoll = DbManager::get($this->connection);
+        $pdoPoll = App::make(DbManager::class)->get($this->connection);
         return (float) $pdoPoll->execute($sql, $bind, $lastID, $pdo);
     }
 
     public function transaction($call){
-        $pdoPoll = DbManager::get($this->connection);
+        $pdoPoll = App::make(DbManager::class)->get($this->connection);
         $pdoPoll->transaction($call);
     }
 

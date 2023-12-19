@@ -36,8 +36,8 @@ class WebHandle
 
         $this->loadRoute(); // 装载路由配置
         App::task($this->servEvent->server ?? null); // 载入task类
-        CacheManager::init(); // 缓存管理初始化
-        DbManager::init(); // 数据库管理初始化
+        App::make(CacheManager::class); // 缓存管理初始化
+        App::make(DbManager::class); // 数据库管理初始化
         App::log($this->servEvent->setting['daemonize'] ?? false)->execute(); // 日志通道运行起来
     }
 

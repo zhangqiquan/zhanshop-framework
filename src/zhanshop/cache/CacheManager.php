@@ -14,11 +14,14 @@ use zhanshop\App;
 
 class CacheManager
 {
-    protected static $cacheConnectionPools = [];
-    public static function init(){
+    /**
+     * @var array
+     */
+    protected $cacheConnectionPools = [];
+    public function __construct(){
         $connections = App::config()->get('cache.connections');
         foreach ($connections as $k => $v){
-            self::$cacheConnectionPools[$k] = new RedisConnectionPool($v);
+            $this->cacheConnectionPools[$k] = new RedisConnectionPool($v);
         }
     }
 
@@ -27,12 +30,12 @@ class CacheManager
      * @return RedisConnectionPool
      * @throws \Exception
      */
-    public static function get(string $connection){
-        return self::$cacheConnectionPools[$connection] ?? throw new \Exception('cache.connections.'.$connection.'未定义');
+    public function get(string $connection){
+        return $this->cacheConnectionPools[$connection] ?? throw new \Exception('cache.connections.'.$connection.'未定义');
     }
 
-    public static function clean(){
-        self::$cacheConnectionPools = [];
+    public function clean(){
+        $this->cacheConnectionPools = [];
     }
 
 }

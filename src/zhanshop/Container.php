@@ -98,7 +98,5 @@ class Container
      */
     public static function cleanAll(){
         self::$instances = [];
-        CacheManager::init();
-        DbManager::init();
     }
 }

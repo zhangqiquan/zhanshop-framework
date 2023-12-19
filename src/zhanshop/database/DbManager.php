@@ -14,11 +14,11 @@ use zhanshop\App;
 
 class DbManager
 {
-    protected static $PDOConnectionPools = [];
-    public static function init(){
+    protected $PDOConnectionPools = [];
+    public function __construct(){
         $connections = App::config()->get('database.connections');
         foreach ($connections as $k => $v){
-            self::$PDOConnectionPools[$k] = new PDOConnectionPool($v);
+            $this->PDOConnectionPools[$k] = new PDOConnectionPool($v);
         }
     }
 
@@ -27,11 +27,11 @@ class DbManager
      * @return PDOConnectionPool
      * @throws \Exception
      */
-    public static function get(string $connection){
-        return self::$PDOConnectionPools[$connection] ?? throw new \Exception('database.connections.'.$connection.'未定义');
+    public function get(string $connection){
+        return $this->PDOConnectionPools[$connection] ?? throw new \Exception('database.connections.'.$connection.'未定义');
     }
 
-    public static function clean(){
-        self::$PDOConnectionPools = [];
+    public function clean(){
+        $this->PDOConnectionPools = [];
     }
 }
