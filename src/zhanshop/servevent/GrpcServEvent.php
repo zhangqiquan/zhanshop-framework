@@ -47,7 +47,7 @@ class GrpcServEvent extends ServEvent
      * @param string $group
      * @return void
      */
-    public function onRequest(mixed $request, mixed $response, int $protocol = Server::HTTP, string $routeGroup = 'grpc') :void{
+    public function onRequest($request, $response, $protocol = Server::HTTP, $appName = 'grpc') :void{
 
         if (!in_array($request->header['content-type'] ?? '', [
             'application/grpc',

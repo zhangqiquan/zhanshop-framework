@@ -17,7 +17,7 @@ use zhanshop\ServEvent;
 
 class JsonRpcEvent extends ServEvent
 {
-    public function onReceive(\Swoole\Server $server, int $fd, int $reactorId, string $data) :void{
+    public function onReceive($server, $fd, $reactorId, $data) :void{
 
         try {
             $data = $this->getData($data);
