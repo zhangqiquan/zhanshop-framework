@@ -18,6 +18,6 @@ class AdminServEvent extends ServEvent
      * @return void
      */
     public function onRequest($request, $response, $protocol = Server::HTTP, $appName = 'admin') :void{
-        parent::onRequest($request, $response, $protocol, $routeGroup);
+        parent::onRequest($request, $response, $protocol, $appName);
     }
 }
