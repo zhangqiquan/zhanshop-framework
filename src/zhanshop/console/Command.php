@@ -97,7 +97,7 @@ abstract class Command
      */
     protected function useDatabase(){
         $this->isCoroutine = true;
-        DbManager::init();
+        App::make(DbManager::class);
         $this->useLog();
         return $this;
     }
@@ -109,7 +109,7 @@ abstract class Command
      */
     protected function useCache(){
         $this->isCoroutine = true;
-        CacheManager::init();
+        App::make(CacheManager::class);
         $this->useLog();
         return $this;
     }
