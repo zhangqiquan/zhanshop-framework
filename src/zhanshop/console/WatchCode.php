@@ -50,7 +50,9 @@ class WatchCode
      */
     public function isChange() :bool{
         $files = $this->getFiles($this->watchPath);
+        if($files == false) return false;
         $newHashes = array_combine($files, array_map([$this, 'fileHash'], $files));
+
         foreach($newHashes as $k => $v){
             if(isset($this->hashes[$k]) == false){
                 //echo '文件新增:'.$k.PHP_EOL;
@@ -62,7 +64,6 @@ class WatchCode
                 return true;
             }
         }
-
         foreach($this->hashes as $k => $v){
             // 如果老的文件不在新的中被删除了
             if(isset($newHashes[$k]) == false){
@@ -79,13 +80,14 @@ class WatchCode
      * @return array
      */
     protected function getFiles(string $path){
-        $directory = new \RecursiveDirectoryIterator($path);
-        $filter = new WatchCodeFilter($directory);
-        $iterator = new \RecursiveIteratorIterator($filter);
-        return array_map(function ($fileInfo) {
-            return $fileInfo->getPathname();
-        }, iterator_to_array($iterator));
-
+        try {
+            $directory = new \RecursiveDirectoryIterator($path);
+            $filter = new WatchCodeFilter($directory);
+            $iterator = new \RecursiveIteratorIterator($filter);
+            return array_map(function ($fileInfo) {
+                return $fileInfo->getPathname();
+            }, iterator_to_array($iterator));
+        }catch (\Throwable $e){}
     }
 
     /**

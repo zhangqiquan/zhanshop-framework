@@ -13,6 +13,7 @@ namespace zhanshop;
 use app\exception\HttpException;
 use app\exception\WebSocketException;
 use zhanshop\cache\CacheManager;
+use zhanshop\console\TaskManager;
 use zhanshop\database\DbManager;
 use zhanshop\route\Dispatch;
 use zhanshop\service\ApiDoc;
@@ -35,7 +36,7 @@ class WebHandle
         $this->servEvent = $servEvent;
 
         $this->loadRoute(); // 装载路由配置
-        App::task($this->servEvent->server ?? null); // 载入task类
+        App::make(TaskManager::class, [$this->servEvent->server]);  // 载入task管理类
         App::make(CacheManager::class); // 缓存管理初始化
         App::make(DbManager::class); // 数据库管理初始化
         App::log($this->servEvent->setting['daemonize'] ?? false)->execute(); // 日志通道运行起来
@@ -157,6 +158,46 @@ class WebHandle
             $servResponse->setHttpCode((int)$e->getCode());
             $data = App::make(WebSocketException::class)->handle($request, $servResponse, $e);
             $servResponse->setData($data); // 先执行后置中间件
+        }
+    }
+
+    /**
+     * 网桥控制器调度
+     * @param string $appName
+     * @param Request $request
+     * @param \Swoole\Coroutine\Channel $servResponse
+     * @return array
+     */
+    public function dispatchBridg(string $appName, Request &$request, \Swoole\Coroutine\Channel &$servResponse){
+        try {
+            $dispatch = App::make(Dispatch::class);
+
+            $dispatch->check($appName, $request);
+
+            $handler = $request->getRoure()['handler'];
+            $controller = $handler[0];
+            $action = $handler[1];
+            App::make($controller)->$action($request, $servResponse);
+            return true;
+        }catch (\Throwable $e){
+            return $e->getMessage().PHP_EOL.$e->getFile().':'.$e->getLine();
+        }
+    }
+
+    public function dispatchtTcp(string $appName, Request &$request, Response &$servResponse){
+        try {
+            $dispatch = App::make(Dispatch::class);
+
+            $dispatch->check($appName, $request);
+
+            $handler = $request->getRoure()['handler'];
+            $controller = $handler[0];
+            $action = $handler[1];
+
+            App::make($controller)->$action($request, $servResponse);
+            return true;
+        }catch (\Throwable $e){
+            return $e->getMessage() .PHP_EOL. $e->getFile().':'.$e->getLine();
         }
     }
 }

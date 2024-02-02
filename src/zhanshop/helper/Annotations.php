@@ -25,7 +25,7 @@ class Annotations
     public function api(){
         // @api POST goods 添加商品
         // @api  \s+匹配一个或者多个空格  (GET|POST|DELETE|PUT)匹配GET|POST|DELETE|PUT任意一项     \s+匹配一个或者多个空格     (\w+)匹配一个包含字母数字下划线的字符串     \s+匹配一个或者多个空格  (\S*) 匹配任意非空白字符
-        $matched = preg_match('/@api\s+(GET|POST|DELETE|PUT)\s+(\S*)\s+(\S*)/i', $this->docComment, $matches);
+        $matched = preg_match('/@api\s+(GET|POST|DELETE|PUT|WS|TCP|UDP|MQTT|FTP)\s+(\S*)\s+(\S*)/i', $this->docComment, $matches);
         return [
             'method' => $matches[1] ?? '',
             'uri' => $matches[2] ?? '',

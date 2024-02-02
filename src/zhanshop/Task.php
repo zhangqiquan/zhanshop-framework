@@ -10,36 +10,28 @@ declare (strict_types=1);
 
 namespace zhanshop;
 
-class Task
+abstract class Task
 {
-    /**
-     * server对象
-     * @var Swoole\Server
-     */
-    protected $server;
-    public function __construct(mixed &$server)
+    protected \Swoole\Server\Task $task;
+    public function __construct(\Swoole\Server\Task $task)
     {
-        $this->server = $server;
+        $this->task = $task;
     }
+    /**
+     * 任务启动
+     * @return mixed
+     */
+    abstract public function onStart();
 
     /**
-     * 获取server对象
-     * @return Swoole\Server
+     * 任务运行
+     * @return mixed
      */
-    public function getServer(){
-        return $this->server;
-    }
+    abstract public function execute();
 
     /**
-     * 执行task任务
-     * @param array $call
-     * @param array $param
-     * @return void
+     * 任务结束
+     * @return mixed
      */
-    public function callback(array $callback, ...$value){
-        $this->server->task([
-            'callback' => $callback,
-            'value' => $value
-        ]);
-    }
+    abstract public function onEnd();
 }

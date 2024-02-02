@@ -76,7 +76,7 @@ class Log
             swoole_error_log($level, $msg);
         }else{
             // 直接输出日志
-            $msg = '['.date('Y-m-d H:i:s *v').']	LOG LEVEL '.$level.'	'.$msg;
+            $msg = '['.date('Y-m-d H:i:s *v').']	'.getmypid().' LEVEL '.$level.'	'.$msg;
             $stype = 'success';
             if ($level >= 5){
                 $stype = 'error';
@@ -87,5 +87,31 @@ class Log
             }
             App::make(Output::class)->output($msg, $stype);
         }
+    }
+
+    /**
+     * 输出日志
+     * @param string $msg
+     * @return void
+     */
+    public static function echo(string $msg)
+    {
+        echo $msg."\r\n";
+    }
+
+    /**
+     * 脚本日志
+     * @param string $event
+     * @param mixed $msg
+     * @return void
+     */
+    public static function scriptLog(string $event, mixed $msg = "")
+    {
+        $body = [
+            'event' => $event,
+            'body' => $msg
+        ];
+        $body = json_encode($body, JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
+        echo $body."\r\n";
     }
 }

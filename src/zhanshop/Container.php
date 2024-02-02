@@ -58,6 +58,16 @@ class Container
     }
 
     /**
+     * 通过类名清除类的实例
+     * @param string $className
+     * @return void
+     */
+    public static function clean(string $className)
+    {
+        unset(self::$instances[$className]);
+    }
+
+    /**
      * 获取实例
      * @param $name
      * @param array $arguments

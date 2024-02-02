@@ -14,6 +14,7 @@ namespace zhanshop;
 use zhanshop\console\command\ApiCreate;
 use zhanshop\console\command\ApiDoc;
 use zhanshop\console\command\ApiRoute;
+use zhanshop\console\command\CallScript;
 use zhanshop\console\command\Help;
 use zhanshop\console\command\Http;
 use zhanshop\console\command\Phar;
@@ -48,6 +49,7 @@ class Console{
     protected $commands = [
         'help'       => Help::class,
         'server' => Server::class,
+        'script' => CallScript::class,
         'phar' => Phar::class,
         'api:route' => ApiRoute::class,
         'software:scan:ports' => ScanPorts::class,
@@ -66,9 +68,6 @@ class Console{
      * Http constructor.
      */
     public function __construct(){
-        if(extension_loaded('swoole')){
-            Coroutine::set(['hook_flags'=> SWOOLE_HOOK_ALL]);
-        }
         $this->init(); // 初始化操作
     }
 

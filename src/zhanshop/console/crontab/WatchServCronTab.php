@@ -12,6 +12,7 @@ namespace zhanshop\console\crontab;
 
 use zhanshop\App;
 use zhanshop\console\task\WatchServTask;
+use zhanshop\console\TaskManager;
 use zhanshop\Crontab;
 
 class WatchServCronTab extends Crontab
@@ -23,6 +24,6 @@ class WatchServCronTab extends Crontab
 
     public function execute()
     {
-        App::task()->callback([WatchServTask::class, 'check']);
+        App::make(TaskManager::class)->callback(WatchServTask::class);
     }
 }

@@ -11,6 +11,7 @@ declare (strict_types=1);
 namespace zhanshop\console;
 
 use zhanshop\App;
+use zhanshop\Curl;
 
 class ServerStatus
 {
@@ -44,6 +45,7 @@ class ServerStatus
      */
     public static function info(string $url){
         if(strpos($url, 'http') === 0 ||  strpos($url, 'ws') === 0){
+            $url = "http://".explode("://", $url)[1];
             return self::http($url);
         }else{
             return self::client($url);
@@ -84,17 +86,14 @@ class ServerStatus
     }
 
     public static function http($url){
-        $statusData = [];
-        $url = $url.'/_status?app_key='.App::config()->get('app.app_key');
-        $data =  file_get_contents($url);
-        if($data){
-            $data = json_decode($data, true);
-            if($data) $statusData = $data;
-        }
-        if($statusData){
-            $statusData = self::translate($statusData);
-        }
-        return $statusData;
+        $curl = new Curl();
+        $curl->setHeader("Content-Type", "application/json; charset=utf-8");
+        $response = $curl->request($url.'/v1/api.doc', "POST", [
+            '_method' => 'servStatus',
+            'appkey' => App::config()->get('app.app_key'),
+        ]);
+        $body = json_decode($response['body'], true)['data'];
+        return self::translate($body);
     }
 
     protected static function translate(array $data){

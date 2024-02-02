@@ -18,6 +18,7 @@ use zhanshop\console\Input;
 use zhanshop\console\Output;
 use zhanshop\console\process\TaskScheduler;
 use zhanshop\console\ServerStatus;
+use zhanshop\console\TaskManager;
 use zhanshop\Log;
 use zhanshop\ServEvent;
 use zhanshop\console\crontab\WatchServCronTab;
@@ -51,8 +52,7 @@ class Server extends Command
         'settings' => [
             'daemonize' => true,
             'enable_coroutine' => true, // 这个只是将OnRequest 方法变成非阻塞而已而没有把mysql的操作变成非阻塞
-            'send_yield' => true,
-            'send_timeout' => 3, // 1.5秒
+            'hook_flags' => SWOOLE_HOOK_ALL,
             'log_level' => SWOOLE_LOG_NOTICE, // 仅记录错误日志以上的日志
             'log_rotation' => SWOOLE_LOG_ROTATION_DAILY, // 每日日志
             'task_worker_num' => 1,
@@ -63,9 +63,7 @@ class Server extends Command
             'document_root' => '',
             'http_autoindex' => true,
             'http_index_files' => ['index.html'],
-            'open_eof_split' => true,
-            'package_eof' => "\r\n",
-            'stats_timer_interval' => 5000,
+            'max_connection' => 200000,
             //'ssl_cert_file' => '/ssl/swagger.crt',
             //'ssl_key_file' => '/ssl/swagger.key',
         ],
@@ -329,7 +327,7 @@ class Server extends Command
                 break;
         }
 
-        if($conf['sock_type'] >= SWOOLE_SSL) $protocol .= 's';
+        if($conf['sock_type'] >= 512) $protocol .= 's';
         if($this->config['settings']['daemonize'] == false && $echoListenMsg) echo '['.date('Y-m-d H:i:s').'] ###[listen]###'." ".$protocol.'://'.$conf['host'].':'.$conf['port'].'/'.PHP_EOL;
         return $protocol;
     }
@@ -347,7 +345,7 @@ class Server extends Command
         $server = null;
         foreach($this->config['servers'] as $k => $v){
             if($k == 0){
-                if(!in_array($v['serv_type'], [Server::HTTP, Server::WEBSOCKET])) App::error()->setError('主server的serv_type必须为HTTP | ');
+                //if(!in_array($v['serv_type'], [Server::HTTP, Server::WEBSOCKET])) App::error()->setError('主server的serv_type必须为HTTP | ');
                 $server = $this->createServer($v);
                 $settings = array_merge($this->config['settings'], $v['settings']);
                 if($v['serv_type'] != Server::HTTP){
@@ -366,14 +364,13 @@ class Server extends Command
         }
 
         $customMsg = "";
-        if($this->config['settings']['task_worker_num']) $customMsg .= "task进程开启数".$this->config['settings']['task_worker_num'].',';
 
         // 用户进程的生存周期与 Master 和 Manager 是相同的，不会受到 reload 影响 修改定时任务啥的需要重启
         if($this->config['crontab']){
             // 当存在定时任务的时候才会启动定时任务进程
             $process = new \Swoole\Process(function ($process) use ($server) {
-                $process->set(['enable_coroutine' => true]);
-                App::task($server);
+                $process->set(['enable_coroutine' => true, 'hook_flags' => SWOOLE_HOOK_ALL]);
+                App::make(TaskManager::class, [$server]);
                 foreach($this->config['crontab'] as $v){
                     App::make(Timer::class)->register(new $v($server)); // 根据配置执行定时任务
                 }

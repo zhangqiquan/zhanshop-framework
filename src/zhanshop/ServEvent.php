@@ -13,6 +13,7 @@ namespace zhanshop;
 use Swoole\Timer;
 use zhanshop\cache\CacheManager;
 use zhanshop\console\command\Server;
+use zhanshop\console\command\server\Accepted;
 use zhanshop\database\DbManager;
 
 class ServEvent
@@ -90,7 +91,7 @@ class ServEvent
      * @return void
      */
     public function onStart($server) :void{
-        $msg = "启动工作进程数".($server->setting['worker_num']).', 线程数'.($server->setting['worker_num'] * $server->setting['reactor_num']).', swoole'.swoole_version().', 环境'.($_SERVER['APP_ENV'] ?? 'dev');
+        $msg = "启动工作进程数".($server->setting['worker_num']).', 任务工作进程'.($server->setting['task_worker_num']).', swoole'.swoole_version().', 环境'.($_SERVER['APP_ENV'] ?? 'dev');
         Log::errorLog(SWOOLE_LOG_NOTICE, $msg);
         App::make(Robot::class)->send($msg);
     }
@@ -191,7 +192,7 @@ class ServEvent
     }
 
     /**
-     * 收到tcp数据[可能会出现粘包]
+     * 收到tcp数据
      * @param \Swoole\Server $server
      * @param int $fd
      * @param int $reactorId
@@ -199,9 +200,28 @@ class ServEvent
      * @return void
      */
     public function onReceive($server, $fd, $reactorId, $data) :void{
-        if($data == 'servStatus'){
-            $server->send($fd, json_encode($server->stats()));
-            return;
+        if($data == "ping") return;
+        // 接收到的数据过长
+        $data = json_decode($data, true);
+        if($data){
+            $request = \Swoole\Http\Request::create([]);
+            $request->fd = $fd;
+            $clientInfo = $server->getClientInfo($fd);
+            $request->server['remote_addr'] = $clientInfo['remote_ip'] ?? '-1';
+            $request->server['request_uri'] = $data['uri'] ?? '/v1/index.index';
+            $request->server['request_time'] = time();
+            $request->server['request_method'] = 'TCP';
+            foreach($data['header'] ?? [] as $k => $v){
+                $request->header[$k] = $v;
+            }
+            $request->post = $data['body'] ?? [];
+            $protocol = Server::TCP;
+            $servRequest = new Request($protocol, $request);
+            $servResponse = new Response($server, $fd);
+            $result = App::webhandle()->dispatchtTcp('admin', $servRequest, $servResponse);
+            if($result !== true){
+                $server->send($fd, '{"uri":"error","header":[],"body":"'.$request->server['request_uri'].PHP_EOL.addslashes($result).'"}'."\r\n");
+            }
         }
     }
 
@@ -213,7 +233,6 @@ class ServEvent
      * @return void
      */
     public function onConnect($server, $fd, $reactorId) :void{
-
     }
 
 //    /**
@@ -252,7 +271,6 @@ class ServEvent
      * @return void
      */
     public function onClose($server, $fd, $reactorId) :void{
-
     }
 
     /**
@@ -265,9 +283,13 @@ class ServEvent
         try{
             if($task->data == false || !is_array($task->data)){
                 Log::errorLog(SWOOLE_LOG_ERROR,'投递的task必须是一个数组');
+            }else{
+                $class = $task->data['class'];
+                $obj = new $class($task);
+                $obj->onStart();
+                $obj->execute();
+                $obj->onEnd();
             }
-            $action = $task->data['callback'][1];
-            App::make($task->data['callback'][0])->$action(...$task->data['value']);
         }catch (\Throwable $e){
             Log::errorLog(SWOOLE_LOG_ERROR,'task出错 '.$e->getMessage().PHP_EOL.'#@ '.$e->getFile().':'.$e->getLine().PHP_EOL.$e->getTraceAsString().PHP_EOL);
         }

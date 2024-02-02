@@ -27,7 +27,6 @@ use zhanshop\console\Output;
  * @method static Rsa rsa()
  * @method static Curl curl()
  * @method static Middleware middleware()
- * @method static Task task()
  * @method static Robot robot()
  * @method static Phar phar()
  */
@@ -91,7 +90,6 @@ class App extends Container
         'config'          => Config::class,
         'cache'           => Cache::class,
         'log'             => Log::class,
-        'task'            => Task::class,
         'route'           => Route::class,
         'webhandle'       => WebHandle::class,
         'validate'        => Validate::class,

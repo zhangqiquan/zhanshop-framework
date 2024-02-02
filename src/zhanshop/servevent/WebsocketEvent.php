@@ -97,6 +97,7 @@ class WebsocketEvent extends ServEvent
             $uri = App::rootPath().'/public'.$request->server['request_uri'];
             if(is_dir($uri)) $uri = rtrim($uri, '/').'/index.html';
             if(file_exists($uri)){
+                $response->header('Server', 'zhanshop');
                 $ext = pathinfo($uri, PATHINFO_EXTENSION);
                 if($ext == 'js'){
                     $response->header('Content-Type', 'text/javascript');
@@ -113,7 +114,11 @@ class WebsocketEvent extends ServEvent
                 }
 
                 $response->header('Last-Modified', $lastModifiedTime);
-                $response->end(file_get_contents($uri, false, null, 0, 1000000));
+                if(filesize($uri) > 2000000){
+                    $response->sendfile($uri);
+                }else{
+                    $response->end(file_get_contents($uri, false, null, 0, 2000000));
+                }
                 return true;
             }
         }catch (\Throwable $e){}

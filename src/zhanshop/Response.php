@@ -20,7 +20,6 @@ class Response
 {
     /**
      * 原始请求对象
-     * @var \Swoole\Http\Response
      */
     protected mixed $response = null;
 
@@ -111,7 +110,7 @@ class Response
      * @return void
      */
     public function sendHttp(){
-        if($this->data){
+        if($this->data !== false){
             $respData = $this->data;
             if(is_array($respData)){
                 $respData['trace_id'] = microtime(true).rand(10000, 99999).'.'. App::config()->get('app.serial_code', 0).'.'.getmypid();
@@ -119,12 +118,45 @@ class Response
                 $respData = json_encode($respData);
             }
             $this->response->status($this->httpCode);
+            $this->response->header('Server', 'zhanshop');
             $this->response->end($respData);
-        }else{
-            $this->response->end();
         }
     }
 
+    public function wsPush(int $fd, mixed $data)
+    {
+        if(is_array($data) || is_object($data)){
+            $data = json_encode($data, JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
+        }
+        try{
+            return $this->response->push($fd, $data);
+        }catch (\Throwable $e){
+            return false;
+        }
+    }
+
+    /**
+     * 发送tcp数据
+     * @param int $fd
+     * @param mixed $data
+     * @return mixed
+     */
+    public function send(int $fd, mixed $data, $partition = "\r\n")
+    {
+        return $this->response->send($fd, $data.$partition);
+    }
+
+    /**
+     * 发送udp数据
+     * @param $address
+     * @param $port
+     * @param $data
+     * @return mixed
+     */
+    public function sendto($address, $port, $data)
+    {
+        return $this->response->sendto($address, $port, $data);
+    }
     /**
      * 发送websocket响应
      * @return void
@@ -138,7 +170,7 @@ class Response
                     $respData['trace_id'] = microtime(true).rand(10000, 99999).'.'. App::config()->get('app.serial_code', 0).'.'.getmypid();
                     $respData = json_encode($respData, JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
                 }
-                $this->response->push($this->fd, $respData);
+                return $this->response->push($this->fd, $respData);
             }
             return true;
         }catch (\Throwable $e){
@@ -158,5 +190,14 @@ class Response
         }catch (\Throwable $e){
             return null;
         }
+    }
+
+    /**
+     * 原始的响应对象
+     * @return mixed|null
+     */
+    public function rawResponse()
+    {
+        return $this->response;
     }
 }
